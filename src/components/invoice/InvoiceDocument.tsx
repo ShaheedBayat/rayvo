@@ -13,7 +13,7 @@ export default function InvoiceDocument({ invoice, company }: Props) {
       <div className="flex justify-between items-start mb-10">
         <div>
           {company?.logo ? (
-            <img src={company.logo} alt={company.name} className="h-12 w-auto mb-3 object-contain" />
+            <img src={company.logo} alt={company.name} className="h-16 w-auto mb-3 object-contain" />
           ) : (
             <h2 className="text-xl font-semibold mb-3">{company?.name || 'Company'}</h2>
           )}
