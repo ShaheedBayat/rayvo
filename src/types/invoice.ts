@@ -33,6 +33,7 @@ export interface Invoice {
   status: 'draft' | 'sent' | 'paid';
   createdAt: string;
   dueDate: string;
+  shareToken?: string;
 }
 
 export const currencySymbols: Record<Currency, string> = {

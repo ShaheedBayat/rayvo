@@ -47,7 +47,12 @@ export default function InvoiceView() {
   };
 
   const handleShare = () => {
-    const url = `${window.location.origin}/public/invoice/${invoice.id}`;
+    let token = invoice.shareToken;
+    if (!token) {
+      token = crypto.randomUUID();
+      updateInvoice({ ...invoice, shareToken: token });
+    }
+    const url = `${window.location.origin}/public/invoice/${invoice.id}?token=${token}`;
     navigator.clipboard.writeText(url);
     toast.success('Public link copied to clipboard!');
   };
