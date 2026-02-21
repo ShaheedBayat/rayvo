@@ -1,26 +1,28 @@
 import { useParams, useSearchParams } from 'react-router-dom';
-import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
+import { usePublicInvoice } from '@/hooks/useInvoiceStore';
 import InvoiceDocument from '@/components/invoice/InvoiceDocument';
 
 export default function PublicInvoice() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const { getInvoice } = useInvoices();
-  const { getCompany } = useCompanies();
+  const { invoice, company, loading } = usePublicInvoice(id || '', token);
 
-  const invoice = getInvoice(id || '');
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
-  // Require a valid share token to view the invoice
-  if (!invoice || !token || invoice.shareToken !== token) {
+  if (!invoice) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-muted-foreground">Invoice not found or link is invalid.</p>
       </div>
     );
   }
-
-  const company = getCompany(invoice.companyId);
 
   return (
     <div className="min-h-screen bg-secondary/30 py-12 px-4">
