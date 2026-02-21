@@ -1,0 +1,210 @@
+import { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { useCompanies } from '@/hooks/useInvoiceStore';
+import type { Company } from '@/types/invoice';
+import AppLayout from '@/components/AppLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Building2, Plus, Trash2, Pencil, Upload } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+
+function CompanyForm({
+  initial,
+  onSave,
+  onClose,
+}: {
+  initial?: Company;
+  onSave: (c: Company) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(initial?.name || '');
+  const [email, setEmail] = useState(initial?.email || '');
+  const [phone, setPhone] = useState(initial?.phone || '');
+  const [address, setAddress] = useState(initial?.address || '');
+  const [city, setCity] = useState(initial?.city || '');
+  const [country, setCountry] = useState(initial?.country || '');
+  const [taxNumber, setTaxNumber] = useState(initial?.taxNumber || '');
+  const [logo, setLogo] = useState(initial?.logo || '');
+
+  const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setLogo(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      id: initial?.id || uuidv4(),
+      name, email, phone, address, city, country, taxNumber, logo,
+    });
+    onClose();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex items-center gap-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed bg-secondary overflow-hidden">
+          {logo ? (
+            <img src={logo} alt="Logo" className="h-full w-full object-contain" />
+          ) : (
+            <Upload className="h-5 w-5 text-muted-foreground" />
+          )}
+        </div>
+        <div>
+          <Label className="cursor-pointer text-sm text-primary hover:underline">
+            Upload Logo
+            <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+          </Label>
+          <p className="text-xs text-muted-foreground mt-0.5">PNG or JPG, max 2MB</p>
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>Company Name</Label>
+          <Input required value={name} onChange={e => setName(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Email</Label>
+          <Input type="email" required value={email} onChange={e => setEmail(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Phone</Label>
+          <Input value={phone} onChange={e => setPhone(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Tax / VAT Number</Label>
+          <Input value={taxNumber} onChange={e => setTaxNumber(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Address</Label>
+          <Input required value={address} onChange={e => setAddress(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>City</Label>
+          <Input required value={city} onChange={e => setCity(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Country</Label>
+          <Input required value={country} onChange={e => setCountry(e.target.value)} />
+        </div>
+      </div>
+      <div className="flex gap-2 pt-2">
+        <Button type="submit">{initial ? 'Update' : 'Add'} Company</Button>
+        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+      </div>
+    </form>
+  );
+}
+
+export default function Companies() {
+  const { companies, addCompany, updateCompany, deleteCompany } = useCompanies();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Company | undefined>();
+
+  const handleSave = (c: Company) => {
+    if (editing) {
+      updateCompany(c);
+      toast.success('Company updated');
+    } else {
+      addCompany(c);
+      toast.success('Company added');
+    }
+    setEditing(undefined);
+  };
+
+  const handleEdit = (c: Company) => {
+    setEditing(c);
+    setOpen(true);
+  };
+
+  return (
+    <AppLayout>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Companies</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage your companies and billing details.
+          </p>
+        </div>
+        <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) setEditing(undefined); }}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-1.5 h-4 w-4" /> Add Company
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editing ? 'Edit' : 'Add'} Company</DialogTitle>
+            </DialogHeader>
+            <CompanyForm
+              initial={editing}
+              onSave={handleSave}
+              onClose={() => { setOpen(false); setEditing(undefined); }}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {companies.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-20">
+          <Building2 className="h-10 w-10 text-muted-foreground/50" />
+          <h3 className="mt-4 text-lg font-medium">No companies yet</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Add a company to start creating invoices.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {companies.map(c => (
+            <div key={c.id} className="rounded-lg border bg-card p-5 invoice-shadow group">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  {c.logo ? (
+                    <img src={c.logo} alt={c.name} className="h-10 w-10 rounded object-contain" />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded bg-accent">
+                      <Building2 className="h-5 w-5 text-accent-foreground" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-medium">{c.name}</h3>
+                    <p className="text-xs text-muted-foreground">{c.email}</p>
+                  </div>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(c)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => { deleteCompany(c.id); toast.success('Company deleted'); }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-3 text-sm text-muted-foreground">
+                <p>{c.address}</p>
+                <p>{c.city}, {c.country}</p>
+                {c.taxNumber && <p className="mono text-xs mt-1">Tax: {c.taxNumber}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </AppLayout>
+  );
+}
