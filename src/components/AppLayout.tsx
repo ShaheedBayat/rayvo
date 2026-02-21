@@ -19,7 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2.5">
-              <img src={raynLogo} alt="RAYN" className="h-8 w-auto" />
+              <img src={raynLogo} alt="RAYN" className="h-12 w-auto" />
               <span className="text-lg font-semibold text-foreground">Invoice</span>
             </Link>
             <nav className="flex items-center gap-1">
