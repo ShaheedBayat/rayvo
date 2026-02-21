@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import raynLogo from '@/assets/rayn-logo.png';
-import { FileText, Building2, Plus } from 'lucide-react';
+import { FileText, Building2, Plus, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { to: '/', label: 'Invoices', icon: FileText },
@@ -9,6 +11,7 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const { signOut, user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,13 +39,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
           </div>
-          <Link
-            to="/invoices/new"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            New Invoice
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/invoices/new"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              New Invoice
+            </Link>
+            {user && (
+              <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </header>
       <main className="container py-8 animate-fade-in">
