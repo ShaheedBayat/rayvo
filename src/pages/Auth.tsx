@@ -40,7 +40,7 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-2">
-          <img src={raynLogo} alt="RAYN" className="h-16 w-auto" />
+          <img src={raynLogo} alt="RAYN" className="h-28 w-auto" />
           <h1 className="text-xl font-semibold">RAYN Invoice</h1>
           <p className="text-sm text-muted-foreground">
             {isSignUp ? 'Create an account' : 'Sign in to your account'}
