@@ -1,4 +1,4 @@
-export type Currency = 'ZAR' | 'USD';
+export type Currency = 'ZAR' | 'USD' | 'EUR' | 'GBP';
 
 export interface Company {
   id: string;
@@ -39,6 +39,8 @@ export interface Invoice {
 export const currencySymbols: Record<Currency, string> = {
   ZAR: 'R',
   USD: '$',
+  EUR: '€',
+  GBP: '£',
 };
 
 export function formatCurrency(amount: number, currency: Currency): string {
