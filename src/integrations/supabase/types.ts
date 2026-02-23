@@ -59,54 +59,200 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_contacts: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          email: string | null
+          first_name: string
+          id: string
+          is_primary: boolean | null
+          last_name: string
+          owner_id: string
+          phone: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          is_primary?: boolean | null
+          last_name?: string
+          owner_id: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          is_primary?: boolean | null
+          last_name?: string
+          owner_id?: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
+          account_number: string | null
           address: string | null
+          bank_account_name: string | null
+          bank_account_number: string | null
+          billing_city: string | null
+          billing_country: string | null
+          billing_postal_code: string | null
+          billing_province: string | null
+          billing_street: string | null
+          billing_suburb: string | null
+          block_on_credit_limit: boolean | null
           city: string | null
           country: string | null
           created_at: string
+          credit_limit: number | null
+          currency: string | null
+          default_discount: number | null
+          default_due_days: number | null
+          default_line_amounts: string | null
+          default_tax_rate: number | null
+          delivery_city: string | null
+          delivery_country: string | null
+          delivery_postal_code: string | null
+          delivery_province: string | null
+          delivery_same_as_billing: boolean | null
+          delivery_street: string | null
+          delivery_suburb: string | null
           email: string | null
           id: string
           id_number: string | null
+          industry: string | null
           name: string
+          notes: string | null
           owner_id: string
+          payment_reference: string | null
           phone: string | null
           registration_number: string | null
+          sales_tax_override: string | null
+          status: string | null
+          tags: string[] | null
+          tax_exempt: boolean | null
+          tax_id_number: string | null
           type: string
           updated_at: string
           vat_number: string | null
+          website: string | null
         }
         Insert: {
+          account_number?: string | null
           address?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_postal_code?: string | null
+          billing_province?: string | null
+          billing_street?: string | null
+          billing_suburb?: string | null
+          block_on_credit_limit?: boolean | null
           city?: string | null
           country?: string | null
           created_at?: string
+          credit_limit?: number | null
+          currency?: string | null
+          default_discount?: number | null
+          default_due_days?: number | null
+          default_line_amounts?: string | null
+          default_tax_rate?: number | null
+          delivery_city?: string | null
+          delivery_country?: string | null
+          delivery_postal_code?: string | null
+          delivery_province?: string | null
+          delivery_same_as_billing?: boolean | null
+          delivery_street?: string | null
+          delivery_suburb?: string | null
           email?: string | null
           id?: string
           id_number?: string | null
+          industry?: string | null
           name: string
+          notes?: string | null
           owner_id: string
+          payment_reference?: string | null
           phone?: string | null
           registration_number?: string | null
+          sales_tax_override?: string | null
+          status?: string | null
+          tags?: string[] | null
+          tax_exempt?: boolean | null
+          tax_id_number?: string | null
           type?: string
           updated_at?: string
           vat_number?: string | null
+          website?: string | null
         }
         Update: {
+          account_number?: string | null
           address?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_postal_code?: string | null
+          billing_province?: string | null
+          billing_street?: string | null
+          billing_suburb?: string | null
+          block_on_credit_limit?: boolean | null
           city?: string | null
           country?: string | null
           created_at?: string
+          credit_limit?: number | null
+          currency?: string | null
+          default_discount?: number | null
+          default_due_days?: number | null
+          default_line_amounts?: string | null
+          default_tax_rate?: number | null
+          delivery_city?: string | null
+          delivery_country?: string | null
+          delivery_postal_code?: string | null
+          delivery_province?: string | null
+          delivery_same_as_billing?: boolean | null
+          delivery_street?: string | null
+          delivery_suburb?: string | null
           email?: string | null
           id?: string
           id_number?: string | null
+          industry?: string | null
           name?: string
+          notes?: string | null
           owner_id?: string
+          payment_reference?: string | null
           phone?: string | null
           registration_number?: string | null
+          sales_tax_override?: string | null
+          status?: string | null
+          tags?: string[] | null
+          tax_exempt?: boolean | null
+          tax_id_number?: string | null
           type?: string
           updated_at?: string
           vat_number?: string | null
+          website?: string | null
         }
         Relationships: []
       }
