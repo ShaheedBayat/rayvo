@@ -185,6 +185,29 @@ export type Database = {
         }
         Relationships: []
       }
+      company_invoice_counters: {
+        Row: {
+          company_id: string
+          last_number: number
+        }
+        Insert: {
+          company_id: string
+          last_number?: number
+        }
+        Update: {
+          company_id?: string
+          last_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_invoice_counters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_contacts: {
         Row: {
           created_at: string | null
