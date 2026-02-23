@@ -151,7 +151,7 @@ function InvoiceSummary({
 
 export default function CreateInvoice() {
   const navigate = useNavigate();
-  const { addInvoice } = useInvoices();
+  const { addInvoice, invoices: allInvoices } = useInvoices();
   const { companies } = useCompanies();
 
   const [companyId, setCompanyId] = useState(companies[0]?.id || '');
@@ -159,7 +159,10 @@ export default function CreateInvoice() {
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientAddress, setClientAddress] = useState('');
-  const [invoiceNumber, setInvoiceNumber] = useState(`INV-${String(Date.now()).slice(-6)}`);
+  const [invoiceNumber, setInvoiceNumber] = useState(() => {
+    const nextNum = (allInvoices.length + 1).toString().padStart(5, '0');
+    return `INV-${nextNum}`;
+  });
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 30);
