@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import type { Company } from '@/types/invoice';
 
@@ -18,6 +19,7 @@ const ActiveCompanyContext = createContext<ActiveCompanyContextType>({
 
 export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   const { companies, loading } = useCompanies();
+  const navigate = useNavigate();
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(
     () => localStorage.getItem('activeCompanyId')
   );
@@ -33,8 +35,11 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   }, [loading, activeCompany, activeCompanyId]);
 
   const switchCompany = (id: string) => {
-    setActiveCompanyId(id);
-    localStorage.setItem('activeCompanyId', id);
+    if (id !== activeCompanyId) {
+      setActiveCompanyId(id);
+      localStorage.setItem('activeCompanyId', id);
+      navigate('/');
+    }
   };
 
   return (
