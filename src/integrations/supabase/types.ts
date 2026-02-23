@@ -131,6 +131,33 @@ export type Database = {
         }
         Relationships: []
       }
+      global_settings: {
+        Row: {
+          banking_details: string | null
+          created_at: string
+          id: string
+          owner_id: string
+          terms_conditions: string | null
+          updated_at: string
+        }
+        Insert: {
+          banking_details?: string | null
+          created_at?: string
+          id?: string
+          owner_id: string
+          terms_conditions?: string | null
+          updated_at?: string
+        }
+        Update: {
+          banking_details?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string
+          terms_conditions?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           client_address: string | null
@@ -225,6 +252,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      recurring_invoices: {
+        Row: {
+          client_address: string | null
+          client_email: string | null
+          client_name: string
+          company_id: string | null
+          created_at: string
+          currency: string
+          day_of_month: number | null
+          frequency: string
+          id: string
+          is_active: boolean
+          items: Json
+          next_run_date: string
+          notes: string | null
+          owner_id: string
+          tax_rate: number
+          updated_at: string
+        }
+        Insert: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name: string
+          company_id?: string | null
+          created_at?: string
+          currency?: string
+          day_of_month?: number | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          items?: Json
+          next_run_date: string
+          notes?: string | null
+          owner_id: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string
+          company_id?: string | null
+          created_at?: string
+          currency?: string
+          day_of_month?: number | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          items?: Json
+          next_run_date?: string
+          notes?: string | null
+          owner_id?: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

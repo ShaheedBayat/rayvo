@@ -1,10 +1,31 @@
-import { Settings, Palette, FileText, Shield, CreditCard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Palette, FileText, Shield, CreditCard, Landmark, Scale } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme, colorThemes } from '@/hooks/useTheme';
+import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, colorTheme, setColorTheme } = useTheme();
+  const { settings, saveSettings } = useGlobalSettings();
+  const [banking, setBanking] = useState('');
+  const [terms, setTerms] = useState('');
+
+  useEffect(() => {
+    if (settings) {
+      setBanking(settings.bankingDetails);
+      setTerms(settings.termsConditions);
+    }
+  }, [settings]);
+
+  const handleSaveSettings = async () => {
+    const ok = await saveSettings(banking, terms);
+    if (ok) toast.success('Settings saved');
+    else toast.error('Failed to save');
+  };
 
   const sections = [
     {
@@ -12,11 +33,65 @@ export default function SettingsPage() {
       title: 'Theme & Appearance',
       description: 'Choose your preferred colour scheme and mode.',
       content: (
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Current: {theme === 'dark' ? 'Dark' : 'Light'}</span>
-          <Button variant="outline" size="sm" onClick={toggleTheme}>
-            Switch to {theme === 'dark' ? 'Light' : 'Dark'}
-          </Button>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">Mode: {theme === 'dark' ? 'Dark' : 'Light'}</span>
+            <Button variant="outline" size="sm" onClick={toggleTheme}>
+              Switch to {theme === 'dark' ? 'Light' : 'Dark'}
+            </Button>
+          </div>
+          <div>
+            <Label className="text-xs mb-2 block">Color Theme</Label>
+            <div className="flex flex-wrap gap-2">
+              {colorThemes.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setColorTheme(t.id)}
+                  className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all ${
+                    colorTheme === t.id
+                      ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20'
+                      : 'border-border bg-card hover:border-primary/40'
+                  }`}
+                >
+                  <div
+                    className="h-4 w-4 rounded-full"
+                    style={{ backgroundColor: `hsl(${t.accent})` }}
+                  />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      icon: Landmark,
+      title: 'Banking Details',
+      description: 'These details appear at the bottom of every invoice.',
+      content: (
+        <div className="space-y-3">
+          <Textarea
+            value={banking}
+            onChange={(e) => setBanking(e.target.value)}
+            placeholder="Bank Name: First National Bank&#10;Account Name: My Company&#10;Account Number: 123456789&#10;Branch Code: 250655&#10;Reference: Invoice Number"
+            rows={5}
+          />
+        </div>
+      ),
+    },
+    {
+      icon: Scale,
+      title: 'Terms & Conditions',
+      description: 'Default terms shown at the bottom of every invoice.',
+      content: (
+        <div className="space-y-3">
+          <Textarea
+            value={terms}
+            onChange={(e) => setTerms(e.target.value)}
+            placeholder="1. Payment is due within 30 days of invoice date.&#10;2. Late payments will incur a 2% monthly interest charge.&#10;3. All prices are inclusive of VAT unless stated otherwise."
+            rows={5}
+          />
         </div>
       ),
     },
@@ -48,11 +123,14 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage your account, branding, and preferences.
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Settings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage your account, branding, and preferences.
+          </p>
+        </div>
+        <Button onClick={handleSaveSettings}>Save Settings</Button>
       </div>
 
       <div className="space-y-4">

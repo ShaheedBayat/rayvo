@@ -4,9 +4,11 @@ import { formatCurrency, calculateSubtotal, calculateTax, calculateTotal } from 
 interface Props {
   invoice: Invoice;
   company: Company | undefined;
+  bankingDetails?: string;
+  termsConditions?: string;
 }
 
-export default function InvoiceDocument({ invoice, company }: Props) {
+export default function InvoiceDocument({ invoice, company, bankingDetails, termsConditions }: Props) {
   return (
     <div
       className="bg-card rounded-lg border invoice-shadow-lg max-w-[800px] mx-auto"
@@ -148,9 +150,29 @@ export default function InvoiceDocument({ invoice, company }: Props) {
         {invoice.notes && (
           <div className="mt-10 pt-6 border-t">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-2">
-              Notes & Terms
+              Notes
             </p>
             <p className="text-sm text-muted-foreground whitespace-pre-line">{invoice.notes}</p>
+          </div>
+        )}
+
+        {/* Banking Details */}
+        {bankingDetails && (
+          <div className="mt-6 pt-6 border-t">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-2">
+              Banking Details
+            </p>
+            <p className="text-sm text-muted-foreground whitespace-pre-line">{bankingDetails}</p>
+          </div>
+        )}
+
+        {/* Terms & Conditions */}
+        {termsConditions && (
+          <div className="mt-6 pt-6 border-t">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-2">
+              Terms & Conditions
+            </p>
+            <p className="text-sm text-muted-foreground whitespace-pre-line">{termsConditions}</p>
           </div>
         )}
       </div>
