@@ -1,223 +1,62 @@
 
-# Complete Feature Implementation Plan
 
-This is a comprehensive plan covering every remaining gap identified by comparing the system against industry-standard invoicing platforms (Xero, FreshBooks, Wave, Zoho).
+# Finalize System and Simplify Themes
 
----
+## Part 1: Simplify Theme System (4 color options)
 
-## Phase A: Fix Invoice Deletion and Add Voiding
+The current 8-theme system is overengineered and several themes have visual issues. We'll simplify to **4 clean color options**, all following the same proven structure as Ocean (dark-tinted sidebar in light mode, matching dark equivalent in dark mode).
 
-### Problem
-Currently, invoices at any status can be soft-deleted. This violates accounting standards -- only draft invoices should be deletable. Approved, sent, and paid invoices need a "Void" action instead.
+### The 4 Themes
 
-### Changes
+| Theme | Accent Color | Sidebar (Light) | Sidebar (Dark) | Font |
+|-------|-------------|-----------------|-----------------|------|
+| **Ocean** (keep as-is) | Teal `192 75% 36%` | Dark teal `192 45% 18%` | Darker teal `192 35% 10%` | Inter |
+| **Slate** (replace Corporate) | Blue-gray `215 20% 46%` | Dark slate `215 25% 16%` | Darker slate `215 22% 8%` | Inter |
+| **Forest** (replace Editorial) | Green `152 45% 38%` | Dark green `152 30% 16%` | Darker green `152 25% 8%` | Inter |
+| **Berry** (replace Creative) | Purple-pink `280 50% 52%` | Dark purple `280 30% 16%` | Darker purple `280 25% 8%` | Inter |
 
-**Database migration:**
-- Add `voided` and `partially_paid` as valid invoice statuses (no schema change needed since `status` is a text column)
-- Update the `soft_delete_invoice` function to reject deletion if invoice status is not `draft`
+**Key design principles:**
+- All themes use **Inter** font (consistent, professional)
+- All themes use the same **0.5rem border radius**
+- Light mode: dark-tinted sidebar (like Ocean currently looks)
+- Dark mode: sidebar uses a darker shade of the same accent color family (not generic gray)
+- No special overrides (no brutalist forced edges, no glassmorphism, no neon glows)
+- Clean, consistent, professional across all 4
 
-**Files to modify:**
-- `src/types/invoice.ts` -- Add `voided` and `partially_paid` to the Invoice status type
-- `src/hooks/useInvoiceStore.ts` -- Add a `voidInvoice` method that sets status to `voided`
-- `src/pages/InvoiceView.tsx`:
-  - Remove the Delete option for non-draft invoices
-  - Add a "Void Invoice" action (with confirmation dialog) for approved/sent invoices
-  - Show a "VOIDED" badge for voided invoices
-  - Disable all action buttons on voided invoices
-- `src/pages/Invoices.tsx`:
-  - Add `voided` to statusConfig
-  - Add a "Voided" filter option
-  - Only show delete in the dropdown for draft invoices
-- `src/components/invoice/InvoiceDocument.tsx` -- Show a diagonal "VOID" watermark overlay when invoice status is `voided`
+### Files to Modify
 
----
+**`src/index.css`** -- Replace all 8 theme definitions with 4 clean ones. Remove ALL theme-specific override CSS at the bottom (brutalist sharp edges, editorial card gradients, creative sidebar gradients, midnight glassmorphism, cyber neon glow, rose transitions, corporate left borders). Keep only the base layer and utility classes.
 
-## Phase B: Payment Recording
+**`src/hooks/useTheme.tsx`** -- Update `ColorTheme` type to `'ocean' | 'slate' | 'forest' | 'berry'`. Update `colorThemes` array to 4 entries. Add migration map for old theme names (corporate -> slate, editorial -> forest, creative -> berry, midnight/brutalist/rose/cyber -> ocean).
 
-### Problem
-"Mark as Paid" is a simple toggle. Real systems record payment details and support partial payments.
-
-### Changes
-
-**Database migration:**
-- Create a `payments` table:
-
-```text
-payments
-  id          UUID PK DEFAULT gen_random_uuid()
-  owner_id    UUID NOT NULL
-  invoice_id  UUID NOT NULL
-  amount      NUMERIC NOT NULL
-  payment_date DATE NOT NULL DEFAULT CURRENT_DATE
-  method      TEXT NOT NULL DEFAULT 'bank_transfer'
-  reference   TEXT DEFAULT ''
-  notes       TEXT DEFAULT ''
-  created_at  TIMESTAMPTZ DEFAULT now()
-```
-
-- Add RLS policies: owner can INSERT, SELECT, UPDATE, DELETE own payments
-
-**Files to create:**
-- `src/hooks/usePayments.ts` -- CRUD hook for payments (fetch by invoice_id, add, delete)
-
-**Files to modify:**
-- `src/pages/InvoiceView.tsx`:
-  - Replace "Mark as Paid" button with "Record Payment" button
-  - Add a Record Payment dialog (amount, date, method dropdown, reference, notes)
-  - Show payment history section below the invoice document
-  - Auto-update invoice status to `paid` when total payments >= invoice total, or `partially_paid` when payments exist but are less than the total
-- `src/types/invoice.ts` -- Already updated in Phase A with `partially_paid`
-- `src/pages/Invoices.tsx` -- Add `partially_paid` to statusConfig
+**`src/pages/SettingsPage.tsx`** -- No structural changes needed (it reads from `colorThemes` array dynamically). The grid will naturally show 4 cards instead of 8.
 
 ---
 
-## Phase C: Quote Editing
+## Part 2: Final Quality Checks and Fixes
 
-### Problem
-Quotes can only be created and listed. There is no way to edit a draft quote.
+Based on thorough review of the codebase, here are remaining issues to address:
 
-### Changes
+### Fix 1: Activity logging on entity creation
+Currently `addInvoice`, `addQuote`, and `addCreditNote` in `useInvoiceStore.ts` do not log a "created" activity. Only status changes log activity. This was identified previously but may not have been fully implemented.
 
-**Files to modify:**
-- `src/pages/Quotes.tsx`:
-  - Add an "Edit" option in the dropdown menu for draft quotes
-  - Open the existing create dialog but pre-populated with the quote's data
-  - On save, call `updateQuote` instead of `addQuote`
+**File:** `src/hooks/useInvoiceStore.ts` -- Verify and ensure `logActivity` is called after successful creation of invoices. (If already done, skip.)
 
----
+### Fix 2: Remove unused theme override CSS
+The bottom of `index.css` (lines 772-860) has structural overrides for themes being removed (brutalist, editorial, creative, midnight, cyber, rose, corporate). These will be deleted as part of the theme simplification.
 
-## Phase D: Credit Note Improvements
-
-### Problem
-Credit notes are standalone documents with no actions beyond delete. They need status changes and the ability to be applied against invoices.
-
-### Changes
-
-**Files to modify:**
-- `src/pages/CreditNotes.tsx`:
-  - Add "Mark as Approved" and "Mark as Sent" actions in the dropdown menu
-  - Add an "Edit" option for draft credit notes (reuse the create dialog pre-populated)
-  - Show linked invoice number in the table if `invoiceId` is set
+### Fix 3: Clean up font imports
+`index.css` line 5 imports 9 Google Fonts families. After simplification, we only need Inter and JetBrains Mono (for code/mono display). Remove DM Serif Display, Space Grotesk, Playfair Display, Sora, Outfit, Crimson Pro, and IBM Plex Mono.
 
 ---
 
-## Phase E: Currency-Aware Overview and Reports
+## Summary of Changes
 
-### Problem
-The Overview and Reports pages pick `currency` from the first invoice. If you have invoices in multiple currencies, totals are mixed incorrectly.
+| File | What Changes |
+|------|-------------|
+| `src/index.css` | Replace 8 theme CSS blocks with 4 clean ones. Remove all theme-specific override CSS. Trim font imports to Inter + JetBrains Mono. |
+| `src/hooks/useTheme.tsx` | Update ColorTheme type and colorThemes array to 4 themes. Add migration for removed theme names. |
+| `src/pages/SettingsPage.tsx` | No changes needed (reads dynamically from colorThemes). |
 
-### Changes
+No database changes required. No new files needed.
 
-**Files to modify:**
-- `src/pages/Overview.tsx`:
-  - Group financial summaries by currency
-  - Show separate Outstanding/Received/Overdue cards per currency, or show the dominant currency and note "mixed currencies"
-- `src/pages/Reports.tsx`:
-  - Group revenue, paid, outstanding, overdue totals by currency
-  - Show per-currency summary cards
-  - Add a Tax Summary section showing total tax collected per period
-
----
-
-## Phase F: Audit Trail / Activity Log
-
-### Problem
-No record of actions taken on invoices. Professional systems log every status change.
-
-### Changes
-
-**Database migration:**
-- Create an `activity_log` table:
-
-```text
-activity_log
-  id          UUID PK DEFAULT gen_random_uuid()
-  owner_id    UUID NOT NULL
-  entity_type TEXT NOT NULL (e.g. 'invoice', 'quote', 'credit_note')
-  entity_id   UUID NOT NULL
-  action      TEXT NOT NULL (e.g. 'created', 'approved', 'sent', 'voided', 'payment_recorded')
-  details     TEXT DEFAULT ''
-  created_at  TIMESTAMPTZ DEFAULT now()
-```
-
-- RLS: owner can INSERT and SELECT own logs
-
-**Files to create:**
-- `src/hooks/useActivityLog.ts` -- Hook to log actions and fetch logs for an entity
-
-**Files to modify:**
-- `src/hooks/useInvoiceStore.ts` -- Log on addInvoice, updateInvoice (status changes), voidInvoice, softDeleteInvoice
-- `src/pages/InvoiceView.tsx` -- Add an "Activity" section showing the log timeline below the invoice
-
----
-
-## Phase G: Customer Statement
-
-### Problem
-No way to generate a statement for a customer showing all invoices, payments, and credit notes.
-
-### Changes
-
-**Files to create:**
-- `src/pages/CustomerStatement.tsx` -- A page showing:
-  - Customer info header
-  - Date range filter
-  - Table of all invoices, payments, and credit notes for that customer
-  - Running balance
-  - Export to PDF button
-
-**Files to modify:**
-- `src/App.tsx` -- Add route `/customers/:id/statement`
-- `src/pages/Customers.tsx` -- Add "View Statement" action in the customer row dropdown
-
----
-
-## Phase H: Recurring Invoice Auto-Generation
-
-### Problem
-Recurring invoices have a schedule but nothing actually generates invoices automatically. The `nextRunDate` is stored but never acted on.
-
-### Changes
-
-**Files to create:**
-- `supabase/functions/process-recurring-invoices/index.ts` -- A backend function that:
-  - Queries all active recurring invoices where `next_run_date <= today`
-  - Creates a new draft invoice for each
-  - Updates `next_run_date` to the next cycle date
-  - Can be called manually or via a cron trigger
-
-**Files to modify:**
-- `src/pages/Invoices.tsx` (RecurringTab) -- Add a "Generate Now" button per recurring invoice for manual triggering
-
----
-
-## Summary of All New Files
-
-| File | Purpose |
-|------|---------|
-| `src/hooks/usePayments.ts` | Payment CRUD hook |
-| `src/hooks/useActivityLog.ts` | Activity logging hook |
-| `src/pages/CustomerStatement.tsx` | Customer statement page |
-| `supabase/functions/process-recurring-invoices/index.ts` | Auto-generate recurring invoices |
-
-## Summary of All Modified Files
-
-| File | Changes |
-|------|---------|
-| `src/types/invoice.ts` | Add `voided`, `partially_paid` to status type |
-| `src/hooks/useInvoiceStore.ts` | Add `voidInvoice`, integrate activity logging |
-| `src/pages/InvoiceView.tsx` | Void action, record payment dialog, payment history, activity log, restrict delete to drafts |
-| `src/pages/Invoices.tsx` | Voided/partially_paid badges, restrict delete to drafts, voided filter |
-| `src/components/invoice/InvoiceDocument.tsx` | VOID watermark overlay |
-| `src/pages/Quotes.tsx` | Edit draft quotes |
-| `src/pages/CreditNotes.tsx` | Status actions, edit drafts, show linked invoice |
-| `src/pages/Overview.tsx` | Currency-aware grouping |
-| `src/pages/Reports.tsx` | Currency-aware grouping, tax summary |
-| `src/pages/Customers.tsx` | "View Statement" action |
-| `src/App.tsx` | Add customer statement route |
-
-## Database Migrations
-
-1. Update `soft_delete_invoice` function to reject non-draft invoices
-2. Create `payments` table with RLS
-3. Create `activity_log` table with RLS
