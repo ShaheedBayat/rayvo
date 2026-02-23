@@ -6,6 +6,7 @@ import { formatCurrency, calculateTotal } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { v4 as uuidv4 } from 'uuid';
 import { RefreshCw, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,7 @@ export default function RecurringInvoices() {
   const { activeCompanyId } = useActiveCompany();
   const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
   const [open, setOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Form state
   const [companyId, setCompanyId] = useState(companies[0]?.id || '');
@@ -250,10 +252,7 @@ export default function RecurringInvoices() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>
                         {r.isActive ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4" />}
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => {
-                        await deleteRecurring(r.id);
-                        toast.success('Deleted');
-                      }}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(r.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -264,6 +263,19 @@ export default function RecurringInvoices() {
           </table>
         </div>
       )}
+
+      <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete recurring invoice?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove this recurring invoice schedule.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => { if (deleteId) { await deleteRecurring(deleteId); toast.success('Deleted'); setDeleteId(null); } }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

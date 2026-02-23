@@ -17,6 +17,7 @@ export interface InvoiceItem {
   description: string;
   quantity: number;
   unitPrice: number;
+  discount?: number; // percentage discount
 }
 
 export interface Invoice {
@@ -49,7 +50,11 @@ export function formatCurrency(amount: number, currency: Currency): string {
 }
 
 export function calculateSubtotal(items: InvoiceItem[]): number {
-  return items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  return items.reduce((sum, item) => {
+    const lineTotal = item.quantity * item.unitPrice;
+    const discount = item.discount || 0;
+    return sum + lineTotal * (1 - discount / 100);
+  }, 0);
 }
 
 export function calculateTax(items: InvoiceItem[], taxRate: number): number {

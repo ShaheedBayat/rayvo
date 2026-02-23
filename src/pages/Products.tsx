@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/components/AppLayout';
 import { useProducts, type Product } from '@/hooks/useProducts';
@@ -182,6 +183,7 @@ export default function Products() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | undefined>(undefined);
   const [search, setSearch] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
   const filtered = products.filter(p =>
     p.code.toLowerCase().includes(search.toLowerCase()) ||
@@ -301,7 +303,7 @@ export default function Products() {
                           <DropdownMenuItem onClick={async () => { await updateProduct(p.id, { status: p.status === 'active' ? 'archived' : 'active' }); toast.success(p.status === 'active' ? 'Archived' : 'Activated'); }}>
                             <Archive className="mr-2 h-4 w-4" /> {p.status === 'active' ? 'Archive' : 'Activate'}
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={async () => { await deleteProduct(p.id); toast.success('Deleted'); }} className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="text-destructive focus:text-destructive">
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -314,6 +316,21 @@ export default function Products() {
           </div>
         </>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {deleteTarget?.name || deleteTarget?.code}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => { if (deleteTarget) { await deleteProduct(deleteTarget.id); toast.success('Deleted'); setDeleteTarget(null); } }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

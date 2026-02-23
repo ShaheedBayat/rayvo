@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
@@ -6,7 +7,7 @@ import InvoiceDocument from '@/components/invoice/InvoiceDocument';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, Edit } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useRef } from 'react';
 
@@ -31,6 +42,7 @@ export default function InvoiceView() {
   const { getCompany } = useCompanies();
   const { settings } = useGlobalSettings();
   const docRef = useRef<HTMLDivElement>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const invoice = getInvoice(id || '');
 
@@ -39,9 +51,7 @@ export default function InvoiceView() {
       <AppLayout>
         <div className="text-center py-20">
           <p className="text-muted-foreground">Invoice not found.</p>
-          <Link to="/invoices" className="text-primary hover:underline text-sm mt-2 inline-block">
-            Back to invoices
-          </Link>
+          <Link to="/invoices" className="text-primary hover:underline text-sm mt-2 inline-block">Back to invoices</Link>
         </div>
       </AppLayout>
     );
@@ -50,21 +60,13 @@ export default function InvoiceView() {
   const company = getCompany(invoice.companyId);
   const config = statusConfig[invoice.status] || statusConfig.draft;
   const total = calculateTotal(invoice.items, invoice.taxRate);
+  const canEdit = invoice.status === 'draft' || invoice.status === 'approved';
 
   const handleExportPdf = async () => {
     const element = document.getElementById('invoice-document');
     if (!element) return;
     const html2pdf = (await import('html2pdf.js')).default;
-    html2pdf()
-      .set({
-        margin: 0.5,
-        filename: `${invoice.invoiceNumber}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
-      })
-      .from(element)
-      .save();
+    html2pdf().set({ margin: 0.5, filename: `${invoice.invoiceNumber}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } }).from(element).save();
     toast.success('PDF downloaded!');
   };
 
@@ -101,26 +103,39 @@ export default function InvoiceView() {
     }
   };
 
+  const handleDuplicate = () => {
+    navigate('/invoices/new', {
+      state: {
+        clientName: invoice.clientName,
+        clientEmail: invoice.clientEmail,
+        clientAddress: invoice.clientAddress,
+        currency: invoice.currency,
+        items: invoice.items,
+        taxRate: invoice.taxRate,
+        notes: invoice.notes,
+      },
+    });
+  };
+
   return (
     <AppLayout>
-      {/* Top bar */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/invoices')}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <button onClick={() => navigate('/invoices')} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" /> Invoices
           </button>
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold mono">{invoice.invoiceNumber}</h1>
-            <Badge variant="outline" className={`${config.className} text-[11px]`}>
-              {config.label}
-            </Badge>
+            <Badge variant="outline" className={`${config.className} text-[11px]`}>{config.label}</Badge>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
+              <Edit className="mr-1.5 h-4 w-4" /> Edit
+            </Button>
+          )}
           {(invoice.status === 'draft' || invoice.status === 'approved') && (
             <Button variant="outline" size="sm" onClick={markApproveAndSend} className="text-info border-info/30 hover:bg-info/10">
               <Send className="mr-1.5 h-4 w-4" /> Approve & Send
@@ -139,16 +154,17 @@ export default function InvoiceView() {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleShare}>
                 <Copy className="mr-2 h-4 w-4" /> Copy share link
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDuplicate}>
+                <Copy className="mr-2 h-4 w-4" /> Duplicate invoice
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem onClick={() => setDeleteOpen(true)} className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" /> Delete invoice
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -156,7 +172,21 @@ export default function InvoiceView() {
         </div>
       </div>
 
-      {/* Summary strip */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete invoice?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move {invoice.invoiceNumber} to deleted. This action can be reviewed by an admin.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="rounded-lg border bg-card p-4 invoice-shadow">
           <p className="text-xs text-muted-foreground mb-1">Customer</p>
@@ -172,20 +202,12 @@ export default function InvoiceView() {
         </div>
         <div className="rounded-lg border bg-card p-4 invoice-shadow">
           <p className="text-xs text-muted-foreground mb-1">Amount Due</p>
-          <p className="text-sm font-semibold mono text-primary">
-            {formatCurrency(total, invoice.currency)}
-          </p>
+          <p className="text-sm font-semibold mono text-primary">{formatCurrency(total, invoice.currency)}</p>
         </div>
       </div>
 
-      {/* Document */}
       <div ref={docRef}>
-        <InvoiceDocument
-          invoice={invoice}
-          company={company}
-          bankingDetails={settings?.bankingDetails}
-          termsConditions={settings?.termsConditions}
-        />
+        <InvoiceDocument invoice={invoice} company={company} bankingDetails={settings?.bankingDetails} termsConditions={settings?.termsConditions} />
       </div>
     </AppLayout>
   );
