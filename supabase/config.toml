@@ -1,1 +1,4 @@
 project_id = "ahzmgjedjlzfawexlbrm"
+
+[functions.process-recurring-invoices]
+verify_jwt = false

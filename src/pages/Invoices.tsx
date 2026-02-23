@@ -217,6 +217,19 @@ function RecurringTab() {
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={async () => {
+                        try {
+                          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-recurring-invoices`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+                            body: JSON.stringify({ recurringId: r.id }),
+                          });
+                          if (res.ok) toast.success('Invoice generated');
+                          else toast.error('Failed to generate');
+                        } catch { toast.error('Failed to generate'); }
+                      }}>
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>
                         {r.isActive ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4" />}
                       </Button>
