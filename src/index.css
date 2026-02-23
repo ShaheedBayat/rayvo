@@ -30,14 +30,14 @@
     --ring: 192 75% 36%;
     --radius: 0.5rem;
     --sidebar-background: 192 45% 18%;
-    --sidebar-foreground: 192 15% 75%;
+    --sidebar-foreground: 192 5% 92%;
     --sidebar-primary: 192 80% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 192 35% 24%;
-    --sidebar-accent-foreground: 192 20% 92%;
+    --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 192 30% 22%;
     --sidebar-ring: 192 80% 60%;
-    --sidebar-muted: 192 10% 55%;
+    --sidebar-muted: 192 5% 78%;
     --success: 152 56% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -122,14 +122,14 @@
     --ring: 217 71% 45%;
     --radius: 0.375rem;
     --sidebar-background: 222 35% 10%;
-    --sidebar-foreground: 220 15% 65%;
+    --sidebar-foreground: 220 8% 90%;
     --sidebar-primary: 217 65% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 28% 16%;
-    --sidebar-accent-foreground: 220 15% 90%;
+    --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 222 25% 18%;
     --sidebar-ring: 217 65% 55%;
-    --sidebar-muted: 220 10% 50%;
+    --sidebar-muted: 220 5% 72%;
     --success: 152 56% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -213,14 +213,14 @@
     --ring: 28 55% 42%;
     --radius: 0.75rem;
     --sidebar-background: 25 22% 14%;
-    --sidebar-foreground: 35 15% 65%;
+    --sidebar-foreground: 35 8% 90%;
     --sidebar-primary: 28 50% 55%;
     --sidebar-primary-foreground: 42 40% 98%;
     --sidebar-accent: 25 18% 22%;
-    --sidebar-accent-foreground: 35 15% 88%;
+    --sidebar-accent-foreground: 0 0% 96%;
     --sidebar-border: 25 15% 22%;
     --sidebar-ring: 28 50% 55%;
-    --sidebar-muted: 25 10% 50%;
+    --sidebar-muted: 25 5% 72%;
     --success: 145 40% 40%;
     --success-foreground: 0 0% 100%;
     --warning: 35 80% 50%;
@@ -304,14 +304,14 @@
     --ring: 265 65% 52%;
     --radius: 0.875rem;
     --sidebar-background: 265 45% 96%;
-    --sidebar-foreground: 265 20% 40%;
+    --sidebar-foreground: 265 20% 22%;
     --sidebar-primary: 265 65% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 265 35% 90%;
-    --sidebar-accent-foreground: 265 65% 38%;
+    --sidebar-accent-foreground: 265 65% 28%;
     --sidebar-border: 275 20% 86%;
     --sidebar-ring: 265 65% 52%;
-    --sidebar-muted: 265 12% 50%;
+    --sidebar-muted: 265 12% 35%;
     --success: 160 55% 40%;
     --success-foreground: 0 0% 100%;
     --warning: 42 90% 50%;
@@ -395,14 +395,14 @@
     --ring: 190 90% 42%;
     --radius: 0.25rem;
     --sidebar-background: 225 35% 12%;
-    --sidebar-foreground: 225 12% 62%;
+    --sidebar-foreground: 225 5% 90%;
     --sidebar-primary: 190 85% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 225 28% 18%;
-    --sidebar-accent-foreground: 225 14% 88%;
+    --sidebar-accent-foreground: 0 0% 96%;
     --sidebar-border: 225 22% 18%;
     --sidebar-ring: 190 85% 50%;
-    --sidebar-muted: 225 10% 48%;
+    --sidebar-muted: 225 5% 70%;
     --success: 160 60% 40%;
     --success-foreground: 0 0% 100%;
     --warning: 45 90% 48%;
@@ -486,14 +486,14 @@
     --ring: 0 0% 5%;
     --radius: 0rem;
     --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 0 0% 60%;
+    --sidebar-foreground: 0 0% 88%;
     --sidebar-primary: 60 10% 95%;
     --sidebar-primary-foreground: 0 0% 5%;
     --sidebar-accent: 0 0% 12%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 18%;
     --sidebar-ring: 0 0% 100%;
-    --sidebar-muted: 0 0% 50%;
+    --sidebar-muted: 0 0% 70%;
     --success: 120 50% 35%;
     --success-foreground: 0 0% 100%;
     --warning: 45 90% 45%;
@@ -577,14 +577,14 @@
     --ring: 340 55% 52%;
     --radius: 1rem;
     --sidebar-background: 345 35% 97%;
-    --sidebar-foreground: 340 10% 42%;
+    --sidebar-foreground: 340 12% 25%;
     --sidebar-primary: 340 55% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 340 25% 92%;
-    --sidebar-accent-foreground: 340 55% 38%;
+    --sidebar-accent-foreground: 340 55% 28%;
     --sidebar-border: 345 20% 88%;
     --sidebar-ring: 340 55% 52%;
-    --sidebar-muted: 340 8% 52%;
+    --sidebar-muted: 340 8% 38%;
     --success: 155 45% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 85% 50%;
@@ -668,14 +668,14 @@
     --ring: 145 80% 38%;
     --radius: 0.125rem;
     --sidebar-background: 160 15% 6%;
-    --sidebar-foreground: 145 10% 55%;
+    --sidebar-foreground: 145 4% 85%;
     --sidebar-primary: 145 75% 45%;
     --sidebar-primary-foreground: 160 15% 6%;
     --sidebar-accent: 160 12% 12%;
-    --sidebar-accent-foreground: 145 50% 65%;
+    --sidebar-accent-foreground: 145 30% 80%;
     --sidebar-border: 160 10% 14%;
     --sidebar-ring: 145 75% 45%;
-    --sidebar-muted: 160 6% 45%;
+    --sidebar-muted: 160 4% 68%;
     --success: 145 60% 38%;
     --success-foreground: 0 0% 100%;
     --warning: 50 90% 48%;
@@ -802,11 +802,11 @@
 }
 
 /* CREATIVE: Subtle gradient on sidebar in light mode */
-.theme-creative .bg-sidebar-background,
+.theme-creative .bg-sidebar,
 .theme-creative [class*="bg-sidebar"] {
   background-image: linear-gradient(180deg, hsl(265 45% 96%) 0%, hsl(275 40% 94%) 100%);
 }
-.dark.theme-creative .bg-sidebar-background,
+.dark.theme-creative .bg-sidebar,
 .dark.theme-creative [class*="bg-sidebar"] {
   background-image: none;
 }
@@ -818,7 +818,7 @@
   backdrop-filter: blur(16px);
   border: 1px solid hsl(190 85% 50% / 0.08);
 }
-.dark.theme-midnight .bg-sidebar-background,
+.dark.theme-midnight .bg-sidebar,
 .dark.theme-midnight [class*="bg-sidebar"] {
   background: hsl(230 30% 4% / 0.9);
   backdrop-filter: blur(20px);

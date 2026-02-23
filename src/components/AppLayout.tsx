@@ -63,7 +63,7 @@ function NavItem({ to, label, icon: Icon, active, collapsed, children, onNavigat
                   className={`block rounded-md px-3 py-1.5 text-[13px] transition-colors ${
                     childActive
                       ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                      : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/40'
+                      : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/40'
                   }`}
                 >
                   {child.label}
@@ -124,7 +124,7 @@ function SidebarContent({ collapsed, isActive, onNavigate }: { collapsed: boolea
     <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
       <div>
         {!collapsed && (
-          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted/70">
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
             Sales
           </p>
         )}
@@ -145,7 +145,7 @@ function SidebarContent({ collapsed, isActive, onNavigate }: { collapsed: boolea
       </div>
       <div>
         {!collapsed && (
-          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted/70">
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
             Manage
           </p>
         )}
@@ -204,7 +204,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           )}
           {!isCollapsed && (
-            <span className="text-sm font-semibold text-foreground tracking-tight truncate">
+            <span className="text-sm font-semibold text-sidebar-accent-foreground tracking-tight truncate">
               {displayName}
             </span>
           )}
@@ -213,7 +213,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <>
           <img src={raynLogo} alt="RayVo" className="h-9 w-auto shrink-0" />
           {!isCollapsed && (
-            <span className="text-base font-semibold text-foreground tracking-tight">
+            <span className="text-base font-semibold text-sidebar-accent-foreground tracking-tight">
               RayVo
             </span>
           )}
@@ -226,7 +226,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside
-        className={`sticky top-0 h-screen hidden md:flex flex-col border-r border-border/50 bg-sidebar-background transition-all duration-200 ${
+        className={`sticky top-0 h-screen hidden md:flex flex-col border-r border-border/50 bg-sidebar transition-all duration-200 ${
           collapsed ? 'w-16' : 'w-60'
         }`}
       >
@@ -254,7 +254,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64 p-0 bg-sidebar-background border-sidebar-border">
+              <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
                 <LogoSection isCollapsed={false} />
                 <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} />
               </SheetContent>
