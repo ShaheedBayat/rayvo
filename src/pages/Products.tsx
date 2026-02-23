@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Package, Plus, Upload, Download, Trash2, Edit, MoreHorizontal, Archive } from 'lucide-react';
+import { Package, Plus, Upload, Download, Trash2, Edit, MoreHorizontal, Archive, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,12 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/AppLayout';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { toast } from 'sonner';
 
 const TAX_RATES = ['0%', '5%', '10%', '15%', '20%'];
+const PAGE_SIZE = 20;
 
 function NewItemDialog({ open, onOpenChange, onSave, editing }: {
   open: boolean;
@@ -69,7 +71,6 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
           <DialogTitle>{editing ? 'Edit Item' : 'New Item'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 mt-2">
-          {/* Code & Name */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Code <span className="text-muted-foreground">(required)</span></Label>
@@ -80,29 +81,21 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="Item name" />
             </div>
           </div>
-
           <Separator />
-
-          {/* Track inventory */}
           <div className="flex items-start gap-3">
             <Checkbox checked={isTracked} onCheckedChange={(v) => setIsTracked(!!v)} id="track" className="mt-0.5" />
             <div>
               <Label htmlFor="track" className="text-sm font-semibold cursor-pointer">Track inventory item</Label>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Track the quantity and value of stock on hand. Suitable for organisations with less than 4,000 products or services.
-              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">Track the quantity and value of stock on hand.</p>
             </div>
           </div>
-
           <Separator />
-
-          {/* Purchase section */}
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <Checkbox checked={purchaseEnabled} onCheckedChange={(v) => setPurchaseEnabled(!!v)} id="purchase" className="mt-0.5" />
               <div>
                 <Label htmlFor="purchase" className="text-sm font-semibold cursor-pointer">Purchase</Label>
-                <p className="text-sm text-muted-foreground mt-0.5">Add item to bills, purchase orders, and other purchase transactions</p>
+                <p className="text-sm text-muted-foreground mt-0.5">Add item to bills and purchase transactions</p>
               </div>
             </div>
             {purchaseEnabled && (
@@ -116,9 +109,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                     <Label className="text-sm font-medium">Tax rate</Label>
                     <Select value={`${purchaseTaxRate}%`} onValueChange={v => setPurchaseTaxRate(v.replace('%', ''))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {TAX_RATES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                      </SelectContent>
+                      <SelectContent>{TAX_RATES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -129,16 +120,13 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
               </div>
             )}
           </div>
-
           <Separator />
-
-          {/* Sell section */}
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <Checkbox checked={sellEnabled} onCheckedChange={(v) => setSellEnabled(!!v)} id="sell" className="mt-0.5" />
               <div>
                 <Label htmlFor="sell" className="text-sm font-semibold cursor-pointer">Sell</Label>
-                <p className="text-sm text-muted-foreground mt-0.5">Add item to invoices, quotes, and other sales transactions</p>
+                <p className="text-sm text-muted-foreground mt-0.5">Add item to invoices, quotes, and sales transactions</p>
               </div>
             </div>
             {sellEnabled && (
@@ -152,9 +140,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                     <Label className="text-sm font-medium">Tax rate</Label>
                     <Select value={`${sellTaxRate}%`} onValueChange={v => setSellTaxRate(v.replace('%', ''))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {TAX_RATES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                      </SelectContent>
+                      <SelectContent>{TAX_RATES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -165,9 +151,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
               </div>
             )}
           </div>
-
           <Separator />
-
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit">{editing ? 'Save Changes' : 'Save'}</Button>
@@ -184,11 +168,17 @@ export default function Products() {
   const [editing, setEditing] = useState<Product | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [page, setPage] = useState(0);
 
   const filtered = products.filter(p =>
     p.code.toLowerCase().includes(search.toLowerCase()) ||
     p.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const showFrom = filtered.length > 0 ? page * PAGE_SIZE + 1 : 0;
+  const showTo = Math.min((page + 1) * PAGE_SIZE, filtered.length);
 
   const handleSave = async (product: Omit<Product, 'id' | 'createdAt'>) => {
     if (editing) {
@@ -231,7 +221,16 @@ export default function Products() {
       />
 
       {loading ? (
-        <div className="flex justify-center py-20 text-muted-foreground">Loading...</div>
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 rounded-lg border bg-card p-4">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-32 flex-1" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-6 w-14 rounded-full" />
+            </div>
+          ))}
+        </div>
       ) : products.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5 mb-4">
@@ -239,7 +238,7 @@ export default function Products() {
           </div>
           <h3 className="text-lg font-medium">No products or services yet</h3>
           <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">
-            Add your products and services here so you can quickly add them to invoices. Include item codes, prices, and tax rates.
+            Add your products and services here so you can quickly add them to invoices.
           </p>
           <Button className="mt-6 gap-1.5 rounded-lg" onClick={openNew}>
             <Plus className="h-4 w-4" /> Add your first item
@@ -250,46 +249,44 @@ export default function Products() {
           <div className="mb-4 relative max-w-xs">
             <Input
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setPage(0); }}
               placeholder="Search products..."
               className="h-9 pl-3"
             />
           </div>
-          <div className="rounded-xl border border-border/50 bg-card invoice-shadow overflow-hidden">
+
+          {/* Desktop table */}
+          <div className="rounded-xl border border-border/50 bg-card invoice-shadow overflow-hidden hidden md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/20">
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-20">Code</th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-24 hidden sm:table-cell">Type</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-24 hidden md:table-cell">Cost</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">Type</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">Cost</th>
                   <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">Sale Price</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-20 hidden md:table-cell">Tax</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-20">Tax</th>
                   <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground w-20">Status</th>
                   <th className="px-4 py-3 w-10" />
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(p => (
+                {paginated.map(p => (
                   <tr key={p.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors cursor-pointer" onClick={() => openEdit(p)}>
                     <td className="px-4 py-3.5 mono text-xs font-medium">{p.code}</td>
                     <td className="px-4 py-3.5 font-medium">{p.name || '—'}</td>
-                    <td className="px-4 py-3.5 hidden sm:table-cell">
+                    <td className="px-4 py-3.5">
                       <Badge variant="secondary" className="capitalize text-[11px]">{p.type}</Badge>
                     </td>
-                    <td className="px-4 py-3.5 text-right mono text-muted-foreground hidden md:table-cell">
+                    <td className="px-4 py-3.5 text-right mono text-muted-foreground">
                       {p.purchaseEnabled ? p.purchasePrice.toFixed(2) : '—'}
                     </td>
                     <td className="px-4 py-3.5 text-right mono font-medium">
                       {p.sellEnabled ? p.sellPrice.toFixed(2) : '—'}
                     </td>
-                    <td className="px-4 py-3.5 text-right text-muted-foreground hidden md:table-cell">
-                      {p.sellTaxRate}%
-                    </td>
+                    <td className="px-4 py-3.5 text-right text-muted-foreground">{p.sellTaxRate}%</td>
                     <td className="px-4 py-3.5 text-center">
-                      <Badge variant={p.status === 'active' ? 'default' : 'outline'} className="text-[11px]">
-                        {p.status}
-                      </Badge>
+                      <Badge variant={p.status === 'active' ? 'default' : 'outline'} className="text-[11px]">{p.status}</Badge>
                     </td>
                     <td className="px-4 py-3.5" onClick={e => e.stopPropagation()}>
                       <DropdownMenu>
@@ -297,9 +294,7 @@ export default function Products() {
                           <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(p)}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEdit(p)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                           <DropdownMenuItem onClick={async () => { await updateProduct(p.id, { status: p.status === 'active' ? 'archived' : 'active' }); toast.success(p.status === 'active' ? 'Archived' : 'Activated'); }}>
                             <Archive className="mr-2 h-4 w-4" /> {p.status === 'active' ? 'Archive' : 'Activate'}
                           </DropdownMenuItem>
@@ -314,6 +309,38 @@ export default function Products() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile cards */}
+          <div className="space-y-2 md:hidden">
+            {paginated.map(p => (
+              <div key={p.id} className="rounded-lg border bg-card p-4 invoice-shadow" onClick={() => openEdit(p)}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="mono text-xs font-medium text-muted-foreground">{p.code}</span>
+                  <Badge variant={p.status === 'active' ? 'default' : 'outline'} className="text-[10px]">{p.status}</Badge>
+                </div>
+                <div className="font-medium">{p.name || '—'}</div>
+                <div className="flex items-center justify-between mt-2 text-sm">
+                  <Badge variant="secondary" className="capitalize text-[10px]">{p.type}</Badge>
+                  <span className="mono font-medium">{p.sellEnabled ? p.sellPrice.toFixed(2) : '—'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+              <span>Showing {showFrom}–{showTo} of {filtered.length}</span>
+              <div className="flex gap-1">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </>
       )}
 
