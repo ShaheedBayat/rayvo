@@ -13,11 +13,11 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  mode: 'dark',
+  mode: 'light',
   colorTheme: 'ocean',
   toggleMode: () => {},
   setColorTheme: () => {},
-  theme: 'dark',
+  theme: 'light',
   toggleTheme: () => {},
 });
 
@@ -52,7 +52,7 @@ const THEME_MIGRATION: Record<string, ColorTheme> = {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<Mode>(() => {
     const stored = localStorage.getItem('theme') as Mode;
-    return stored || 'dark';
+    return stored || 'light';
   });
   const [colorTheme, setColorThemeState] = useState<ColorTheme>(() => {
     const stored = localStorage.getItem('colorTheme') as string;
