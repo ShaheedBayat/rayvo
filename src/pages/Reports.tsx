@@ -1,22 +1,207 @@
-import { BarChart3 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useInvoices } from '@/hooks/useInvoiceStore';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { formatCurrency, calculateTotal } from '@/types/invoice';
+import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { DollarSign, TrendingUp, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--success))', 'hsl(var(--destructive))'];
 
 export default function Reports() {
+  const { invoices: allInvoices } = useInvoices();
+  const { activeCompanyId } = useActiveCompany();
+
+  const invoices = activeCompanyId ? allInvoices.filter(i => i.companyId === activeCompanyId) : allInvoices;
+  const currency: Currency = invoices[0]?.currency || 'ZAR';
+
+  // Revenue by month (last 6 months)
+  const revenueByMonth = useMemo(() => {
+    const months: Record<string, number> = {};
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+      months[key] = 0;
+    }
+    invoices.forEach(inv => {
+      const d = new Date(inv.createdAt);
+      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+      if (key in months) {
+        months[key] += calculateTotal(inv.items, inv.taxRate);
+      }
+    });
+    return Object.entries(months).map(([month, revenue]) => ({ month, revenue }));
+  }, [invoices]);
+
+  // Status breakdown
+  const statusBreakdown = useMemo(() => {
+    const counts = { draft: 0, sent: 0, paid: 0, overdue: 0 };
+    invoices.forEach(inv => {
+      if (inv.status === 'sent' && new Date(inv.dueDate) < new Date()) {
+        counts.overdue++;
+      } else if (inv.status in counts) {
+        counts[inv.status as keyof typeof counts]++;
+      }
+    });
+    return [
+      { name: 'Draft', value: counts.draft },
+      { name: 'Awaiting', value: counts.sent },
+      { name: 'Paid', value: counts.paid },
+      { name: 'Overdue', value: counts.overdue },
+    ].filter(s => s.value > 0);
+  }, [invoices]);
+
+  // Top customers by revenue
+  const topCustomers = useMemo(() => {
+    const map: Record<string, number> = {};
+    invoices.forEach(inv => {
+      map[inv.clientName] = (map[inv.clientName] || 0) + calculateTotal(inv.items, inv.taxRate);
+    });
+    return Object.entries(map)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [invoices]);
+
+  // AR Aging
+  const aging = useMemo(() => {
+    const buckets = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 };
+    const now = new Date();
+    invoices.filter(i => i.status === 'sent').forEach(inv => {
+      const days = Math.floor((now.getTime() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24));
+      const amt = calculateTotal(inv.items, inv.taxRate);
+      if (days <= 0) buckets['0-30'] += amt;
+      else if (days <= 30) buckets['0-30'] += amt;
+      else if (days <= 60) buckets['31-60'] += amt;
+      else if (days <= 90) buckets['61-90'] += amt;
+      else buckets['90+'] += amt;
+    });
+    return Object.entries(buckets).map(([range, amount]) => ({ range, amount }));
+  }, [invoices]);
+
+  // Summary cards
+  const totalRevenue = invoices.reduce((s, i) => s + calculateTotal(i.items, i.taxRate), 0);
+  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + calculateTotal(i.items, i.taxRate), 0);
+  const totalOutstanding = invoices.filter(i => i.status === 'sent').reduce((s, i) => s + calculateTotal(i.items, i.taxRate), 0);
+  const totalOverdue = invoices.filter(i => i.status === 'sent' && new Date(i.dueDate) < new Date()).reduce((s, i) => s + calculateTotal(i.items, i.taxRate), 0);
+
+  const chartConfig = {
+    revenue: { label: 'Revenue', color: 'hsl(var(--primary))' },
+    amount: { label: 'Amount', color: 'hsl(var(--warning))' },
+  };
+
   return (
     <AppLayout>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">Reports</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          View summaries of your invoicing activity.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">View summaries of your invoicing activity.</p>
       </div>
 
-      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-20">
-        <BarChart3 className="h-10 w-10 text-muted-foreground/40" />
-        <h3 className="mt-4 text-lg font-medium">Reports coming soon</h3>
-        <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">
-          You'll be able to view accounts receivable summaries, invoice aging, sales by customer, and paid vs unpaid totals.
-        </p>
+      {/* Summary cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        {[
+          { label: 'Total Revenue', value: totalRevenue, icon: DollarSign, color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Paid', value: totalPaid, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
+          { label: 'Outstanding', value: totalOutstanding, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
+          { label: 'Overdue', value: totalOverdue, icon: AlertCircle, color: 'text-destructive', bg: 'bg-destructive/10' },
+        ].map(s => (
+          <div key={s.label} className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.bg} mb-3`}>
+              <s.icon className={`h-4 w-4 ${s.color}`} />
+            </div>
+            <p className="text-2xl font-semibold mono">{formatCurrency(s.value, currency)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2 mb-8">
+        {/* Revenue by Month */}
+        <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+          <h2 className="text-sm font-semibold mb-4">Revenue by Month</h2>
+          <ChartContainer config={chartConfig} className="h-[250px] w-full">
+            <BarChart data={revenueByMonth}>
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
+
+        {/* Status Breakdown */}
+        <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+          <h2 className="text-sm font-semibold mb-4">Invoice Status Breakdown</h2>
+          {statusBreakdown.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-12 text-center">No invoices yet</p>
+          ) : (
+            <div className="flex items-center gap-6">
+              <div className="h-[200px] w-[200px]">
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie data={statusBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
+                      {statusBreakdown.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-2">
+                {statusBreakdown.map((s, i) => (
+                  <div key={s.name} className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="text-sm">{s.name}: <span className="font-medium">{s.value}</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Top Customers */}
+        <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+          <h2 className="text-sm font-semibold mb-4">Top Customers by Revenue</h2>
+          {topCustomers.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">No data yet</p>
+          ) : (
+            <div className="space-y-3">
+              {topCustomers.map((c, i) => {
+                const pct = topCustomers[0].total > 0 ? (c.total / topCustomers[0].total) * 100 : 0;
+                return (
+                  <div key={c.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium truncate max-w-[180px]">{c.name}</span>
+                      <span className="mono text-sm font-medium">{formatCurrency(c.total, currency)}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full rounded-full bg-primary/70 transition-all duration-500" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* AR Aging */}
+        <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+          <h2 className="text-sm font-semibold mb-4">Accounts Receivable Aging</h2>
+          <ChartContainer config={{ amount: { label: 'Amount', color: 'hsl(var(--warning))' } }} className="h-[250px] w-full">
+            <BarChart data={aging}>
+              <XAxis dataKey="range" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="amount" fill="var(--color-amount)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
       </div>
     </AppLayout>
   );
