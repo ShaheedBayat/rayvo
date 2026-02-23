@@ -3,27 +3,18 @@ import { useState } from 'react';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatDate } from '@/lib/formatDate';
 import InvoiceDocument from '@/components/invoice/InvoiceDocument';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, Edit } from 'lucide-react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useRef } from 'react';
@@ -130,7 +121,7 @@ export default function InvoiceView() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {canEdit && (
             <Button variant="outline" size="sm" onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
               <Edit className="mr-1.5 h-4 w-4" /> Edit
@@ -150,7 +141,7 @@ export default function InvoiceView() {
             <Share2 className="mr-1.5 h-4 w-4" /> Share
           </Button>
           <Button size="sm" onClick={handleExportPdf}>
-            <Download className="mr-1.5 h-4 w-4" /> Download PDF
+            <Download className="mr-1.5 h-4 w-4" /> PDF
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -194,11 +185,11 @@ export default function InvoiceView() {
         </div>
         <div className="rounded-lg border bg-card p-4 invoice-shadow">
           <p className="text-xs text-muted-foreground mb-1">Issue Date</p>
-          <p className="text-sm font-medium">{new Date(invoice.createdAt).toLocaleDateString()}</p>
+          <p className="text-sm font-medium">{formatDate(invoice.createdAt)}</p>
         </div>
         <div className="rounded-lg border bg-card p-4 invoice-shadow">
           <p className="text-xs text-muted-foreground mb-1">Due Date</p>
-          <p className="text-sm font-medium">{new Date(invoice.dueDate).toLocaleDateString()}</p>
+          <p className="text-sm font-medium">{formatDate(invoice.dueDate)}</p>
         </div>
         <div className="rounded-lg border bg-card p-4 invoice-shadow">
           <p className="text-xs text-muted-foreground mb-1">Amount Due</p>

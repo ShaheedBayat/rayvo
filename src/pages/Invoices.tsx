@@ -4,16 +4,18 @@ import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatDate } from '@/lib/formatDate';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import {
   FileText, Plus, MoreHorizontal, Trash2, Eye, Search, RefreshCw,
-  ToggleLeft, ToggleRight, Copy, ChevronDown,
+  ToggleLeft, ToggleRight, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -24,6 +26,8 @@ import {
 import AppLayout from '@/components/AppLayout';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
+
+const PAGE_SIZE = 20;
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
@@ -202,7 +206,7 @@ function RecurringTab() {
                 <tr key={r.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">
                   <td className="px-4 py-3.5 font-medium">{r.clientName}</td>
                   <td className="px-4 py-3.5 capitalize text-muted-foreground">{r.frequency} · Day {r.dayOfMonth}</td>
-                  <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{new Date(r.nextRunDate).toLocaleDateString()}</td>
+                  <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{formatDate(r.nextRunDate)}</td>
                   <td className="px-4 py-3.5 text-right mono font-medium">{formatCurrency(calculateTotal(r.items, r.taxRate), r.currency)}</td>
                   <td className="px-4 py-3.5 text-center">
                     <Badge variant="outline" className={r.isActive ? 'bg-success/10 text-success border-success/20' : 'bg-muted text-muted-foreground'}>
@@ -230,13 +234,14 @@ function RecurringTab() {
 }
 
 export default function Invoices() {
-  const { invoices, softDeleteInvoice, fetchDeletedInvoices } = useInvoices();
+  const { invoices, softDeleteInvoice, fetchDeletedInvoices, loading } = useInvoices();
   const { getCompany } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedInvoices, setDeletedInvoices] = useState<any[]>([]);
+  const [page, setPage] = useState(0);
 
   const activeTab = searchParams.get('tab') || 'all';
   const statusFilter = searchParams.get('status') || null;
@@ -254,6 +259,7 @@ export default function Invoices() {
     if (status) params.set('status', status);
     else params.delete('status');
     setSearchParams(params);
+    setPage(0);
   };
 
   const handleShowDeleted = async () => {
@@ -262,11 +268,11 @@ export default function Invoices() {
       setDeletedInvoices(deleted);
     }
     setShowDeleted(!showDeleted);
+    setPage(0);
   };
 
   const displayInvoices = showDeleted ? deletedInvoices : invoices;
 
-  // Filter by active company
   const companyFiltered = activeCompanyId
     ? displayInvoices.filter(inv => inv.companyId === activeCompanyId)
     : displayInvoices;
@@ -279,6 +285,11 @@ export default function Invoices() {
     const matchesStatus = !statusFilter || inv.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const showFrom = filtered.length > 0 ? page * PAGE_SIZE + 1 : 0;
+  const showTo = Math.min((page + 1) * PAGE_SIZE, filtered.length);
 
   const statuses = ['draft', 'sent', 'paid', 'overdue'];
 
@@ -306,7 +317,7 @@ export default function Invoices() {
         </div>
       </div>
 
-      {/* Tabs: All | Recurring */}
+      {/* Tabs */}
       <div className="mb-5 flex items-center gap-1 border-b border-border/50">
         <button
           onClick={() => setTab('all')}
@@ -334,11 +345,11 @@ export default function Invoices() {
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search invoices..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 rounded-lg" />
+              <Input placeholder="Search invoices..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} className="pl-9 h-9 rounded-lg" />
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               <button
-                onClick={() => setStatusFilterParam(null)}
+                onClick={() => { setShowDeleted(false); setStatusFilterParam(null); }}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${!statusFilter && !showDeleted ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
               >
                 All
@@ -358,7 +369,20 @@ export default function Invoices() {
             </div>
           </div>
 
-          {companyFiltered.length === 0 ? (
+          {loading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 rounded-lg border bg-card p-4">
+                  <div className="space-y-1.5 flex-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-40" />
+                  </div>
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+              ))}
+            </div>
+          ) : companyFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
               <FileText className="h-10 w-10 text-muted-foreground/30" />
               <h3 className="mt-4 text-lg font-medium">No invoices yet</h3>
@@ -370,75 +394,116 @@ export default function Invoices() {
               </Link>
             </div>
           ) : (
-            <div className="rounded-xl border border-border/50 bg-card invoice-shadow overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/20">
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Invoice</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Customer</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden md:table-cell">Company</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Due Date</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Amount</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
-                      <th className="px-4 py-3 w-10" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((inv) => {
-                      const company = getCompany(inv.companyId);
-                      const isOverdue = inv.status === 'sent' && new Date(inv.dueDate) < new Date();
-                      const config = isOverdue ? statusConfig.overdue : (statusConfig[inv.status] || statusConfig.draft);
-                      return (
-                        <tr key={inv.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">
-                          <td className="px-4 py-3.5">
-                            <Link to={`/invoices/${inv.id}`} className="font-medium text-foreground hover:text-primary mono text-sm">{inv.invoiceNumber}</Link>
-                            <p className="text-xs text-muted-foreground mt-0.5">{new Date(inv.createdAt).toLocaleDateString()}</p>
-                          </td>
-                          <td className="px-4 py-3.5">{inv.clientName}</td>
-                          <td className="px-4 py-3.5 hidden md:table-cell">
-                            <div className="flex items-center gap-2">
-                              {company?.logo && <img src={company.logo} alt="" className="h-5 w-5 rounded object-contain" />}
-                              <span className="text-muted-foreground">{company?.name || '—'}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{new Date(inv.dueDate).toLocaleDateString()}</td>
-                          <td className="px-4 py-3.5 text-right">
-                            <span className="mono font-medium">{formatCurrency(calculateTotal(inv.items, inv.taxRate), inv.currency)}</span>
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <Badge variant="outline" className={`${config.className} text-[11px] capitalize`}>
-                              {isOverdue ? 'Overdue' : config.label}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild><Link to={`/invoices/${inv.id}`}><Eye className="mr-2 h-4 w-4" /> View</Link></DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={async () => {
-                                    const result = await softDeleteInvoice(inv.id);
-                                    if (result.blocked) toast.error(result.error);
-                                    else if (result.error) toast.error(result.error);
-                                    else toast.success('Invoice moved to deleted');
-                                  }}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            <>
+              {/* Desktop table */}
+              <div className="rounded-xl border border-border/50 bg-card invoice-shadow overflow-hidden hidden md:block">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/20">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Invoice</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Customer</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Company</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Due Date</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Amount</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
+                        <th className="px-4 py-3 w-10" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.map((inv) => {
+                        const company = getCompany(inv.companyId);
+                        const isOverdue = inv.status === 'sent' && new Date(inv.dueDate) < new Date();
+                        const config = isOverdue ? statusConfig.overdue : (statusConfig[inv.status] || statusConfig.draft);
+                        return (
+                          <tr key={inv.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">
+                            <td className="px-4 py-3.5">
+                              <Link to={`/invoices/${inv.id}`} className="font-medium text-foreground hover:text-primary mono text-sm">{inv.invoiceNumber}</Link>
+                              <p className="text-xs text-muted-foreground mt-0.5">{formatDate(inv.createdAt)}</p>
+                            </td>
+                            <td className="px-4 py-3.5">{inv.clientName}</td>
+                            <td className="px-4 py-3.5">
+                              <div className="flex items-center gap-2">
+                                {company?.logo && <img src={company.logo} alt="" className="h-5 w-5 rounded object-contain" />}
+                                <span className="text-muted-foreground">{company?.name || '—'}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 text-muted-foreground">{formatDate(inv.dueDate)}</td>
+                            <td className="px-4 py-3.5 text-right">
+                              <span className="mono font-medium">{formatCurrency(calculateTotal(inv.items, inv.taxRate), inv.currency)}</span>
+                            </td>
+                            <td className="px-4 py-3.5 text-center">
+                              <Badge variant="outline" className={`${config.className} text-[11px] capitalize`}>
+                                {isOverdue ? 'Overdue' : config.label}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem asChild><Link to={`/invoices/${inv.id}`}><Eye className="mr-2 h-4 w-4" /> View</Link></DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={async () => {
+                                      const result = await softDeleteInvoice(inv.id);
+                                      if (result.blocked) toast.error(result.error);
+                                      else if (result.error) toast.error(result.error);
+                                      else toast.success('Invoice moved to deleted');
+                                    }}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+
+              {/* Mobile cards */}
+              <div className="space-y-2 md:hidden">
+                {paginated.map((inv) => {
+                  const isOverdue = inv.status === 'sent' && new Date(inv.dueDate) < new Date();
+                  const config = isOverdue ? statusConfig.overdue : (statusConfig[inv.status] || statusConfig.draft);
+                  return (
+                    <Link key={inv.id} to={`/invoices/${inv.id}`} className="block rounded-lg border bg-card p-4 invoice-shadow hover:bg-secondary/30 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="mono text-sm font-medium">{inv.invoiceNumber}</span>
+                        <Badge variant="outline" className={`${config.className} text-[10px]`}>
+                          {isOverdue ? 'Overdue' : config.label}
+                        </Badge>
+                      </div>
+                      <div className="text-sm">{inv.clientName}</div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-muted-foreground">Due {formatDate(inv.dueDate)}</span>
+                        <span className="mono text-sm font-medium">{formatCurrency(calculateTotal(inv.items, inv.taxRate), inv.currency)}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Showing {showFrom}–{showTo} of {filtered.length}</span>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </>
       )}

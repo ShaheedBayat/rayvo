@@ -4,7 +4,7 @@ import raynLogo from '@/assets/rayn-logo.png';
 import {
   LayoutDashboard, FileText, Users, Package, Building2, BarChart3, Settings,
   Plus, LogOut, Sun, Moon, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
-  CreditCard, Receipt, FileCheck,
+  CreditCard, Receipt, FileCheck, Menu, X,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompanies } from '@/hooks/useInvoiceStore';
@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/useTheme';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 interface NavItemProps {
   to: string;
@@ -22,9 +23,10 @@ interface NavItemProps {
   active: boolean;
   collapsed: boolean;
   children?: { to: string; label: string }[];
+  onNavigate?: () => void;
 }
 
-function NavItem({ to, label, icon: Icon, active, collapsed, children }: NavItemProps) {
+function NavItem({ to, label, icon: Icon, active, collapsed, children, onNavigate }: NavItemProps) {
   const location = useLocation();
   const [open, setOpen] = useState(() => {
     if (!children) return false;
@@ -57,6 +59,7 @@ function NavItem({ to, label, icon: Icon, active, collapsed, children }: NavItem
                 <Link
                   key={child.to}
                   to={child.to}
+                  onClick={onNavigate}
                   className={`block rounded-md px-3 py-1.5 text-[13px] transition-colors ${
                     childActive
                       ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
@@ -76,6 +79,7 @@ function NavItem({ to, label, icon: Icon, active, collapsed, children }: NavItem
   return (
     <Link
       to={to}
+      onClick={onNavigate}
       title={collapsed ? label : undefined}
       className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
         active
@@ -115,6 +119,54 @@ const manageNav = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
+function SidebarContent({ collapsed, isActive, onNavigate }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void }) {
+  return (
+    <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <div>
+        {!collapsed && (
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted/70">
+            Sales
+          </p>
+        )}
+        <div className="space-y-0.5">
+          {salesNav.map((item) => (
+            <NavItem
+              key={item.to + item.label}
+              to={item.to}
+              label={item.label}
+              icon={item.icon}
+              active={isActive(item.to)}
+              collapsed={collapsed}
+              children={'children' in item ? item.children : undefined}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      </div>
+      <div>
+        {!collapsed && (
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted/70">
+            Manage
+          </p>
+        )}
+        <div className="space-y-0.5">
+          {manageNav.map((item) => (
+            <NavItem
+              key={item.to}
+              to={item.to}
+              label={item.label}
+              icon={item.icon}
+              active={isActive(item.to)}
+              collapsed={collapsed}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { signOut, user } = useAuth();
@@ -122,18 +174,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { companies } = useCompanies();
   const { activeCompany, switchCompany } = useActiveCompany();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Read cached company name/logo from localStorage for instant display
   const cachedName = localStorage.getItem('activeCompanyName');
   const cachedLogo = localStorage.getItem('activeCompanyLogo');
 
-  // Update cache when activeCompany changes
   if (activeCompany) {
     localStorage.setItem('activeCompanyName', activeCompany.name);
     localStorage.setItem('activeCompanyLogo', activeCompany.logo || '');
   }
 
-  // Use activeCompany if loaded, otherwise use cached values
   const displayName = activeCompany?.name || cachedName;
   const displayLogo = activeCompany?.logo || cachedLogo || '';
 
@@ -142,87 +192,46 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return location.pathname.startsWith(path);
   };
 
+  const LogoSection = ({ isCollapsed }: { isCollapsed: boolean }) => (
+    <div className="flex h-14 items-center gap-2 px-4">
+      {displayName ? (
+        <>
+          {displayLogo ? (
+            <img src={displayLogo} alt={displayName} className="h-8 w-8 rounded-lg object-contain shrink-0" />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary text-sm font-semibold shrink-0">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          {!isCollapsed && (
+            <span className="text-sm font-semibold text-foreground tracking-tight truncate">
+              {displayName}
+            </span>
+          )}
+        </>
+      ) : (
+        <>
+          <img src={raynLogo} alt="RayVo" className="h-9 w-auto shrink-0" />
+          {!isCollapsed && (
+            <span className="text-base font-semibold text-foreground tracking-tight">
+              RayVo
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside
-        className={`sticky top-0 h-screen flex flex-col border-r border-border/50 bg-sidebar-background transition-all duration-200 ${
+        className={`sticky top-0 h-screen hidden md:flex flex-col border-r border-border/50 bg-sidebar-background transition-all duration-200 ${
           collapsed ? 'w-16' : 'w-60'
         }`}
       >
-        {/* Logo / Active Company */}
-        <div className="flex h-14 items-center gap-2 px-4">
-          {displayName ? (
-            <>
-              {displayLogo ? (
-                <img src={displayLogo} alt={displayName} className="h-8 w-8 rounded-lg object-contain shrink-0" />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary text-sm font-semibold shrink-0">
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
-              )}
-              {!collapsed && (
-                <span className="text-sm font-semibold text-foreground tracking-tight truncate">
-                  {displayName}
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              <img src={raynLogo} alt="RayVo" className="h-9 w-auto shrink-0" />
-              {!collapsed && (
-                <span className="text-base font-semibold text-foreground tracking-tight">
-                  RayVo
-                </span>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-          <div>
-            {!collapsed && (
-              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted/70">
-                Sales
-              </p>
-            )}
-            <div className="space-y-0.5">
-              {salesNav.map((item) => (
-                <NavItem
-                  key={item.to + item.label}
-                  to={item.to}
-                  label={item.label}
-                  icon={item.icon}
-                  active={isActive(item.to)}
-                  collapsed={collapsed}
-                  children={'children' in item ? item.children : undefined}
-                />
-              ))}
-            </div>
-          </div>
-          <div>
-            {!collapsed && (
-              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted/70">
-                Manage
-              </p>
-            )}
-            <div className="space-y-0.5">
-              {manageNav.map((item) => (
-                <NavItem
-                  key={item.to}
-                  to={item.to}
-                  label={item.label}
-                  icon={item.icon}
-                  active={isActive(item.to)}
-                  collapsed={collapsed}
-                />
-              ))}
-            </div>
-          </div>
-        </nav>
-
-        {/* Collapse toggle */}
+        <LogoSection isCollapsed={collapsed} />
+        <SidebarContent collapsed={collapsed} isActive={isActive} />
         <div className="border-t border-border/40 p-3">
           <button
             onClick={() => setCollapsed(!collapsed)}
@@ -236,8 +245,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Header */}
-        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-sm px-6">
-          <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-sm px-4 md:px-6">
+          <div className="flex items-center gap-3">
+            {/* Mobile hamburger */}
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0 bg-sidebar-background border-sidebar-border">
+                <LogoSection isCollapsed={false} />
+                <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} />
+              </SheetContent>
+            </Sheet>
+
             {(activeCompany || companies.length > 0) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -272,11 +294,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
-            {/* + New dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" className="gap-1.5 rounded-lg">
-                  <Plus className="h-4 w-4" /> New <ChevronDown className="h-3 w-3 opacity-60" />
+                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New</span> <ChevronDown className="h-3 w-3 opacity-60" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -311,7 +332,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-6 py-8 animate-fade-in">
+        <main className="flex-1 px-4 md:px-6 py-6 md:py-8 animate-fade-in">
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>

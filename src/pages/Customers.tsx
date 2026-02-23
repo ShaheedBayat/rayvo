@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { Users, Plus, Search, Building2, User, Trash2, Edit, ChevronRight } from 'lucide-react';
+import { Users, Plus, Search, Building2, User, Trash2, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/AppLayout';
 import { useCustomers, type Customer } from '@/hooks/useCustomers';
 import CustomerProfileForm from '@/components/customer/CustomerProfileForm';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+
+const PAGE_SIZE = 20;
 
 export default function Customers() {
   const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
@@ -18,6 +21,7 @@ export default function Customers() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
+  const [page, setPage] = useState(0);
   const navigate = useNavigate();
 
   const filtered = customers.filter(c =>
@@ -26,6 +30,11 @@ export default function Customers() {
     c.accountNumber.toLowerCase().includes(search.toLowerCase()) ||
     c.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
   );
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const showFrom = filtered.length > 0 ? page * PAGE_SIZE + 1 : 0;
+  const showTo = Math.min((page + 1) * PAGE_SIZE, filtered.length);
 
   const handleSave = async (data: Omit<Customer, 'createdAt'>) => {
     const err = editing
@@ -76,7 +85,18 @@ export default function Customers() {
       </Dialog>
 
       {loading ? (
-        <div className="flex justify-center py-20 text-muted-foreground">Loading...</div>
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 rounded-lg border bg-card p-4">
+              <Skeleton className="h-10 w-10 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-56" />
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
       ) : customers.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-20">
           <Users className="h-10 w-10 text-muted-foreground/40" />
@@ -96,14 +116,15 @@ export default function Customers() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={e => { setSearch(e.target.value); setPage(0); }}
                 placeholder="Search by name, email, account, tags..."
                 className="pl-9 h-9"
               />
             </div>
           </div>
 
-          <div className="rounded-lg border bg-card invoice-shadow overflow-hidden">
+          {/* Desktop table */}
+          <div className="rounded-lg border bg-card invoice-shadow overflow-hidden hidden md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
@@ -116,7 +137,7 @@ export default function Customers() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(c => (
+                {paginated.map(c => (
                   <tr key={c.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => openEdit(c)}>
                     <td className="py-3 px-4 font-medium">
                       {c.name}
@@ -159,6 +180,41 @@ export default function Customers() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile cards */}
+          <div className="space-y-2 md:hidden">
+            {paginated.map(c => (
+              <div key={c.id} className="rounded-lg border bg-card p-4 invoice-shadow" onClick={() => openEdit(c)}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">{c.name}</span>
+                  <Badge variant={c.status === 'active' ? 'default' : 'outline'} className="text-[11px]">{c.status}</Badge>
+                </div>
+                <div className="text-sm text-muted-foreground">{c.email || '—'}</div>
+                <div className="flex items-center justify-between mt-2">
+                  <Badge variant="secondary" className="capitalize text-[10px]">{c.type}</Badge>
+                  <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Edit className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setDeleteTarget(c)}><Trash2 className="h-3 w-3" /></Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+              <span>Showing {showFrom}–{showTo} of {filtered.length}</span>
+              <div className="flex gap-1">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </>
       )}
 

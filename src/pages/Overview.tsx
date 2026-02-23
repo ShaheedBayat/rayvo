@@ -2,18 +2,19 @@ import { Link } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatDate } from '@/lib/formatDate';
 import {
-  FileText, Plus, TrendingUp, TrendingDown, Clock, CheckCircle2, AlertCircle,
-  ArrowUpRight, ArrowDownRight, Send, DollarSign,
+  FileText, Plus, TrendingUp, Clock, CheckCircle2, AlertCircle,
+  ArrowUpRight, Send, Building2,
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/AppLayout';
 
 export default function Overview() {
-  const { invoices: allInvoices } = useInvoices();
+  const { invoices: allInvoices, loading } = useInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
 
-  // Filter by active company
   const invoices = activeCompanyId
     ? allInvoices.filter(i => i.companyId === activeCompanyId)
     : allInvoices;
@@ -28,10 +29,8 @@ export default function Overview() {
 
   const totalOutstanding = sent.reduce((sum, inv) => sum + calculateTotal(inv.items, inv.taxRate), 0);
   const totalPaid = paid.reduce((sum, inv) => sum + calculateTotal(inv.items, inv.taxRate), 0);
-
   const currency = invoices[0]?.currency || 'ZAR';
 
-  // Group customers by outstanding amount
   const customerOwing: Record<string, { name: string; amount: number }> = {};
   sent.forEach(inv => {
     const total = calculateTotal(inv.items, inv.taxRate);
@@ -52,6 +51,29 @@ export default function Overview() {
     { label: 'Total Invoices', value: invoices.length, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
   ];
 
+  // Empty state: no companies yet
+  if (!loading && companies.length === 0) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center py-24">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 mb-6">
+            <Building2 className="h-10 w-10 text-primary/50" />
+          </div>
+          <h1 className="text-2xl font-semibold mb-2">Welcome to RayVo</h1>
+          <p className="text-muted-foreground text-center max-w-md mb-8">
+            To get started, create your first company. This will be your business identity on all invoices, quotes, and documents.
+          </p>
+          <Link
+            to="/companies?action=new"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Create your first company
+          </Link>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="mb-8">
@@ -62,20 +84,32 @@ export default function Overview() {
       </div>
 
       {/* KPI Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow hover:invoice-shadow-lg transition-shadow">
-            <div className="flex items-center justify-between mb-3">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.bg}`}>
-                <s.icon className={`h-4 w-4 ${s.color}`} />
-              </div>
-              <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+              <Skeleton className="h-9 w-9 rounded-lg mb-3" />
+              <Skeleton className="h-7 w-16 mb-1" />
+              <Skeleton className="h-4 w-24" />
             </div>
-            <p className="text-2xl font-semibold">{s.value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
+          {stats.map((s) => (
+            <div key={s.label} className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow hover:invoice-shadow-lg transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.bg}`}>
+                  <s.icon className={`h-4 w-4 ${s.color}`} />
+                </div>
+                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+              </div>
+              <p className="text-2xl font-semibold">{s.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Money summary */}
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
@@ -120,7 +154,7 @@ export default function Overview() {
           {invoices.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
               <FileText className="h-10 w-10 text-muted-foreground/30" />
-              <h3 className="mt-4 text-lg font-medium">Welcome to RayVo</h3>
+              <h3 className="mt-4 text-lg font-medium">No invoices yet</h3>
               <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">
                 Create your first invoice to start tracking payments.
               </p>
@@ -128,8 +162,7 @@ export default function Overview() {
                 to="/invoices/new"
                 className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                <Plus className="h-4 w-4" />
-                Create your first invoice
+                <Plus className="h-4 w-4" /> Create your first invoice
               </Link>
             </div>
           ) : (
@@ -148,11 +181,11 @@ export default function Overview() {
                       to={`/invoices/${inv.id}`}
                       className="flex items-center justify-between rounded-lg px-3 py-2.5 hover:bg-secondary/60 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <span className="mono text-sm font-medium">{inv.invoiceNumber}</span>
-                        <span className="text-sm text-muted-foreground">{inv.clientName}</span>
+                        <span className="text-sm text-muted-foreground truncate">{inv.clientName}</span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 shrink-0">
                         <span className="mono text-sm font-medium">
                           {formatCurrency(total, inv.currency)}
                         </span>
@@ -186,7 +219,7 @@ export default function Overview() {
               <p className="text-sm text-muted-foreground py-8 text-center">No outstanding balances</p>
             ) : (
               <div className="space-y-3">
-                {topOwing.map((customer, i) => {
+                {topOwing.map((customer) => {
                   const percent = topOwing[0].amount > 0 ? (customer.amount / topOwing[0].amount) * 100 : 0;
                   return (
                     <div key={customer.name}>

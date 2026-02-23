@@ -2,11 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
 
 @layer base {
-  /* === TEAL THEME — Clean & Professional === */
-  :root, .theme-teal {
+  /* ============================================================
+     THEME 1: OCEAN — Clean & Professional (Default)
+     ============================================================ */
+  :root, .theme-ocean {
     --background: 0 0% 97%;
     --foreground: 220 20% 14%;
     --card: 0 0% 100%;
@@ -49,9 +51,11 @@
     --theme-card-radius: 0.5rem;
     --theme-shadow: 0 1px 3px 0 hsl(220 20% 14% / 0.04), 0 1px 2px -1px hsl(220 20% 14% / 0.04);
     --theme-shadow-lg: 0 10px 25px -3px hsl(220 20% 14% / 0.06), 0 4px 6px -4px hsl(220 20% 14% / 0.03);
+    --theme-heading-weight: 600;
+    --theme-heading-tracking: -0.025em;
   }
 
-  .dark.theme-teal, .dark:not(.theme-blue):not(.theme-warm):not(.theme-purple) {
+  .dark.theme-ocean, .dark:not(.theme-corporate):not(.theme-editorial):not(.theme-creative):not(.theme-midnight):not(.theme-brutalist):not(.theme-rose):not(.theme-cyber) {
     --background: 220 18% 10%;
     --foreground: 220 14% 90%;
     --card: 220 18% 13%;
@@ -92,8 +96,10 @@
     --theme-shadow-lg: 0 10px 25px -3px hsl(0 0% 0% / 0.2), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
   }
 
-  /* === BLUE PROFESSIONAL — Corporate & Structured === */
-  .theme-blue {
+  /* ============================================================
+     THEME 2: CORPORATE — Structured & Authoritative
+     ============================================================ */
+  .theme-corporate {
     --background: 216 20% 96%;
     --foreground: 222 24% 12%;
     --card: 0 0% 100%;
@@ -136,8 +142,10 @@
     --theme-card-radius: 0.375rem;
     --theme-shadow: 0 1px 2px 0 hsl(217 40% 30% / 0.05);
     --theme-shadow-lg: 0 4px 12px -2px hsl(217 40% 30% / 0.08);
+    --theme-heading-weight: 700;
+    --theme-heading-tracking: -0.03em;
   }
-  .dark.theme-blue {
+  .dark.theme-corporate {
     --background: 222 24% 8%;
     --foreground: 216 14% 90%;
     --card: 222 22% 12%;
@@ -178,8 +186,10 @@
     --theme-shadow-lg: 0 6px 16px -4px hsl(0 0% 0% / 0.3);
   }
 
-  /* === WARM NEUTRAL — Earthy & Editorial === */
-  .theme-warm {
+  /* ============================================================
+     THEME 3: EDITORIAL — Earthy & Refined
+     ============================================================ */
+  .theme-editorial {
     --background: 40 20% 96%;
     --foreground: 30 15% 15%;
     --card: 40 30% 99%;
@@ -222,8 +232,10 @@
     --theme-card-radius: 0.75rem;
     --theme-shadow: 0 2px 8px -2px hsl(30 20% 30% / 0.06);
     --theme-shadow-lg: 0 12px 32px -8px hsl(30 20% 30% / 0.1);
+    --theme-heading-weight: 500;
+    --theme-heading-tracking: -0.01em;
   }
-  .dark.theme-warm {
+  .dark.theme-editorial {
     --background: 30 14% 9%;
     --foreground: 35 14% 88%;
     --card: 30 12% 13%;
@@ -264,8 +276,10 @@
     --theme-shadow-lg: 0 12px 32px -8px hsl(0 0% 0% / 0.35);
   }
 
-  /* === PURPLE MODERN — Bold & Creative === */
-  .theme-purple {
+  /* ============================================================
+     THEME 4: CREATIVE — Bold & Expressive
+     ============================================================ */
+  .theme-creative {
     --background: 270 15% 97%;
     --foreground: 260 20% 12%;
     --card: 270 20% 100%;
@@ -308,8 +322,10 @@
     --theme-card-radius: 0.875rem;
     --theme-shadow: 0 2px 12px -4px hsl(265 40% 40% / 0.08);
     --theme-shadow-lg: 0 16px 40px -12px hsl(265 40% 40% / 0.12);
+    --theme-heading-weight: 400;
+    --theme-heading-tracking: 0em;
   }
-  .dark.theme-purple {
+  .dark.theme-creative {
     --background: 265 20% 8%;
     --foreground: 270 14% 90%;
     --card: 265 18% 12%;
@@ -349,6 +365,366 @@
     --theme-shadow: 0 2px 12px -4px hsl(265 40% 10% / 0.3);
     --theme-shadow-lg: 0 16px 40px -12px hsl(265 40% 10% / 0.4);
   }
+
+  /* ============================================================
+     THEME 5: MIDNIGHT — Dark & Immersive (Glassmorphism)
+     ============================================================ */
+  .theme-midnight {
+    --background: 230 25% 94%;
+    --foreground: 230 20% 12%;
+    --card: 230 20% 98%;
+    --card-foreground: 230 20% 12%;
+    --popover: 230 20% 98%;
+    --popover-foreground: 230 20% 12%;
+    --primary: 190 90% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 230 15% 92%;
+    --secondary-foreground: 230 20% 12%;
+    --muted: 230 14% 91%;
+    --muted-foreground: 230 10% 44%;
+    --accent: 190 35% 90%;
+    --accent-foreground: 190 90% 30%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 230 12% 87%;
+    --input: 230 12% 87%;
+    --ring: 190 90% 42%;
+    --radius: 0.25rem;
+    --sidebar-background: 230 28% 10%;
+    --sidebar-foreground: 230 10% 60%;
+    --sidebar-primary: 190 85% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 22% 16%;
+    --sidebar-accent-foreground: 230 14% 88%;
+    --sidebar-border: 230 18% 16%;
+    --sidebar-ring: 190 85% 50%;
+    --sidebar-muted: 230 10% 48%;
+    --success: 160 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 90% 48%;
+    --warning-foreground: 0 0% 100%;
+    --info: 200 85% 50%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 72% 51%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-font: 'Outfit', system-ui, sans-serif;
+    --theme-heading-font: 'Outfit', system-ui, sans-serif;
+    --theme-card-radius: 0.25rem;
+    --theme-shadow: 0 1px 4px 0 hsl(190 50% 30% / 0.06);
+    --theme-shadow-lg: 0 8px 24px -4px hsl(190 50% 30% / 0.1);
+    --theme-heading-weight: 600;
+    --theme-heading-tracking: -0.04em;
+  }
+  .dark.theme-midnight {
+    --background: 230 25% 6%;
+    --foreground: 230 15% 88%;
+    --card: 230 22% 10%;
+    --card-foreground: 230 15% 88%;
+    --popover: 230 22% 10%;
+    --popover-foreground: 230 15% 88%;
+    --primary: 190 85% 50%;
+    --primary-foreground: 230 25% 6%;
+    --secondary: 230 20% 14%;
+    --secondary-foreground: 230 15% 88%;
+    --muted: 230 18% 16%;
+    --muted-foreground: 230 10% 50%;
+    --accent: 190 25% 14%;
+    --accent-foreground: 190 70% 65%;
+    --destructive: 0 60% 35%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 230 16% 16%;
+    --input: 230 16% 16%;
+    --ring: 190 85% 50%;
+    --sidebar-background: 230 30% 4%;
+    --sidebar-foreground: 230 10% 50%;
+    --sidebar-primary: 190 85% 50%;
+    --sidebar-primary-foreground: 230 25% 6%;
+    --sidebar-accent: 230 22% 12%;
+    --sidebar-accent-foreground: 230 15% 85%;
+    --sidebar-border: 230 18% 12%;
+    --sidebar-ring: 190 85% 50%;
+    --sidebar-muted: 230 10% 45%;
+    --success: 160 55% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 85% 46%;
+    --warning-foreground: 0 0% 100%;
+    --info: 200 80% 48%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 60% 42%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-shadow: 0 0 12px -2px hsl(190 85% 50% / 0.08), 0 1px 3px hsl(0 0% 0% / 0.2);
+    --theme-shadow-lg: 0 0 30px -5px hsl(190 85% 50% / 0.12), 0 10px 20px hsl(0 0% 0% / 0.25);
+  }
+
+  /* ============================================================
+     THEME 6: BRUTALIST — Raw & Direct
+     ============================================================ */
+  .theme-brutalist {
+    --background: 0 0% 96%;
+    --foreground: 0 0% 5%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+    --primary: 0 0% 5%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 92%;
+    --secondary-foreground: 0 0% 5%;
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 92%;
+    --accent-foreground: 0 0% 5%;
+    --destructive: 0 85% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 75%;
+    --input: 0 0% 75%;
+    --ring: 0 0% 5%;
+    --radius: 0rem;
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 60%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 100%;
+    --sidebar-muted: 0 0% 50%;
+    --success: 120 50% 35%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 90% 45%;
+    --warning-foreground: 0 0% 5%;
+    --info: 210 60% 45%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 85% 50%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-font: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+    --theme-heading-font: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+    --theme-card-radius: 0rem;
+    --theme-shadow: none;
+    --theme-shadow-lg: none;
+    --theme-heading-weight: 700;
+    --theme-heading-tracking: -0.02em;
+  }
+  .dark.theme-brutalist {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 92%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 92%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 0 0% 92%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 92%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 92%;
+    --destructive: 0 75% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+    --ring: 0 0% 92%;
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 50%;
+    --sidebar-primary: 0 0% 92%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 0% 92%;
+    --sidebar-muted: 0 0% 45%;
+    --success: 120 45% 32%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 85% 42%;
+    --warning-foreground: 0 0% 5%;
+    --info: 210 55% 42%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 75% 45%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-shadow: none;
+    --theme-shadow-lg: none;
+  }
+
+  /* ============================================================
+     THEME 7: ROSE — Elegant & Soft
+     ============================================================ */
+  .theme-rose {
+    --background: 340 15% 97%;
+    --foreground: 340 10% 15%;
+    --card: 340 20% 100%;
+    --card-foreground: 340 10% 15%;
+    --popover: 340 20% 100%;
+    --popover-foreground: 340 10% 15%;
+    --primary: 340 55% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 340 12% 95%;
+    --secondary-foreground: 340 10% 15%;
+    --muted: 340 10% 94%;
+    --muted-foreground: 340 6% 46%;
+    --accent: 340 30% 93%;
+    --accent-foreground: 340 55% 38%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 340 10% 89%;
+    --input: 340 10% 89%;
+    --ring: 340 55% 52%;
+    --radius: 1rem;
+    --sidebar-background: 340 20% 98%;
+    --sidebar-foreground: 340 6% 48%;
+    --sidebar-primary: 340 55% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 340 18% 94%;
+    --sidebar-accent-foreground: 340 55% 38%;
+    --sidebar-border: 340 10% 90%;
+    --sidebar-ring: 340 55% 52%;
+    --sidebar-muted: 340 6% 52%;
+    --success: 155 45% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 85% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 215 65% 52%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 65% 50%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-font: 'Inter', system-ui, sans-serif;
+    --theme-heading-font: 'Crimson Pro', serif;
+    --theme-card-radius: 1rem;
+    --theme-shadow: 0 2px 10px -3px hsl(340 30% 50% / 0.06);
+    --theme-shadow-lg: 0 14px 36px -10px hsl(340 30% 50% / 0.1);
+    --theme-heading-weight: 500;
+    --theme-heading-tracking: -0.01em;
+  }
+  .dark.theme-rose {
+    --background: 340 15% 7%;
+    --foreground: 340 10% 90%;
+    --card: 340 12% 11%;
+    --card-foreground: 340 10% 90%;
+    --popover: 340 12% 11%;
+    --popover-foreground: 340 10% 90%;
+    --primary: 340 50% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 340 12% 15%;
+    --secondary-foreground: 340 10% 90%;
+    --muted: 340 10% 17%;
+    --muted-foreground: 340 6% 52%;
+    --accent: 340 20% 16%;
+    --accent-foreground: 340 40% 70%;
+    --destructive: 0 55% 38%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 340 10% 18%;
+    --input: 340 10% 18%;
+    --ring: 340 50% 58%;
+    --sidebar-background: 340 16% 5%;
+    --sidebar-foreground: 340 6% 50%;
+    --sidebar-primary: 340 50% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 340 12% 13%;
+    --sidebar-accent-foreground: 340 10% 82%;
+    --sidebar-border: 340 10% 14%;
+    --sidebar-ring: 340 50% 58%;
+    --sidebar-muted: 340 6% 46%;
+    --success: 155 40% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 78% 46%;
+    --warning-foreground: 0 0% 100%;
+    --info: 215 55% 48%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 55% 42%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-shadow: 0 2px 10px -3px hsl(340 20% 10% / 0.25);
+    --theme-shadow-lg: 0 14px 36px -10px hsl(340 20% 10% / 0.35);
+  }
+
+  /* ============================================================
+     THEME 8: CYBER — Futuristic & Bold
+     ============================================================ */
+  .theme-cyber {
+    --background: 160 8% 95%;
+    --foreground: 160 10% 10%;
+    --card: 160 10% 99%;
+    --card-foreground: 160 10% 10%;
+    --popover: 160 10% 99%;
+    --popover-foreground: 160 10% 10%;
+    --primary: 145 80% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 8% 92%;
+    --secondary-foreground: 160 10% 10%;
+    --muted: 160 6% 90%;
+    --muted-foreground: 160 5% 42%;
+    --accent: 145 30% 90%;
+    --accent-foreground: 145 80% 26%;
+    --destructive: 330 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 6% 85%;
+    --input: 160 6% 85%;
+    --ring: 145 80% 38%;
+    --radius: 0.125rem;
+    --sidebar-background: 160 12% 8%;
+    --sidebar-foreground: 160 6% 55%;
+    --sidebar-primary: 145 75% 45%;
+    --sidebar-primary-foreground: 160 12% 8%;
+    --sidebar-accent: 160 10% 14%;
+    --sidebar-accent-foreground: 145 50% 65%;
+    --sidebar-border: 160 8% 16%;
+    --sidebar-ring: 145 75% 45%;
+    --sidebar-muted: 160 5% 48%;
+    --success: 145 60% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 50 90% 48%;
+    --warning-foreground: 0 0% 5%;
+    --info: 200 70% 48%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 330 70% 50%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-font: 'Outfit', system-ui, sans-serif;
+    --theme-heading-font: 'JetBrains Mono', monospace;
+    --theme-card-radius: 0.125rem;
+    --theme-shadow: 0 1px 3px hsl(145 50% 30% / 0.05);
+    --theme-shadow-lg: 0 6px 20px -4px hsl(145 50% 30% / 0.1);
+    --theme-heading-weight: 500;
+    --theme-heading-tracking: -0.05em;
+  }
+  .dark.theme-cyber {
+    --background: 160 12% 4%;
+    --foreground: 145 10% 85%;
+    --card: 160 10% 7%;
+    --card-foreground: 145 10% 85%;
+    --popover: 160 10% 7%;
+    --popover-foreground: 145 10% 85%;
+    --primary: 145 75% 45%;
+    --primary-foreground: 160 12% 4%;
+    --secondary: 160 8% 11%;
+    --secondary-foreground: 145 10% 85%;
+    --muted: 160 6% 13%;
+    --muted-foreground: 160 5% 48%;
+    --accent: 145 20% 12%;
+    --accent-foreground: 145 60% 58%;
+    --destructive: 330 60% 40%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 160 8% 14%;
+    --input: 160 8% 14%;
+    --ring: 145 75% 45%;
+    --sidebar-background: 160 14% 3%;
+    --sidebar-foreground: 160 5% 45%;
+    --sidebar-primary: 145 75% 45%;
+    --sidebar-primary-foreground: 160 14% 3%;
+    --sidebar-accent: 160 10% 10%;
+    --sidebar-accent-foreground: 145 50% 60%;
+    --sidebar-border: 160 8% 10%;
+    --sidebar-ring: 145 75% 45%;
+    --sidebar-muted: 160 5% 40%;
+    --success: 145 55% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 50 85% 44%;
+    --warning-foreground: 0 0% 5%;
+    --info: 200 60% 44%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 330 60% 44%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-shadow: 0 0 8px -1px hsl(145 75% 45% / 0.1), 0 1px 2px hsl(0 0% 0% / 0.2);
+    --theme-shadow-lg: 0 0 24px -4px hsl(145 75% 45% / 0.15), 0 8px 16px hsl(0 0% 0% / 0.25);
+  }
 }
 
 @layer base {
@@ -362,7 +738,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    font-weight: var(--theme-heading-weight, 600);
+    letter-spacing: var(--theme-heading-tracking, -0.025em);
     font-family: var(--theme-heading-font, var(--theme-font, 'Inter', system-ui, sans-serif));
   }
 }
@@ -383,4 +760,64 @@
   .theme-card-radius {
     border-radius: var(--theme-card-radius, 0.5rem);
   }
+}
+
+/* ============================================================
+   THEME-SPECIFIC OVERRIDES — Structural differences per theme
+   ============================================================ */
+
+/* BRUTALIST: Force sharp edges, heavy borders, no shadows */
+.theme-brutalist *[class*="rounded"],
+.theme-brutalist .rounded-lg,
+.theme-brutalist .rounded-xl,
+.theme-brutalist .rounded-md,
+.theme-brutalist .rounded-full:not(button):not([role="checkbox"]) {
+  border-radius: 0 !important;
+}
+.theme-brutalist .border {
+  border-width: 2px;
+}
+.theme-brutalist .border-b {
+  border-bottom-width: 2px;
+}
+.theme-brutalist .border-r {
+  border-right-width: 2px;
+}
+
+/* MIDNIGHT: Glassmorphism cards in dark mode */
+.dark.theme-midnight .bg-card,
+.dark.theme-midnight [class*="bg-card"] {
+  background: hsl(230 22% 10% / 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid hsl(190 85% 50% / 0.08);
+}
+.dark.theme-midnight .bg-sidebar-background,
+.dark.theme-midnight [class*="bg-sidebar"] {
+  background: hsl(230 30% 4% / 0.9);
+  backdrop-filter: blur(20px);
+}
+
+/* CYBER: Neon glow on primary elements in dark mode */
+.dark.theme-cyber .bg-primary,
+.dark.theme-cyber [class*="bg-primary"]:not([class*="bg-primary/"]) {
+  box-shadow: 0 0 12px hsl(145 75% 45% / 0.3), 0 0 4px hsl(145 75% 45% / 0.2);
+}
+.dark.theme-cyber .border-primary,
+.dark.theme-cyber [class*="border-primary"] {
+  box-shadow: 0 0 8px hsl(145 75% 45% / 0.15);
+}
+.dark.theme-cyber input:focus,
+.dark.theme-cyber textarea:focus {
+  box-shadow: 0 0 0 2px hsl(145 75% 45% / 0.2), 0 0 8px hsl(145 75% 45% / 0.1);
+}
+
+/* ROSE: Soft, delicate feel */
+.theme-rose button,
+.theme-rose a {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* MIDNIGHT: Smooth transitions */
+.theme-midnight * {
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }

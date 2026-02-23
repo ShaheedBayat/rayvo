@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight } from 'lucide-react';
+import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useTheme, colorThemes } from '@/hooks/useTheme';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
@@ -32,9 +32,9 @@ export default function SettingsPage() {
     {
       icon: Palette,
       title: 'Theme & Appearance',
-      description: 'Choose a vibe that matches your brand personality.',
+      description: 'Transform the entire look and feel of your workspace.',
       content: (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={toggleTheme} className="gap-2">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -42,31 +42,43 @@ export default function SettingsPage() {
             </Button>
           </div>
           <div>
-            <Label className="text-xs mb-3 block">Choose Your Vibe</Label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {colorThemes.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setColorTheme(t.id)}
-                  className={`relative flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
-                    colorTheme === t.id
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                      : 'border-border bg-card hover:border-primary/30 hover:bg-accent/30'
-                  }`}
-                >
-                  <div
-                    className="mt-0.5 h-5 w-5 shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-background"
-                    style={{
-                      backgroundColor: `hsl(${t.accent})`,
-                      boxShadow: colorTheme === t.id ? `0 0 0 2px hsl(${t.accent})` : undefined,
-                    }}
-                  />
-                  <div>
-                    <span className="text-sm font-medium">{t.label}</span>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t.vibe}</p>
-                  </div>
-                </button>
-              ))}
+            <Label className="text-xs mb-4 block uppercase tracking-wider text-muted-foreground">Choose Your Experience</Label>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {colorThemes.map((t) => {
+                const isActive = colorTheme === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setColorTheme(t.id)}
+                    className={`group relative flex flex-col rounded-lg border p-4 text-left transition-all hover:scale-[1.02] ${
+                      isActive
+                        ? 'border-primary bg-primary/5 ring-2 ring-primary/30'
+                        : 'border-border bg-card hover:border-primary/30 hover:bg-accent/30'
+                    }`}
+                  >
+                    {/* Mini color preview bar */}
+                    <div className="mb-3 flex items-center gap-1.5">
+                      <div
+                        className="h-6 w-6 rounded-full ring-2 ring-offset-2 ring-offset-background"
+                        style={{
+                          backgroundColor: `hsl(${t.accent})`,
+                          boxShadow: isActive ? `0 0 0 2px hsl(${t.accent})` : undefined,
+                        }}
+                      />
+                      <div className="flex-1" />
+                      {isActive && (
+                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-sm font-semibold">{t.label}</span>
+                    <span className="text-[11px] text-muted-foreground mt-0.5">{t.vibe}</span>
+                    <p className="text-[10px] text-muted-foreground/70 mt-2 leading-relaxed">{t.description}</p>
+                    <span className="mt-2 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">{t.font}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
