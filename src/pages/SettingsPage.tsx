@@ -83,6 +83,7 @@ export default function SettingsPage() {
             placeholder="Bank Name: First National Bank&#10;Account Name: My Company&#10;Account Number: 123456789&#10;Branch Code: 250655&#10;Reference: Invoice Number"
             rows={5}
           />
+          <Button size="sm" onClick={handleSaveSettings}>Save Banking Details</Button>
         </div>
       ),
     },
@@ -98,6 +99,7 @@ export default function SettingsPage() {
             placeholder="1. Payment is due within 30 days of invoice date.&#10;2. Late payments will incur a 2% monthly interest charge.&#10;3. All prices are inclusive of VAT unless stated otherwise."
             rows={5}
           />
+          <Button size="sm" onClick={handleSaveSettings}>Save Terms & Conditions</Button>
         </div>
       ),
     },
