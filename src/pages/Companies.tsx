@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import type { Company } from '@/types/invoice';
@@ -6,7 +6,7 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Building2, Plus, Trash2, Pencil, Upload } from 'lucide-react';
+import { Building2, Plus, Trash2, Pencil, Upload, Search, Clock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -111,6 +111,21 @@ export default function Companies() {
   const { companies, addCompany, updateCompany, deleteCompany } = useCompanies();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Company | undefined>();
+  const [search, setSearch] = useState('');
+
+  // Get last used company from localStorage
+  const lastUsedId = localStorage.getItem('lastUsedCompanyId');
+  const lastUsedCompany = companies.find(c => c.id === lastUsedId);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return companies;
+    const q = search.toLowerCase();
+    return companies.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q) ||
+      c.city.toLowerCase().includes(q)
+    );
+  }, [companies, search]);
 
   const handleSave = (c: Company) => {
     if (editing) {
@@ -120,6 +135,8 @@ export default function Companies() {
       addCompany(c);
       toast.success('Company added');
     }
+    // Track as last used
+    localStorage.setItem('lastUsedCompanyId', c.id);
     setEditing(undefined);
   };
 
@@ -128,9 +145,19 @@ export default function Companies() {
     setOpen(true);
   };
 
+  const handleAddNew = () => {
+    // Pre-fill with last used company data for efficiency
+    if (lastUsedCompany) {
+      setEditing({ ...lastUsedCompany, id: '', name: '' });
+    } else {
+      setEditing(undefined);
+    }
+    setOpen(true);
+  };
+
   return (
     <AppLayout>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Companies</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -139,13 +166,13 @@ export default function Companies() {
         </div>
         <Dialog open={open} onOpenChange={o => { setOpen(o); if (!o) setEditing(undefined); }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={handleAddNew}>
               <Plus className="mr-1.5 h-4 w-4" /> Add Company
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>{editing ? 'Edit' : 'Add'} Company</DialogTitle>
+              <DialogTitle>{editing?.id ? 'Edit' : 'Add'} Company</DialogTitle>
             </DialogHeader>
             <CompanyForm
               initial={editing}
@@ -155,6 +182,49 @@ export default function Companies() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Search bar - always visible when companies exist */}
+      {companies.length > 0 && (
+        <div className="mb-4 flex items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search companies..."
+              className="pl-9 h-9"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Recently used company */}
+      {lastUsedCompany && companies.length > 1 && !search && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+            <Clock className="h-3.5 w-3.5" />
+            Recently Used
+          </div>
+          <div
+            className="rounded-lg border border-primary/20 bg-accent/30 p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={() => handleEdit(lastUsedCompany)}
+          >
+            <div className="flex items-center gap-3">
+              {lastUsedCompany.logo ? (
+                <img src={lastUsedCompany.logo} alt={lastUsedCompany.name} className="h-8 w-8 rounded object-contain" />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-primary/10">
+                  <Building2 className="h-4 w-4 text-primary" />
+                </div>
+              )}
+              <div>
+                <span className="text-sm font-medium">{lastUsedCompany.name}</span>
+                <p className="text-xs text-muted-foreground">{lastUsedCompany.email}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {companies.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-20">
@@ -166,7 +236,7 @@ export default function Companies() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {companies.map(c => (
+          {filtered.map(c => (
             <div key={c.id} className="rounded-lg border bg-card p-5 invoice-shadow group">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -203,6 +273,11 @@ export default function Companies() {
               </div>
             </div>
           ))}
+          {filtered.length === 0 && search && (
+            <div className="col-span-full py-12 text-center text-muted-foreground">
+              No companies matching "{search}"
+            </div>
+          )}
         </div>
       )}
     </AppLayout>
