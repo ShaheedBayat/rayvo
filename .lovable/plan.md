@@ -1,127 +1,223 @@
 
+# Complete Feature Implementation Plan
 
-# Comprehensive Feature Implementation Plan
-
-This plan provides a single prompt you can paste in default mode to implement all missing features and improvements identified in the audit. Given the scope, it is strongly recommended to break this into multiple phases. Below is the exact prompt text, organized by priority.
-
----
-
-## Prompt to Paste (Phase 1 - Critical Missing Features)
-
-Copy and paste the following message in a new chat (outside plan mode). This covers the most critical gaps:
+This is a comprehensive plan covering every remaining gap identified by comparing the system against industry-standard invoicing platforms (Xero, FreshBooks, Wave, Zoho).
 
 ---
 
-**Implement the following features one by one, in order. For each feature, make the minimum viable changes needed. Do NOT skip any.**
+## Phase A: Fix Invoice Deletion and Add Voiding
 
-### 1. Edit Invoice
-- Add an "Edit" button to the InvoiceView page (only visible when status is 'draft' or 'approved')
-- Clicking it navigates to `/invoices/:id/edit`
-- Create an EditInvoice page that reuses the same form layout as CreateInvoice but pre-populates all fields from the existing invoice
-- On save, call `updateInvoice` and navigate back to the invoice view
-- Add the route to App.tsx
+### Problem
+Currently, invoices at any status can be soft-deleted. This violates accounting standards -- only draft invoices should be deletable. Approved, sent, and paid invoices need a "Void" action instead.
 
-### 2. Customer Selection in Invoice Creation
-- On the CreateInvoice page, replace the freeform "Customer Name", "Email", and "Address" fields with a searchable dropdown/combobox that searches existing customers (from useCustomers hook)
-- When a customer is selected, auto-fill their name, email, and billing address
-- Also auto-fill the customer's sales defaults: default tax rate, default currency, and default due days (calculate due date from today + default_due_days)
-- Still allow typing a new customer name if they don't exist yet (combobox pattern)
+### Changes
 
-### 3. Product Selection in Line Items
-- In the line items section of CreateInvoice (and EditInvoice), add a searchable product dropdown to each line item row
-- When a product is selected from the catalog, auto-fill the description (sell_description), unit price (sell_price), and tax rate (sell_tax_rate)
-- Still allow freeform entry if no product is selected
-- Use the useProducts hook filtered by activeCompanyId
+**Database migration:**
+- Add `voided` and `partially_paid` as valid invoice statuses (no schema change needed since `status` is a text column)
+- Update the `soft_delete_invoice` function to reject deletion if invoice status is not `draft`
 
-### 4. Duplicate Invoice
-- Add a "Duplicate" option in the InvoiceView dropdown menu
-- It should navigate to CreateInvoice but pre-populate all fields (customer, items, currency, tax rate, notes) from the original invoice
-- The new invoice gets a fresh ID and auto-generated invoice number
-
-### 5. Confirmation Dialogs
-- Add AlertDialog confirmation before deleting an invoice (InvoiceView page)
-- Add AlertDialog confirmation before deleting a customer (Customers page)
-- Add AlertDialog confirmation before deleting a product (Products page)
-- Add AlertDialog confirmation before deleting a recurring invoice
-
-### 6. Discount Support
-- Add an optional discount field per line item (percentage or fixed amount)
-- Update the invoice type to include `discount` on InvoiceItem
-- Update calculateSubtotal to account for discounts
-- Show discount column in line items table (CreateInvoice, EditInvoice, InvoiceDocument)
-- Add a database migration to ensure the items JSONB can store the discount field
-
-### 7. Payment Terms Display
-- Add a "Payment Terms" select on CreateInvoice with options: Due on Receipt, Net 7, Net 14, Net 30, Net 60, Net 90
-- When selected, auto-calculate the due date
-- Display payment terms on the InvoiceDocument
+**Files to modify:**
+- `src/types/invoice.ts` -- Add `voided` and `partially_paid` to the Invoice status type
+- `src/hooks/useInvoiceStore.ts` -- Add a `voidInvoice` method that sets status to `voided`
+- `src/pages/InvoiceView.tsx`:
+  - Remove the Delete option for non-draft invoices
+  - Add a "Void Invoice" action (with confirmation dialog) for approved/sent invoices
+  - Show a "VOIDED" badge for voided invoices
+  - Disable all action buttons on voided invoices
+- `src/pages/Invoices.tsx`:
+  - Add `voided` to statusConfig
+  - Add a "Voided" filter option
+  - Only show delete in the dropdown for draft invoices
+- `src/components/invoice/InvoiceDocument.tsx` -- Show a diagonal "VOID" watermark overlay when invoice status is `voided`
 
 ---
 
-## Prompt to Paste (Phase 2 - Important Features)
+## Phase B: Payment Recording
 
-Paste this as a separate message after Phase 1 is complete:
+### Problem
+"Mark as Paid" is a simple toggle. Real systems record payment details and support partial payments.
 
----
+### Changes
 
-**Continue implementing these features:**
+**Database migration:**
+- Create a `payments` table:
 
-### 8. Credit Notes (Functional)
-- Create a database table `credit_notes` with columns: id, owner_id, company_id, credit_note_number, invoice_id (nullable reference), client_name, client_email, items (jsonb), tax_rate, currency, status (draft/approved/sent), notes, created_at, due_date, deleted_at. Add RLS policies matching invoice patterns.
-- Create a DB trigger to auto-generate credit note numbers per company (CN-00001 pattern) using a company_credit_note_counters table
-- Build the CreditNotes page with a list view, "New Credit Note" dialog/page
-- Allow linking a credit note to an existing invoice (optional)
-- Add a useCreditNotes hook following the same pattern as useInvoiceStore
+```text
+payments
+  id          UUID PK DEFAULT gen_random_uuid()
+  owner_id    UUID NOT NULL
+  invoice_id  UUID NOT NULL
+  amount      NUMERIC NOT NULL
+  payment_date DATE NOT NULL DEFAULT CURRENT_DATE
+  method      TEXT NOT NULL DEFAULT 'bank_transfer'
+  reference   TEXT DEFAULT ''
+  notes       TEXT DEFAULT ''
+  created_at  TIMESTAMPTZ DEFAULT now()
+```
 
-### 9. Reports Dashboard (Functional)
-- Replace the placeholder Reports page with actual data visualizations using recharts (already installed)
-- Include: Revenue over time (bar chart by month), Invoice status breakdown (pie chart), Top customers by revenue (horizontal bar), Accounts receivable aging (0-30, 31-60, 61-90, 90+ days), Paid vs Outstanding summary cards
-- Filter by date range and active company
-- All data derived from existing invoices table
+- Add RLS policies: owner can INSERT, SELECT, UPDATE, DELETE own payments
 
-### 10. Quotes/Estimates
-- Create a `quotes` database table with similar structure to invoices (id, owner_id, company_id, quote_number, client fields, items, tax_rate, currency, status: draft/sent/accepted/declined, valid_until date, notes)
-- Auto-generate quote numbers per company (QU-00001)
-- Build Quotes page with list, create, and view functionality
-- Add "Convert to Invoice" action that creates a new invoice pre-filled from the quote
-- Add Quotes to the navigation under SALES
-- Add route to App.tsx
+**Files to create:**
+- `src/hooks/usePayments.ts` -- CRUD hook for payments (fetch by invoice_id, add, delete)
 
-### 11. Scope Customers by Company
-- Add a `company_id` column to the customers table (nullable, UUID)
-- Filter customers by activeCompanyId in useCustomers hook
-- Set company_id automatically when creating a new customer
-- Update the Customers page to show only customers for the active company
-
----
-
-## Prompt to Paste (Phase 3 - UI/UX Improvements)
+**Files to modify:**
+- `src/pages/InvoiceView.tsx`:
+  - Replace "Mark as Paid" button with "Record Payment" button
+  - Add a Record Payment dialog (amount, date, method dropdown, reference, notes)
+  - Show payment history section below the invoice document
+  - Auto-update invoice status to `paid` when total payments >= invoice total, or `partially_paid` when payments exist but are less than the total
+- `src/types/invoice.ts` -- Already updated in Phase A with `partially_paid`
+- `src/pages/Invoices.tsx` -- Add `partially_paid` to statusConfig
 
 ---
 
-**Implement these UI/UX improvements:**
+## Phase C: Quote Editing
 
-### 12. Pagination
-- Add pagination (20 items per page) to the Invoices list, Customers list, and Products list
-- Show "Showing X-Y of Z" text and Previous/Next buttons
+### Problem
+Quotes can only be created and listed. There is no way to edit a draft quote.
 
-### 13. Loading States
-- Replace plain "Loading..." text with skeleton loaders on Invoices, Customers, Products, and Overview pages
-- Use the existing Skeleton component from ui/skeleton
+### Changes
 
-### 14. Date Formatting Consistency
-- Create a shared `formatDate` utility function that formats all dates consistently as "DD MMM YYYY" (e.g., "23 Feb 2026") using date-fns
-- Apply it across Overview, Invoices, InvoiceView, and InvoiceDocument
-
-### 15. Mobile Responsiveness
-- Make the invoice table on the Invoices page stack vertically on mobile (card layout instead of table rows)
-- Ensure CreateInvoice form is usable on small screens
-- Make the sidebar navigation collapsible on mobile with a hamburger menu
-
-### 16. Empty State Improvements
-- When there are no companies yet, show a prominent CTA on the Overview page directing users to create their first company before creating invoices
+**Files to modify:**
+- `src/pages/Quotes.tsx`:
+  - Add an "Edit" option in the dropdown menu for draft quotes
+  - Open the existing create dialog but pre-populated with the quote's data
+  - On save, call `updateQuote` instead of `addQuote`
 
 ---
 
-This phased approach ensures each batch is manageable and testable before moving to the next.
+## Phase D: Credit Note Improvements
 
+### Problem
+Credit notes are standalone documents with no actions beyond delete. They need status changes and the ability to be applied against invoices.
+
+### Changes
+
+**Files to modify:**
+- `src/pages/CreditNotes.tsx`:
+  - Add "Mark as Approved" and "Mark as Sent" actions in the dropdown menu
+  - Add an "Edit" option for draft credit notes (reuse the create dialog pre-populated)
+  - Show linked invoice number in the table if `invoiceId` is set
+
+---
+
+## Phase E: Currency-Aware Overview and Reports
+
+### Problem
+The Overview and Reports pages pick `currency` from the first invoice. If you have invoices in multiple currencies, totals are mixed incorrectly.
+
+### Changes
+
+**Files to modify:**
+- `src/pages/Overview.tsx`:
+  - Group financial summaries by currency
+  - Show separate Outstanding/Received/Overdue cards per currency, or show the dominant currency and note "mixed currencies"
+- `src/pages/Reports.tsx`:
+  - Group revenue, paid, outstanding, overdue totals by currency
+  - Show per-currency summary cards
+  - Add a Tax Summary section showing total tax collected per period
+
+---
+
+## Phase F: Audit Trail / Activity Log
+
+### Problem
+No record of actions taken on invoices. Professional systems log every status change.
+
+### Changes
+
+**Database migration:**
+- Create an `activity_log` table:
+
+```text
+activity_log
+  id          UUID PK DEFAULT gen_random_uuid()
+  owner_id    UUID NOT NULL
+  entity_type TEXT NOT NULL (e.g. 'invoice', 'quote', 'credit_note')
+  entity_id   UUID NOT NULL
+  action      TEXT NOT NULL (e.g. 'created', 'approved', 'sent', 'voided', 'payment_recorded')
+  details     TEXT DEFAULT ''
+  created_at  TIMESTAMPTZ DEFAULT now()
+```
+
+- RLS: owner can INSERT and SELECT own logs
+
+**Files to create:**
+- `src/hooks/useActivityLog.ts` -- Hook to log actions and fetch logs for an entity
+
+**Files to modify:**
+- `src/hooks/useInvoiceStore.ts` -- Log on addInvoice, updateInvoice (status changes), voidInvoice, softDeleteInvoice
+- `src/pages/InvoiceView.tsx` -- Add an "Activity" section showing the log timeline below the invoice
+
+---
+
+## Phase G: Customer Statement
+
+### Problem
+No way to generate a statement for a customer showing all invoices, payments, and credit notes.
+
+### Changes
+
+**Files to create:**
+- `src/pages/CustomerStatement.tsx` -- A page showing:
+  - Customer info header
+  - Date range filter
+  - Table of all invoices, payments, and credit notes for that customer
+  - Running balance
+  - Export to PDF button
+
+**Files to modify:**
+- `src/App.tsx` -- Add route `/customers/:id/statement`
+- `src/pages/Customers.tsx` -- Add "View Statement" action in the customer row dropdown
+
+---
+
+## Phase H: Recurring Invoice Auto-Generation
+
+### Problem
+Recurring invoices have a schedule but nothing actually generates invoices automatically. The `nextRunDate` is stored but never acted on.
+
+### Changes
+
+**Files to create:**
+- `supabase/functions/process-recurring-invoices/index.ts` -- A backend function that:
+  - Queries all active recurring invoices where `next_run_date <= today`
+  - Creates a new draft invoice for each
+  - Updates `next_run_date` to the next cycle date
+  - Can be called manually or via a cron trigger
+
+**Files to modify:**
+- `src/pages/Invoices.tsx` (RecurringTab) -- Add a "Generate Now" button per recurring invoice for manual triggering
+
+---
+
+## Summary of All New Files
+
+| File | Purpose |
+|------|---------|
+| `src/hooks/usePayments.ts` | Payment CRUD hook |
+| `src/hooks/useActivityLog.ts` | Activity logging hook |
+| `src/pages/CustomerStatement.tsx` | Customer statement page |
+| `supabase/functions/process-recurring-invoices/index.ts` | Auto-generate recurring invoices |
+
+## Summary of All Modified Files
+
+| File | Changes |
+|------|---------|
+| `src/types/invoice.ts` | Add `voided`, `partially_paid` to status type |
+| `src/hooks/useInvoiceStore.ts` | Add `voidInvoice`, integrate activity logging |
+| `src/pages/InvoiceView.tsx` | Void action, record payment dialog, payment history, activity log, restrict delete to drafts |
+| `src/pages/Invoices.tsx` | Voided/partially_paid badges, restrict delete to drafts, voided filter |
+| `src/components/invoice/InvoiceDocument.tsx` | VOID watermark overlay |
+| `src/pages/Quotes.tsx` | Edit draft quotes |
+| `src/pages/CreditNotes.tsx` | Status actions, edit drafts, show linked invoice |
+| `src/pages/Overview.tsx` | Currency-aware grouping |
+| `src/pages/Reports.tsx` | Currency-aware grouping, tax summary |
+| `src/pages/Customers.tsx` | "View Statement" action |
+| `src/App.tsx` | Add customer statement route |
+
+## Database Migrations
+
+1. Update `soft_delete_invoice` function to reject non-draft invoices
+2. Create `payments` table with RLS
+3. Create `activity_log` table with RLS
