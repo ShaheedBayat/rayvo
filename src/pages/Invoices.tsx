@@ -34,8 +34,10 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 function RecurringTab() {
-  const { recurring, addRecurring, updateRecurring, deleteRecurring } = useRecurringInvoices();
+  const { recurring: allRecurring, addRecurring, updateRecurring, deleteRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
+  const { activeCompanyId } = useActiveCompany();
+  const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
   const [open, setOpen] = useState(false);
   const [companyId, setCompanyId] = useState(companies[0]?.id || '');
   const [clientName, setClientName] = useState('');
@@ -286,7 +288,7 @@ export default function Invoices() {
         <div>
           <h1 className="text-2xl font-semibold">Invoices</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {invoices.length} invoice{invoices.length !== 1 ? 's' : ''} total
+            {companyFiltered.length} invoice{companyFiltered.length !== 1 ? 's' : ''} total
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -356,7 +358,7 @@ export default function Invoices() {
             </div>
           </div>
 
-          {invoices.length === 0 ? (
+          {companyFiltered.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
               <FileText className="h-10 w-10 text-muted-foreground/30" />
               <h3 className="mt-4 text-lg font-medium">No invoices yet</h3>

@@ -537,6 +537,77 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          code: string
+          company_id: string | null
+          created_at: string
+          id: string
+          is_tracked: boolean
+          name: string
+          owner_id: string
+          purchase_description: string
+          purchase_enabled: boolean
+          purchase_price: number
+          purchase_tax_rate: number
+          sell_description: string
+          sell_enabled: boolean
+          sell_price: number
+          sell_tax_rate: number
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          is_tracked?: boolean
+          name?: string
+          owner_id: string
+          purchase_description?: string
+          purchase_enabled?: boolean
+          purchase_price?: number
+          purchase_tax_rate?: number
+          sell_description?: string
+          sell_enabled?: boolean
+          sell_price?: number
+          sell_tax_rate?: number
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          is_tracked?: boolean
+          name?: string
+          owner_id?: string
+          purchase_description?: string
+          purchase_enabled?: boolean
+          purchase_price?: number
+          purchase_tax_rate?: number
+          sell_description?: string
+          sell_enabled?: boolean
+          sell_price?: number
+          sell_tax_rate?: number
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           blocked_reason: string | null

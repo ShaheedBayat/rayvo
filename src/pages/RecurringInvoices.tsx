@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { useCompanies } from '@/hooks/useInvoiceStore';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { v4 as uuidv4 } from 'uuid';
@@ -22,8 +23,10 @@ import AppLayout from '@/components/AppLayout';
 import { toast } from 'sonner';
 
 export default function RecurringInvoices() {
-  const { recurring, addRecurring, updateRecurring, deleteRecurring } = useRecurringInvoices();
+  const { recurring: allRecurring, addRecurring, updateRecurring, deleteRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
+  const { activeCompanyId } = useActiveCompany();
+  const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
   const [open, setOpen] = useState(false);
 
   // Form state
