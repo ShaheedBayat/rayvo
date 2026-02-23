@@ -185,6 +185,29 @@ export type Database = {
         }
         Relationships: []
       }
+      company_credit_note_counters: {
+        Row: {
+          company_id: string
+          last_number: number
+        }
+        Insert: {
+          company_id: string
+          last_number?: number
+        }
+        Update: {
+          company_id?: string
+          last_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_credit_note_counters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_invoice_counters: {
         Row: {
           company_id: string
@@ -204,6 +227,104 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: true
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_quote_counters: {
+        Row: {
+          company_id: string
+          last_number: number
+        }
+        Insert: {
+          company_id: string
+          last_number?: number
+        }
+        Update: {
+          company_id?: string
+          last_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_quote_counters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_notes: {
+        Row: {
+          client_address: string | null
+          client_email: string | null
+          client_name: string
+          company_id: string | null
+          created_at: string
+          credit_note_number: string
+          currency: string
+          deleted_at: string | null
+          due_date: string
+          id: string
+          invoice_id: string | null
+          items: Json
+          notes: string | null
+          owner_id: string
+          status: string
+          tax_rate: number
+          updated_at: string
+        }
+        Insert: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name: string
+          company_id?: string | null
+          created_at?: string
+          credit_note_number?: string
+          currency?: string
+          deleted_at?: string | null
+          due_date?: string
+          id?: string
+          invoice_id?: string | null
+          items?: Json
+          notes?: string | null
+          owner_id: string
+          status?: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string
+          company_id?: string | null
+          created_at?: string
+          credit_note_number?: string
+          currency?: string
+          deleted_at?: string | null
+          due_date?: string
+          id?: string
+          invoice_id?: string | null
+          items?: Json
+          notes?: string | null
+          owner_id?: string
+          status?: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_notes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -272,6 +393,7 @@ export type Database = {
           billing_suburb: string | null
           block_on_credit_limit: boolean | null
           city: string | null
+          company_id: string | null
           country: string | null
           created_at: string
           credit_limit: number | null
@@ -320,6 +442,7 @@ export type Database = {
           billing_suburb?: string | null
           block_on_credit_limit?: boolean | null
           city?: string | null
+          company_id?: string | null
           country?: string | null
           created_at?: string
           credit_limit?: number | null
@@ -368,6 +491,7 @@ export type Database = {
           billing_suburb?: string | null
           block_on_credit_limit?: boolean | null
           city?: string | null
+          company_id?: string | null
           country?: string | null
           created_at?: string
           credit_limit?: number | null
@@ -403,7 +527,15 @@ export type Database = {
           vat_number?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deletion_log: {
         Row: {
@@ -657,6 +789,68 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      quotes: {
+        Row: {
+          client_address: string | null
+          client_email: string | null
+          client_name: string
+          company_id: string | null
+          created_at: string
+          currency: string
+          id: string
+          items: Json
+          notes: string | null
+          owner_id: string
+          quote_number: string
+          status: string
+          tax_rate: number
+          updated_at: string
+          valid_until: string
+        }
+        Insert: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name: string
+          company_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          owner_id: string
+          quote_number?: string
+          status?: string
+          tax_rate?: number
+          updated_at?: string
+          valid_until?: string
+        }
+        Update: {
+          client_address?: string | null
+          client_email?: string | null
+          client_name?: string
+          company_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          owner_id?: string
+          quote_number?: string
+          status?: string
+          tax_rate?: number
+          updated_at?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recurring_invoices: {
         Row: {

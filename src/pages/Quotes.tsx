@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Receipt, Plus, Trash2, MoreHorizontal, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { FileCheck, Plus, Trash2, MoreHorizontal, Search, ArrowRight } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
-import { useCreditNotes } from '@/hooks/useCreditNotes';
-import { useInvoices } from '@/hooks/useInvoiceStore';
+import { useQuotes } from '@/hooks/useQuotes';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
@@ -20,81 +20,84 @@ import { toast } from 'sonner';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
-  approved: { label: 'Approved', className: 'bg-info/10 text-info border-info/20' },
   sent: { label: 'Sent', className: 'bg-warning/10 text-warning border-warning/20' },
+  accepted: { label: 'Accepted', className: 'bg-success/10 text-success border-success/20' },
+  declined: { label: 'Declined', className: 'bg-destructive/10 text-destructive border-destructive/20' },
 };
 
-export default function CreditNotes() {
-  const { creditNotes, addCreditNote, deleteCreditNote } = useCreditNotes();
-  const { invoices } = useInvoices();
-  const { activeCompany, activeCompanyId } = useActiveCompany();
+export default function Quotes() {
+  const navigate = useNavigate();
+  const { quotes, addQuote, updateQuote, deleteQuote } = useQuotes();
+  const { activeCompanyId } = useActiveCompany();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const filtered = creditNotes
-    .filter(cn => !activeCompanyId || cn.companyId === activeCompanyId)
-    .filter(cn => !search || cn.creditNoteNumber.toLowerCase().includes(search.toLowerCase()) || cn.clientName.toLowerCase().includes(search.toLowerCase()));
+  const filtered = quotes
+    .filter(q => !activeCompanyId || q.companyId === activeCompanyId)
+    .filter(q => !search || q.quoteNumber.toLowerCase().includes(search.toLowerCase()) || q.clientName.toLowerCase().includes(search.toLowerCase()));
 
-  // Form state
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientAddress, setClientAddress] = useState('');
-  const [invoiceId, setInvoiceId] = useState('');
   const [currency, setCurrency] = useState<Currency>('ZAR');
   const [taxRate, setTaxRate] = useState(15);
   const [notes, setNotes] = useState('');
+  const [validUntil, setValidUntil] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  });
   const [items, setItems] = useState<InvoiceItem[]>([{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
-
-  const companyInvoices = invoices.filter(i => i.companyId === activeCompanyId && i.status !== 'draft');
 
   const resetForm = () => {
     setClientName(''); setClientEmail(''); setClientAddress('');
-    setInvoiceId(''); setCurrency('ZAR'); setTaxRate(15); setNotes('');
+    setCurrency('ZAR'); setTaxRate(15); setNotes('');
     setItems([{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
-  };
-
-  const handleSelectInvoice = (id: string) => {
-    setInvoiceId(id);
-    const inv = invoices.find(i => i.id === id);
-    if (inv) {
-      setClientName(inv.clientName);
-      setClientEmail(inv.clientEmail);
-      setClientAddress(inv.clientAddress);
-      setCurrency(inv.currency);
-      setTaxRate(inv.taxRate);
-      setItems(inv.items.map(i => ({ ...i, id: uuidv4() })));
-    }
+    const d = new Date(); d.setDate(d.getDate() + 30);
+    setValidUntil(d.toISOString().split('T')[0]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeCompanyId) { toast.error('Select a company first'); return; }
     if (!clientName) { toast.error('Enter client name'); return; }
-    const d = new Date(); d.setDate(d.getDate() + 30);
-    const result = await addCreditNote({
+    const result = await addQuote({
       id: uuidv4(),
       companyId: activeCompanyId,
-      invoiceId: invoiceId || null,
       clientName, clientEmail, clientAddress,
       items, taxRate, currency,
       status: 'draft',
       notes,
-      dueDate: d.toISOString().split('T')[0],
+      validUntil,
     });
     if (result) {
-      toast.success(`Credit note ${result.creditNoteNumber} created`);
-      resetForm();
-      setOpen(false);
+      toast.success(`Quote ${result.quoteNumber} created`);
+      resetForm(); setOpen(false);
     } else {
-      toast.error('Failed to create credit note');
+      toast.error('Failed to create quote');
     }
+  };
+
+  const handleConvertToInvoice = (q: typeof quotes[0]) => {
+    navigate('/invoices/new', {
+      state: {
+        clientName: q.clientName,
+        clientEmail: q.clientEmail,
+        clientAddress: q.clientAddress,
+        currency: q.currency,
+        items: q.items,
+        taxRate: q.taxRate,
+        notes: q.notes,
+      },
+    });
+    updateQuote({ ...q, status: 'accepted' });
+    toast.success('Converting quote to invoice');
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    await deleteCreditNote(deleteId);
-    toast.success('Credit note deleted');
+    await deleteQuote(deleteId);
+    toast.success('Quote deleted');
     setDeleteId(null);
   };
 
@@ -102,29 +105,16 @@ export default function CreditNotes() {
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Credit Notes</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Issue credit notes against invoices.</p>
+          <h1 className="text-2xl font-semibold">Quotes</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Create and manage quotes for your customers.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-1.5 rounded-lg"><Plus className="h-4 w-4" /> New Credit Note</Button>
+            <Button className="gap-1.5 rounded-lg"><Plus className="h-4 w-4" /> New Quote</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>New Credit Note</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>New Quote</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-              {companyInvoices.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Link to Invoice (optional)</Label>
-                  <Select value={invoiceId} onValueChange={handleSelectInvoice}>
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Select invoice..." /></SelectTrigger>
-                    <SelectContent>
-                      {companyInvoices.map(inv => (
-                        <SelectItem key={inv.id} value={inv.id}>{inv.invoiceNumber} — {inv.clientName}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Customer Name</Label>
@@ -139,7 +129,7 @@ export default function CreditNotes() {
                 <Label className="text-xs">Address</Label>
                 <Textarea value={clientAddress} onChange={e => setClientAddress(e.target.value)} rows={2} />
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Currency</Label>
                   <Select value={currency} onValueChange={v => setCurrency(v as Currency)}>
@@ -153,6 +143,10 @@ export default function CreditNotes() {
                 <div className="space-y-1.5">
                   <Label className="text-xs">Tax Rate (%)</Label>
                   <Input type="number" min={0} max={100} value={taxRate} onChange={e => setTaxRate(parseFloat(e.target.value) || 0)} className="h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Valid Until</Label>
+                  <Input type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)} className="h-9" />
                 </div>
               </div>
               <div>
@@ -177,7 +171,7 @@ export default function CreditNotes() {
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit">Create Credit Note</Button>
+                <Button type="submit">Create Quote</Button>
               </div>
             </form>
           </DialogContent>
@@ -188,17 +182,17 @@ export default function CreditNotes() {
         <div className="mb-4">
           <div className="relative max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search credit notes..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 rounded-lg" />
+            <Input placeholder="Search quotes..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 rounded-lg" />
           </div>
         </div>
       )}
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
-          <Receipt className="h-10 w-10 text-muted-foreground/30" />
-          <h3 className="mt-4 text-lg font-medium">No credit notes yet</h3>
+          <FileCheck className="h-10 w-10 text-muted-foreground/30" />
+          <h3 className="mt-4 text-lg font-medium">No quotes yet</h3>
           <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">
-            Create credit notes to issue refunds or adjustments against existing invoices.
+            Create quotes and convert them to invoices when accepted.
           </p>
         </div>
       ) : (
@@ -208,22 +202,22 @@ export default function CreditNotes() {
               <tr className="border-b bg-muted/20">
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Number</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Valid Until</th>
                 <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Amount</th>
                 <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
                 <th className="px-4 py-3 w-12" />
               </tr>
             </thead>
             <tbody>
-              {filtered.map(cn => {
-                const total = calculateTotal(cn.items, cn.taxRate);
-                const cfg = statusConfig[cn.status] || statusConfig.draft;
+              {filtered.map(q => {
+                const total = calculateTotal(q.items, q.taxRate);
+                const cfg = statusConfig[q.status] || statusConfig.draft;
                 return (
-                  <tr key={cn.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">
-                    <td className="px-4 py-3.5 mono font-medium">{cn.creditNoteNumber}</td>
-                    <td className="px-4 py-3.5">{cn.clientName}</td>
-                    <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{new Date(cn.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3.5 text-right mono font-medium">{formatCurrency(total, cn.currency)}</td>
+                  <tr key={q.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">
+                    <td className="px-4 py-3.5 mono font-medium">{q.quoteNumber}</td>
+                    <td className="px-4 py-3.5">{q.clientName}</td>
+                    <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{new Date(q.validUntil).toLocaleDateString()}</td>
+                    <td className="px-4 py-3.5 text-right mono font-medium">{formatCurrency(total, q.currency)}</td>
                     <td className="px-4 py-3.5 text-center">
                       <Badge variant="outline" className={`${cfg.className} text-[11px]`}>{cfg.label}</Badge>
                     </td>
@@ -233,7 +227,18 @@ export default function CreditNotes() {
                           <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setDeleteId(cn.id)} className="text-destructive focus:text-destructive">
+                          {(q.status === 'draft' || q.status === 'sent') && (
+                            <DropdownMenuItem onClick={() => handleConvertToInvoice(q)}>
+                              <ArrowRight className="mr-2 h-4 w-4" /> Convert to Invoice
+                            </DropdownMenuItem>
+                          )}
+                          {q.status === 'draft' && (
+                            <DropdownMenuItem onClick={() => updateQuote({ ...q, status: 'sent' })}>
+                              Mark as Sent
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setDeleteId(q.id)} className="text-destructive focus:text-destructive">
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -250,7 +255,7 @@ export default function CreditNotes() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete credit note?</AlertDialogTitle>
+            <AlertDialogTitle>Delete quote?</AlertDialogTitle>
             <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

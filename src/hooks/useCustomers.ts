@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 
 export interface CustomerContact {
   id: string;
@@ -125,15 +126,20 @@ function mapContact(row: any): CustomerContact {
 
 export function useCustomers() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchCustomers = useCallback(async () => {
     if (!user) { setCustomers([]); setLoading(false); return; }
-    const { data, error } = await supabase
+    let query = supabase
       .from('customers')
       .select('*')
       .order('created_at', { ascending: false });
+    if (activeCompanyId) {
+      query = query.or(`company_id.eq.${activeCompanyId},company_id.is.null`);
+    }
+    const { data, error } = await query;
     if (!error && data) {
       const mapped = data.map(mapCustomer);
       // Fetch contacts for all customers
@@ -153,7 +159,7 @@ export function useCustomers() {
       setCustomers(mapped);
     }
     setLoading(false);
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
 
@@ -163,6 +169,7 @@ export function useCustomers() {
     const { error } = await supabase.from('customers').insert({
       id: rest.id,
       owner_id: user.id,
+      company_id: activeCompanyId || null,
       type: rest.type,
       name: rest.name,
       email: rest.email,
@@ -222,7 +229,7 @@ export function useCustomers() {
     }
     if (!error) await fetchCustomers();
     return error;
-  }, [user, fetchCustomers]);
+  }, [user, activeCompanyId, fetchCustomers]);
 
   const updateCustomer = useCallback(async (customer: Omit<Customer, 'createdAt'>) => {
     if (!user) return;
