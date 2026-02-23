@@ -148,7 +148,7 @@ export default function Companies() {
   const handleAddNew = () => {
     // Pre-fill with last used company data for efficiency
     if (lastUsedCompany) {
-      setEditing({ ...lastUsedCompany, id: '', name: '' });
+      setEditing({ ...lastUsedCompany, id: '' });
     } else {
       setEditing(undefined);
     }
