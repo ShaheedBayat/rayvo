@@ -155,13 +155,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           collapsed ? 'w-16' : 'w-60'
         }`}
       >
-        {/* Logo */}
+        {/* Logo / Active Company */}
         <div className="flex h-14 items-center gap-2 px-4">
-          <img src={raynLogo} alt="RayVo" className="h-9 w-auto shrink-0" />
-          {!collapsed && (
-            <span className="text-base font-semibold text-foreground tracking-tight">
-              RayVo
-            </span>
+          {activeCompany ? (
+            <>
+              {activeCompany.logo ? (
+                <img src={activeCompany.logo} alt={activeCompany.name} className="h-8 w-8 rounded-lg object-contain shrink-0" />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary text-sm font-semibold shrink-0">
+                  {activeCompany.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              {!collapsed && (
+                <span className="text-sm font-semibold text-foreground tracking-tight truncate">
+                  {activeCompany.name}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <img src={raynLogo} alt="RayVo" className="h-9 w-auto shrink-0" />
+              {!collapsed && (
+                <span className="text-base font-semibold text-foreground tracking-tight">
+                  RayVo
+                </span>
+              )}
+            </>
           )}
         </div>
 
