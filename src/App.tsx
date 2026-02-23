@@ -16,6 +16,7 @@ import Customers from "./pages/Customers";
 import Products from "./pages/Products";
 import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
+import InvoiceSettings from "./pages/InvoiceSettings";
 import OnlinePayments from "./pages/OnlinePayments";
 import CreditNotes from "./pages/CreditNotes";
 import Auth from "./pages/Auth";
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="/recurring" element={<Navigate to="/invoices?tab=recurring" replace />} />
               <Route path="/online-payments" element={<ProtectedRoute><OnlinePayments /></ProtectedRoute>} />
               <Route path="/credit-notes" element={<ProtectedRoute><CreditNotes /></ProtectedRoute>} />
+              <Route path="/settings/invoice" element={<ProtectedRoute><InvoiceSettings /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

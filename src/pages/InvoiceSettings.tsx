@@ -1,0 +1,248 @@
+import { useState } from 'react';
+import { useBrandingThemes, type BrandingTheme, getDefaultTheme } from '@/hooks/useBrandingThemes';
+import BrandingThemeEditor from '@/components/branding/BrandingThemeEditor';
+import AppLayout from '@/components/AppLayout';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Plus, MoreHorizontal, Pencil, Copy, Star, Trash2, ArrowLeft,
+  FileText, CreditCard, Bell, Settings2,
+} from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
+
+const tabs = [
+  { id: 'themes', label: 'Branding Themes', icon: FileText },
+  { id: 'defaults', label: 'Default Settings', icon: Settings2 },
+  { id: 'payments', label: 'Payment Services', icon: CreditCard },
+  { id: 'reminders', label: 'Invoice Reminders', icon: Bell },
+];
+
+function ThemeCard({ theme, onEdit, onDuplicate, onSetDefault, onDelete }: {
+  theme: BrandingTheme;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  onSetDefault: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="group rounded-xl border bg-card p-5 hover:border-primary/30 transition-all invoice-shadow">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+            style={{ backgroundColor: theme.primaryColor }}
+          >
+            {theme.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold">{theme.name}</h3>
+              {theme.isDefault && (
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0">
+                  Default
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">{theme.fontFamily} · {theme.fontSize}pt</p>
+          </div>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+            <DropdownMenuItem onClick={onDuplicate}><Copy className="mr-2 h-4 w-4" /> Duplicate</DropdownMenuItem>
+            {!theme.isDefault && (
+              <DropdownMenuItem onClick={onSetDefault}><Star className="mr-2 h-4 w-4" /> Set as Default</DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Preview strip */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+        <div className="flex justify-between">
+          <span>Page</span><span className="font-medium text-foreground">{theme.pageSize}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Tax</span><span className="font-medium text-foreground capitalize">{theme.taxDisplay}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Margins</span><span className="font-medium text-foreground">{theme.topMargin}/{theme.bottomMargin}{theme.measureUnit}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Payment</span><span className="font-medium text-foreground capitalize">{theme.paymentService === 'none' ? '—' : theme.paymentService}</span>
+        </div>
+        <div className="flex justify-between col-span-2">
+          <span>Titles</span>
+          <span className="font-medium text-foreground truncate ml-2">
+            {theme.documentTitles.draft_invoice}, {theme.documentTitles.credit_note}…
+          </span>
+        </div>
+      </div>
+
+      {/* Color + Logo strip */}
+      <div className="mt-4 flex items-center gap-2">
+        <div className="flex gap-1.5">
+          <div className="h-5 w-5 rounded-full border" style={{ backgroundColor: theme.primaryColor }} title="Primary" />
+          <div className="h-5 w-5 rounded-full border" style={{ backgroundColor: theme.accentColor }} title="Accent" />
+        </div>
+        {theme.logo && (
+          <img src={theme.logo} alt="Logo" className="h-5 w-auto rounded ml-auto object-contain" />
+        )}
+        <span className="text-xs text-muted-foreground ml-auto">Logo: {theme.logoAlignment}</span>
+      </div>
+    </div>
+  );
+}
+
+export default function InvoiceSettings() {
+  const { themes, addTheme, updateTheme, deleteTheme, duplicateTheme, setDefault } = useBrandingThemes();
+  const [activeTab, setActiveTab] = useState('themes');
+  const [editingTheme, setEditingTheme] = useState<BrandingTheme | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Full-screen editor mode
+  if (editingTheme || isCreating) {
+    return (
+      <BrandingThemeEditor
+        initial={editingTheme || undefined}
+        onSave={async (theme) => {
+          if (editingTheme) {
+            const ok = await updateTheme(editingTheme.id, theme);
+            if (ok) toast.success('Theme updated');
+            else { toast.error('Failed to update'); return; }
+          } else {
+            const result = await addTheme(theme);
+            if (result) toast.success('Theme created');
+            else { toast.error('Failed to create'); return; }
+          }
+          setEditingTheme(null);
+          setIsCreating(false);
+        }}
+        onCancel={() => { setEditingTheme(null); setIsCreating(false); }}
+      />
+    );
+  }
+
+  return (
+    <AppLayout>
+      <div className="mb-6 flex items-center gap-3">
+        <a href="/settings" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Settings
+        </a>
+        <span className="text-muted-foreground/40">/</span>
+        <h1 className="text-xl font-semibold">Invoice Settings</h1>
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-6 flex items-center gap-1 border-b border-border/50">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === t.id ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <t.icon className="h-4 w-4" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'themes' && (
+        <>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {themes.length} branding theme{themes.length !== 1 ? 's' : ''}. Each theme controls how your documents look in PDF and online views.
+              </p>
+            </div>
+            <Button size="sm" className="gap-1.5 rounded-lg" onClick={() => setIsCreating(true)}>
+              <Plus className="h-4 w-4" /> New Branding Theme
+            </Button>
+          </div>
+
+          {themes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
+              <FileText className="h-10 w-10 text-muted-foreground/30" />
+              <h3 className="mt-4 text-lg font-medium">No branding themes yet</h3>
+              <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">
+                Create your first branding theme to control how your invoices, quotes, and statements look.
+              </p>
+              <Button className="mt-6 gap-1.5" onClick={() => setIsCreating(true)}>
+                <Plus className="h-4 w-4" /> Create your first theme
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {themes.map(theme => (
+                <ThemeCard
+                  key={theme.id}
+                  theme={theme}
+                  onEdit={() => setEditingTheme(theme)}
+                  onDuplicate={async () => {
+                    const dup = await duplicateTheme(theme);
+                    if (dup) toast.success('Theme duplicated');
+                    else toast.error('Failed to duplicate');
+                  }}
+                  onSetDefault={async () => {
+                    const ok = await setDefault(theme.id);
+                    if (ok) toast.success('Default theme updated');
+                    else toast.error('Failed to update default');
+                  }}
+                  onDelete={async () => {
+                    const ok = await deleteTheme(theme.id);
+                    if (ok) toast.success('Theme deleted');
+                    else toast.error('Failed to delete');
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'defaults' && (
+        <div className="rounded-xl border bg-card p-8 text-center">
+          <Settings2 className="h-10 w-10 mx-auto text-muted-foreground/30" />
+          <h3 className="mt-4 text-lg font-medium">Default Settings</h3>
+          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+            Configure default branding theme per company, customer, or document type. Coming soon.
+          </p>
+        </div>
+      )}
+
+      {activeTab === 'payments' && (
+        <div className="rounded-xl border bg-card p-8 text-center">
+          <CreditCard className="h-10 w-10 mx-auto text-muted-foreground/30" />
+          <h3 className="mt-4 text-lg font-medium">Payment Services</h3>
+          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+            Connect Stripe, PayFast, or PayPal to accept online payments directly from invoices. Coming soon.
+          </p>
+        </div>
+      )}
+
+      {activeTab === 'reminders' && (
+        <div className="rounded-xl border bg-card p-8 text-center">
+          <Bell className="h-10 w-10 mx-auto text-muted-foreground/30" />
+          <h3 className="mt-4 text-lg font-medium">Invoice Reminders</h3>
+          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+            Set up automatic reminders for overdue invoices. Coming soon.
+          </p>
+        </div>
+      )}
+    </AppLayout>
+  );
+}
