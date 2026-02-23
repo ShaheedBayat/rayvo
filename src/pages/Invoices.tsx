@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
+  approved: { label: 'Approved', className: 'bg-info/10 text-info border-info/20' },
   sent: { label: 'Awaiting Payment', className: 'bg-warning/10 text-warning border-warning/20' },
   paid: { label: 'Paid', className: 'bg-success/10 text-success border-success/20' },
 };
@@ -49,7 +50,7 @@ export default function Invoices() {
     return matchesSearch && matchesStatus;
   });
 
-  const statuses = ['draft', 'sent', 'paid'];
+  const statuses = ['draft', 'approved', 'sent', 'paid'];
 
   return (
     <AppLayout>

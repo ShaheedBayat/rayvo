@@ -5,37 +5,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @layer base {
-  :root {
+  /* === TEAL THEME (default) === */
+  :root, .theme-teal {
     --background: 0 0% 97%;
     --foreground: 220 20% 14%;
-
     --card: 0 0% 100%;
     --card-foreground: 220 20% 14%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 14%;
-
     --primary: 192 75% 36%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 220 14% 96%;
     --secondary-foreground: 220 20% 14%;
-
     --muted: 220 14% 95%;
     --muted-foreground: 220 10% 46%;
-
     --accent: 192 40% 94%;
     --accent-foreground: 192 75% 28%;
-
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 192 75% 36%;
-
     --radius: 0.5rem;
-
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 10% 46%;
     --sidebar-primary: 192 75% 36%;
@@ -45,7 +36,6 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 192 75% 36%;
     --sidebar-muted: 220 10% 46%;
-
     --success: 152 56% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -56,35 +46,26 @@
     --overdue-foreground: 0 0% 100%;
   }
 
-  .dark {
+  .dark.theme-teal, .dark:not(.theme-blue):not(.theme-warm):not(.theme-purple) {
     --background: 220 18% 10%;
     --foreground: 220 14% 90%;
-
     --card: 220 18% 13%;
     --card-foreground: 220 14% 90%;
-
     --popover: 220 18% 13%;
     --popover-foreground: 220 14% 90%;
-
     --primary: 192 70% 45%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 220 16% 18%;
     --secondary-foreground: 220 14% 90%;
-
     --muted: 220 14% 20%;
     --muted-foreground: 220 10% 55%;
-
     --accent: 192 30% 18%;
     --accent-foreground: 192 60% 70%;
-
     --destructive: 0 62% 30%;
     --destructive-foreground: 220 14% 95%;
-
     --border: 220 14% 20%;
     --input: 220 14% 20%;
     --ring: 192 70% 45%;
-
     --sidebar-background: 220 18% 8%;
     --sidebar-foreground: 220 10% 55%;
     --sidebar-primary: 192 70% 45%;
@@ -94,7 +75,6 @@
     --sidebar-border: 220 14% 18%;
     --sidebar-ring: 192 70% 45%;
     --sidebar-muted: 220 10% 55%;
-
     --success: 152 50% 38%;
     --success-foreground: 0 0% 100%;
     --warning: 38 85% 48%;
@@ -103,6 +83,78 @@
     --info-foreground: 0 0% 100%;
     --overdue: 0 62% 40%;
     --overdue-foreground: 0 0% 100%;
+  }
+
+  /* === BLUE PROFESSIONAL === */
+  .theme-blue {
+    --primary: 217 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 217 40% 94%;
+    --accent-foreground: 217 71% 30%;
+    --ring: 217 71% 45%;
+    --sidebar-primary: 217 71% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 40% 94%;
+    --sidebar-accent-foreground: 217 71% 30%;
+    --sidebar-ring: 217 71% 45%;
+  }
+  .dark.theme-blue {
+    --primary: 217 65% 55%;
+    --accent: 217 30% 18%;
+    --accent-foreground: 217 55% 70%;
+    --ring: 217 65% 55%;
+    --sidebar-primary: 217 65% 55%;
+    --sidebar-accent: 217 20% 16%;
+    --sidebar-accent-foreground: 217 55% 80%;
+    --sidebar-ring: 217 65% 55%;
+  }
+
+  /* === WARM NEUTRAL === */
+  .theme-warm {
+    --primary: 30 50% 45%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 30 35% 93%;
+    --accent-foreground: 30 50% 30%;
+    --ring: 30 50% 45%;
+    --sidebar-primary: 30 50% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 35% 93%;
+    --sidebar-accent-foreground: 30 50% 30%;
+    --sidebar-ring: 30 50% 45%;
+  }
+  .dark.theme-warm {
+    --primary: 30 45% 55%;
+    --accent: 30 20% 18%;
+    --accent-foreground: 30 40% 70%;
+    --ring: 30 45% 55%;
+    --sidebar-primary: 30 45% 55%;
+    --sidebar-accent: 30 15% 16%;
+    --sidebar-accent-foreground: 30 40% 80%;
+    --sidebar-ring: 30 45% 55%;
+  }
+
+  /* === PURPLE MODERN === */
+  .theme-purple {
+    --primary: 270 60% 50%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 270 40% 94%;
+    --accent-foreground: 270 60% 35%;
+    --ring: 270 60% 50%;
+    --sidebar-primary: 270 60% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 270 40% 94%;
+    --sidebar-accent-foreground: 270 60% 35%;
+    --sidebar-ring: 270 60% 50%;
+  }
+  .dark.theme-purple {
+    --primary: 270 55% 60%;
+    --accent: 270 25% 18%;
+    --accent-foreground: 270 50% 72%;
+    --ring: 270 55% 60%;
+    --sidebar-primary: 270 55% 60%;
+    --sidebar-accent: 270 20% 16%;
+    --sidebar-accent-foreground: 270 50% 80%;
+    --sidebar-ring: 270 55% 60%;
   }
 }
 

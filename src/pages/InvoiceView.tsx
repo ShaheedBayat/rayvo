@@ -1,11 +1,12 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
+import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
 import InvoiceDocument from '@/components/invoice/InvoiceDocument';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy } from 'lucide-react';
+import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, ShieldCheck } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import { useRef } from 'react';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
+  approved: { label: 'Approved', className: 'bg-info/10 text-info border-info/20' },
   sent: { label: 'Awaiting Payment', className: 'bg-warning/10 text-warning border-warning/20' },
   paid: { label: 'Paid', className: 'bg-success/10 text-success border-success/20' },
 };
@@ -27,6 +29,7 @@ export default function InvoiceView() {
   const navigate = useNavigate();
   const { getInvoice, updateInvoice, softDeleteInvoice } = useInvoices();
   const { getCompany } = useCompanies();
+  const { settings } = useGlobalSettings();
   const docRef = useRef<HTMLDivElement>(null);
 
   const invoice = getInvoice(id || '');
@@ -76,14 +79,19 @@ export default function InvoiceView() {
     toast.success('Public link copied to clipboard!');
   };
 
-  const markPaid = () => {
-    updateInvoice({ ...invoice, status: 'paid' });
-    toast.success('Invoice marked as paid');
+  const markApproved = () => {
+    updateInvoice({ ...invoice, status: 'approved' });
+    toast.success('Invoice approved');
   };
 
   const markSent = () => {
     updateInvoice({ ...invoice, status: 'sent' });
     toast.success('Invoice marked as sent');
+  };
+
+  const markPaid = () => {
+    updateInvoice({ ...invoice, status: 'paid' });
+    toast.success('Invoice marked as paid');
   };
 
   const handleDelete = async () => {
@@ -119,6 +127,11 @@ export default function InvoiceView() {
 
         <div className="flex items-center gap-2">
           {invoice.status === 'draft' && (
+            <Button variant="outline" size="sm" onClick={markApproved} className="text-info border-info/30 hover:bg-info/10">
+              <ShieldCheck className="mr-1.5 h-4 w-4" /> Approve
+            </Button>
+          )}
+          {invoice.status === 'approved' && (
             <Button variant="outline" size="sm" onClick={markSent}>
               <Send className="mr-1.5 h-4 w-4" /> Mark as Sent
             </Button>
@@ -177,7 +190,12 @@ export default function InvoiceView() {
 
       {/* Document */}
       <div ref={docRef}>
-        <InvoiceDocument invoice={invoice} company={company} />
+        <InvoiceDocument
+          invoice={invoice}
+          company={company}
+          bankingDetails={settings?.bankingDetails}
+          termsConditions={settings?.termsConditions}
+        />
       </div>
     </AppLayout>
   );

@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompanies } from '@/hooks/useInvoiceStore';
@@ -32,6 +33,7 @@ import {
 const salesNav = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
   { to: '/invoices', label: 'Invoices', icon: FileText },
+  { to: '/recurring', label: 'Recurring', icon: RefreshCw },
   { to: '/customers', label: 'Customers', icon: Users },
   { to: '/products', label: 'Products & Services', icon: Package },
 ];
