@@ -1,104 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, Plus, Trash2, Pencil } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useTheme, colorThemes } from '@/hooks/useTheme';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { useInvoiceTemplates, type InvoiceTemplate } from '@/hooks/useInvoiceTemplates';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
-import type { Currency, InvoiceItem } from '@/types/invoice';
-import { formatCurrency, calculateTotal } from '@/types/invoice';
-
-function TemplateForm({ onSave, onCancel, initial }: {
-  onSave: (t: Omit<InvoiceTemplate, 'id' | 'createdAt'>) => void;
-  onCancel: () => void;
-  initial?: InvoiceTemplate;
-}) {
-  const [name, setName] = useState(initial?.name || '');
-  const [description, setDescription] = useState(initial?.description || '');
-  const [currency, setCurrency] = useState<Currency>(initial?.currency || 'ZAR');
-  const [taxRate, setTaxRate] = useState(initial?.taxRate ?? 15);
-  const [notes, setNotes] = useState(initial?.notes || '');
-  const [items, setItems] = useState<InvoiceItem[]>(
-    initial?.items?.length ? initial.items : [{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]
-  );
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) { toast.error('Template name is required'); return; }
-    onSave({ name, description, currency, items, taxRate, notes });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Template Name</Label>
-          <Input required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Monthly Retainer" className="h-9" />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Currency</Label>
-          <Select value={currency} onValueChange={v => setCurrency(v as Currency)}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ZAR">ZAR</SelectItem>
-              <SelectItem value="USD">USD</SelectItem>
-              <SelectItem value="EUR">EUR</SelectItem>
-              <SelectItem value="GBP">GBP</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Description</Label>
-        <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description of this template" className="h-9" />
-      </div>
-      <div>
-        <Label className="text-xs mb-2 block">Line Items</Label>
-        {items.map((item, i) => (
-          <div key={item.id} className="flex gap-2 mb-2">
-            <Input placeholder="Description" value={item.description} onChange={e => { const u = [...items]; u[i] = { ...item, description: e.target.value }; setItems(u); }} className="h-8 text-xs flex-1" />
-            <Input type="number" placeholder="Qty" value={item.quantity} onChange={e => { const u = [...items]; u[i] = { ...item, quantity: parseInt(e.target.value) || 0 }; setItems(u); }} className="h-8 text-xs w-16" />
-            <Input type="number" placeholder="Price" value={item.unitPrice} onChange={e => { const u = [...items]; u[i] = { ...item, unitPrice: parseFloat(e.target.value) || 0 }; setItems(u); }} className="h-8 text-xs w-24" />
-            {items.length > 1 && (
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setItems(items.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button>
-            )}
-          </div>
-        ))}
-        <Button type="button" variant="ghost" size="sm" className="text-primary text-xs" onClick={() => setItems([...items, { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }])}>
-          <Plus className="h-3 w-3 mr-1" /> Add item
-        </Button>
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Tax Rate (%)</Label>
-        <Input type="number" min={0} max={100} value={taxRate} onChange={e => setTaxRate(parseFloat(e.target.value) || 0)} className="h-9 w-24" />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Notes</Label>
-        <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Default notes for this template" />
-      </div>
-      <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">{initial ? 'Update' : 'Save'} Template</Button>
-      </div>
-    </form>
-  );
-}
 
 export default function SettingsPage() {
   const { theme, toggleTheme, colorTheme, setColorTheme } = useTheme();
   const { settings, saveSettings } = useGlobalSettings();
-  const { templates, addTemplate, updateTemplate, deleteTemplate } = useInvoiceTemplates();
   const [banking, setBanking] = useState('');
   const [terms, setTerms] = useState('');
-  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<InvoiceTemplate | null>(null);
 
   useEffect(() => {
     if (settings) {
@@ -111,24 +26,6 @@ export default function SettingsPage() {
     const ok = await saveSettings(banking, terms);
     if (ok) toast.success('Settings saved');
     else toast.error('Failed to save');
-  };
-
-  const handleSaveTemplate = async (t: Omit<InvoiceTemplate, 'id' | 'createdAt'>) => {
-    if (editingTemplate) {
-      const ok = await updateTemplate(editingTemplate.id, t);
-      if (ok) { toast.success('Template updated'); setEditingTemplate(null); setTemplateDialogOpen(false); }
-      else toast.error('Failed to update template');
-    } else {
-      const result = await addTemplate(t);
-      if (result) { toast.success('Template saved'); setTemplateDialogOpen(false); }
-      else toast.error('Failed to save template');
-    }
-  };
-
-  const handleDeleteTemplate = async (id: string) => {
-    const ok = await deleteTemplate(id);
-    if (ok) toast.success('Template deleted');
-    else toast.error('Failed to delete');
   };
 
   const sections = [
@@ -209,50 +106,15 @@ export default function SettingsPage() {
     },
     {
       icon: FileText,
-      title: 'Invoice Templates',
-      description: 'Create reusable templates with pre-filled line items, notes, and settings.',
+      title: 'Branding Themes & Invoice Settings',
+      description: 'Control how your invoices, quotes, and statements look in PDFs and online views.',
       content: (
-        <div className="space-y-4">
-          <Dialog open={templateDialogOpen} onOpenChange={(open) => { setTemplateDialogOpen(open); if (!open) setEditingTemplate(null); }}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> New Template</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>{editingTemplate ? 'Edit Template' : 'New Invoice Template'}</DialogTitle></DialogHeader>
-              <TemplateForm
-                initial={editingTemplate || undefined}
-                onSave={handleSaveTemplate}
-                onCancel={() => { setTemplateDialogOpen(false); setEditingTemplate(null); }}
-              />
-            </DialogContent>
-          </Dialog>
-
-          {templates.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No templates yet. Create one to speed up invoice creation.</p>
-          ) : (
-            <div className="space-y-2">
-              {templates.map((t) => (
-                <div key={t.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.items.length} item{t.items.length !== 1 ? 's' : ''} · {formatCurrency(calculateTotal(t.items, t.taxRate), t.currency)}
-                      {t.description && ` · ${t.description}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingTemplate(t); setTemplateDialogOpen(true); }}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteTemplate(t.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <Link
+          to="/settings/invoice"
+          className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+        >
+          Open Invoice Settings <ChevronRight className="h-4 w-4" />
+        </Link>
       ),
     },
     {

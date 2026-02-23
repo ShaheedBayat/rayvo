@@ -14,6 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      branding_themes: {
+        Row: {
+          accent_color: string
+          address_padding: number
+          bottom_margin: number
+          company_header_details: string | null
+          created_at: string
+          currency_conversion_display: string
+          document_titles: Json
+          font_family: string
+          font_size: number
+          footer_logo: string | null
+          footer_message: string | null
+          hide_discount: boolean
+          id: string
+          is_default: boolean
+          logo: string | null
+          logo_alignment: string
+          measure_unit: string
+          name: string
+          owner_id: string
+          page_size: string
+          payment_service: string
+          primary_color: string
+          show_bank_details: boolean
+          show_column_headings: boolean
+          show_contact_account_number: boolean
+          show_item_code: boolean
+          show_logo: boolean
+          show_qr_code: boolean
+          show_registered_address: boolean
+          show_tax_column: boolean
+          show_tax_number: boolean
+          show_unit_price_quantity: boolean
+          tax_display: string
+          tax_subtotal_display: string
+          terms_invoices: string | null
+          terms_quotes: string | null
+          top_margin: number
+          updated_at: string
+          watermark: string | null
+        }
+        Insert: {
+          accent_color?: string
+          address_padding?: number
+          bottom_margin?: number
+          company_header_details?: string | null
+          created_at?: string
+          currency_conversion_display?: string
+          document_titles?: Json
+          font_family?: string
+          font_size?: number
+          footer_logo?: string | null
+          footer_message?: string | null
+          hide_discount?: boolean
+          id?: string
+          is_default?: boolean
+          logo?: string | null
+          logo_alignment?: string
+          measure_unit?: string
+          name?: string
+          owner_id: string
+          page_size?: string
+          payment_service?: string
+          primary_color?: string
+          show_bank_details?: boolean
+          show_column_headings?: boolean
+          show_contact_account_number?: boolean
+          show_item_code?: boolean
+          show_logo?: boolean
+          show_qr_code?: boolean
+          show_registered_address?: boolean
+          show_tax_column?: boolean
+          show_tax_number?: boolean
+          show_unit_price_quantity?: boolean
+          tax_display?: string
+          tax_subtotal_display?: string
+          terms_invoices?: string | null
+          terms_quotes?: string | null
+          top_margin?: number
+          updated_at?: string
+          watermark?: string | null
+        }
+        Update: {
+          accent_color?: string
+          address_padding?: number
+          bottom_margin?: number
+          company_header_details?: string | null
+          created_at?: string
+          currency_conversion_display?: string
+          document_titles?: Json
+          font_family?: string
+          font_size?: number
+          footer_logo?: string | null
+          footer_message?: string | null
+          hide_discount?: boolean
+          id?: string
+          is_default?: boolean
+          logo?: string | null
+          logo_alignment?: string
+          measure_unit?: string
+          name?: string
+          owner_id?: string
+          page_size?: string
+          payment_service?: string
+          primary_color?: string
+          show_bank_details?: boolean
+          show_column_headings?: boolean
+          show_contact_account_number?: boolean
+          show_item_code?: boolean
+          show_logo?: boolean
+          show_qr_code?: boolean
+          show_registered_address?: boolean
+          show_tax_column?: boolean
+          show_tax_number?: boolean
+          show_unit_price_quantity?: boolean
+          tax_display?: string
+          tax_subtotal_display?: string
+          terms_invoices?: string | null
+          terms_quotes?: string | null
+          top_margin?: number
+          updated_at?: string
+          watermark?: string | null
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string
