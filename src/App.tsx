@@ -10,6 +10,7 @@ import Overview from "./pages/Overview";
 import Invoices from "./pages/Invoices";
 import CreateInvoice from "./pages/CreateInvoice";
 import InvoiceView from "./pages/InvoiceView";
+import EditInvoice from "./pages/EditInvoice";
 import PublicInvoice from "./pages/PublicInvoice";
 import Companies from "./pages/Companies";
 import Customers from "./pages/Customers";
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
               <Route path="/invoices/new" element={<ProtectedRoute><CreateInvoice /></ProtectedRoute>} />
               <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceView /></ProtectedRoute>} />
+              <Route path="/invoices/:id/edit" element={<ProtectedRoute><EditInvoice /></ProtectedRoute>} />
               <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
               <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />

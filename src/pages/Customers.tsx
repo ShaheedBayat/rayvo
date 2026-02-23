@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AppLayout from '@/components/AppLayout';
 import { useCustomers, type Customer } from '@/hooks/useCustomers';
@@ -16,6 +17,7 @@ export default function Customers() {
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const navigate = useNavigate();
 
   const filtered = customers.filter(c =>
@@ -147,7 +149,7 @@ export default function Customers() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => { deleteCustomer(c.id); toast.success('Customer deleted'); }}
+                        onClick={() => setDeleteTarget(c)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -159,6 +161,21 @@ export default function Customers() {
           </div>
         </>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete customer?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {deleteTarget?.name}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { if (deleteTarget) { deleteCustomer(deleteTarget.id); toast.success('Customer deleted'); setDeleteTarget(null); } }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
@@ -7,7 +7,7 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useProducts } from '@/hooks/useProducts';
 import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
 import { formatCurrency, calculateSubtotal, calculateTax, calculateTotal } from '@/types/invoice';
-import { ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,46 +20,67 @@ import InvoiceSummary from '@/components/invoice/InvoiceSummary';
 import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 
-export default function CreateInvoice() {
+export default function EditInvoice() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { addInvoice } = useInvoices();
+  const { getInvoice, updateInvoice } = useInvoices();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
   const { products } = useProducts();
-  const companyId = activeCompany?.id || '';
 
-  // Support duplicate: pre-populate from location state
-  const dupState = location.state as Partial<Invoice> | null;
+  const invoice = getInvoice(id || '');
 
-  const [currency, setCurrency] = useState<Currency>(dupState?.currency || 'ZAR');
-  const [clientName, setClientName] = useState(dupState?.clientName || '');
-  const [clientEmail, setClientEmail] = useState(dupState?.clientEmail || '');
-  const [clientAddress, setClientAddress] = useState(dupState?.clientAddress || '');
+  const [currency, setCurrency] = useState<Currency>('ZAR');
+  const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [clientAddress, setClientAddress] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [taxRate, setTaxRate] = useState(15);
+  const [notes, setNotes] = useState('');
   const [paymentTerms, setPaymentTerms] = useState('');
-  const [dueDate, setDueDate] = useState(() => {
-    if (dupState?.dueDate) return dupState.dueDate;
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
-  });
-  const [taxRate, setTaxRate] = useState(dupState?.taxRate ?? 15);
-  const [notes, setNotes] = useState(dupState?.notes || '');
-  const [items, setItems] = useState<InvoiceItem[]>(
-    dupState?.items?.map(i => ({ ...i, id: uuidv4() })) || [{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]
-  );
+  const [items, setItems] = useState<InvoiceItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (invoice && !loaded) {
+      setCurrency(invoice.currency);
+      setClientName(invoice.clientName);
+      setClientEmail(invoice.clientEmail);
+      setClientAddress(invoice.clientAddress);
+      setDueDate(invoice.dueDate);
+      setTaxRate(invoice.taxRate);
+      setNotes(invoice.notes);
+      setItems(invoice.items);
+      setLoaded(true);
+    }
+  }, [invoice, loaded]);
+
+  if (!invoice) {
+    return (
+      <AppLayout>
+        <div className="text-center py-20">
+          <p className="text-muted-foreground">Invoice not found.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (invoice.status !== 'draft' && invoice.status !== 'approved') {
+    navigate(`/invoices/${invoice.id}`);
+    return null;
+  }
 
   const addItem = () => {
-    setItems((prev) => [...prev, { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
+    setItems(prev => [...prev, { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
   };
 
-  const removeItem = (id: string) => {
+  const removeItem = (itemId: string) => {
     if (items.length === 1) return;
-    setItems((prev) => prev.filter((i) => i.id !== id));
+    setItems(prev => prev.filter(i => i.id !== itemId));
   };
 
-  const updateItem = (id: string, field: keyof InvoiceItem, value: string | number) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
+  const updateItem = (itemId: string, field: keyof InvoiceItem, value: string | number) => {
+    setItems(prev => prev.map(i => (i.id === itemId ? { ...i, [field]: value } : i)));
   };
 
   const handleCustomerSelect = (customer: { name: string; email: string; address: string; taxRate?: number; currency?: string; dueDays?: number }) => {
@@ -77,14 +98,8 @@ export default function CreateInvoice() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!companyId) {
-      toast.error('Please add a company first in the Companies section.');
-      return;
-    }
-    const invoice: Invoice = {
-      id: uuidv4(),
-      invoiceNumber: '',
-      companyId,
+    const updated: Invoice = {
+      ...invoice,
       clientName,
       clientEmail,
       clientAddress,
@@ -92,56 +107,56 @@ export default function CreateInvoice() {
       items,
       taxRate,
       notes,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
       dueDate,
     };
-    const created = await addInvoice(invoice);
-    if (created) {
-      toast.success('Invoice created!');
-      navigate(`/invoices/${created.id}`);
-    } else {
-      toast.error('Failed to create invoice');
-    }
+    await updateInvoice(updated);
+    toast.success('Invoice updated!');
+    navigate(`/invoices/${invoice.id}`);
   };
 
   return (
     <AppLayout>
       <button
-        onClick={() => navigate('/invoices')}
+        onClick={() => navigate(`/invoices/${invoice.id}`)}
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to invoices
+        <ArrowLeft className="h-4 w-4" /> Back to invoice
       </button>
 
       <form onSubmit={handleSubmit}>
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-semibold">New Invoice</h1>
+            <h1 className="text-2xl font-semibold">Edit Invoice</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Fill in the details below to create a new invoice.
+              {invoice.invoiceNumber} — Editing draft
             </p>
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
-            <Button type="submit">Save as Draft</Button>
+            <Button type="button" variant="outline" onClick={() => navigate(`/invoices/${invoice.id}`)}>
+              Cancel
+            </Button>
+            <Button type="submit">Save Changes</Button>
           </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Invoice Details</h2>
+              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">
+                Invoice Details
+              </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Company</Label>
                   <p className="h-9 flex items-center px-3 rounded-md border bg-muted/50 text-sm font-medium">
-                    {activeCompany?.name || 'No company selected'}
+                    {activeCompany?.name || 'No company'}
                   </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Invoice Number</Label>
-                  <p className="h-9 flex items-center px-3 rounded-md border bg-muted/50 text-sm mono text-muted-foreground">Auto-generated on save</p>
+                  <p className="h-9 flex items-center px-3 rounded-md border bg-muted/50 text-sm mono">
+                    {invoice.invoiceNumber}
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Payment Terms</Label>
@@ -167,7 +182,9 @@ export default function CreateInvoice() {
             </div>
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Line Items</h2>
+              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">
+                Line Items
+              </h2>
               <InvoiceLineItems
                 items={items}
                 currency={currency}
@@ -182,14 +199,18 @@ export default function CreateInvoice() {
             </div>
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Notes & Terms</h2>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Payment terms, bank details, thank you message..." rows={3} />
+              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">
+                Notes & Terms
+              </h2>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Payment terms, bank details..." rows={3} />
             </div>
           </div>
 
           <div className="space-y-6">
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Bill To</h2>
+              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">
+                Bill To
+              </h2>
               <CustomerCombobox
                 customers={customers}
                 clientName={clientName}
@@ -203,7 +224,9 @@ export default function CreateInvoice() {
             </div>
 
             <div className="rounded-lg border bg-primary/5 p-6 invoice-shadow">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Invoice Summary</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                Invoice Summary
+              </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Items</span>

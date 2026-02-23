@@ -1,0 +1,143 @@
+import { useState, useRef, useEffect } from 'react';
+import type { InvoiceItem, Currency } from '@/types/invoice';
+import type { Product } from '@/hooks/useProducts';
+import { formatCurrency } from '@/types/invoice';
+import { Plus, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
+function ProductSearch({ products, onSelect, value, onChange }: {
+  products?: Product[];
+  onSelect: (p: Product) => void;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const filtered = (products || [])
+    .filter(p => p.sellEnabled && (
+      p.name.toLowerCase().includes(value.toLowerCase()) ||
+      p.sellDescription.toLowerCase().includes(value.toLowerCase()) ||
+      p.code.toLowerCase().includes(value.toLowerCase())
+    ))
+    .slice(0, 6);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <Input
+        required
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => products && products.length > 0 && setOpen(true)}
+        placeholder="Service or product description"
+        className="border-0 shadow-none bg-transparent px-0 h-9 focus-visible:ring-0"
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 top-full mt-1 w-64 rounded-md border bg-popover shadow-md max-h-40 overflow-y-auto">
+          {filtered.map(p => (
+            <button
+              key={p.id}
+              type="button"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
+              onClick={() => { onSelect(p); setOpen(false); }}
+            >
+              <span className="font-medium">{p.code}</span>
+              <span className="text-muted-foreground ml-2 text-xs">{p.name || p.sellDescription}</span>
+              <span className="float-right mono text-xs">{p.sellPrice.toFixed(2)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface Props {
+  items: InvoiceItem[];
+  currency: Currency;
+  products?: Product[];
+  onAdd: () => void;
+  onRemove: (id: string) => void;
+  onUpdate: (id: string, field: keyof InvoiceItem, value: string | number) => void;
+  onProductSelect?: (itemId: string, product: Product) => void;
+}
+
+export default function InvoiceLineItems({ items, currency, products, onAdd, onRemove, onUpdate, onProductSelect }: Props) {
+  const handleProductSelect = (itemId: string, product: Product) => {
+    onUpdate(itemId, 'description', product.sellDescription || product.name);
+    onUpdate(itemId, 'unitPrice', product.sellPrice);
+    onProductSelect?.(itemId, product);
+  };
+
+  const hasDiscount = items.some(i => (i as any).discount);
+
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Description</th>
+              <th className="py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-20">Qty</th>
+              <th className="py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-32">Unit Price</th>
+              <th className="py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">Discount</th>
+              <th className="py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-32">Amount</th>
+              <th className="py-2.5 w-10" />
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => {
+              const discount = (item as any).discount || 0;
+              const lineAmount = item.quantity * item.unitPrice * (1 - discount / 100);
+              return (
+                <tr key={item.id} className="border-b last:border-0 group">
+                  <td className="py-2">
+                    <ProductSearch
+                      products={products}
+                      value={item.description}
+                      onChange={(v) => onUpdate(item.id, 'description', v)}
+                      onSelect={(p) => handleProductSelect(item.id, p)}
+                    />
+                  </td>
+                  <td className="py-2">
+                    <Input type="number" min={1} value={item.quantity} onChange={(e) => onUpdate(item.id, 'quantity', parseInt(e.target.value) || 0)} className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono" />
+                  </td>
+                  <td className="py-2">
+                    <Input type="number" min={0} step="0.01" value={item.unitPrice} onChange={(e) => onUpdate(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono" />
+                  </td>
+                  <td className="py-2">
+                    <div className="flex items-center justify-end gap-1">
+                      <Input type="number" min={0} max={100} step="0.5" value={discount} onChange={(e) => onUpdate(item.id, 'discount' as any, parseFloat(e.target.value) || 0)} className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono w-16" />
+                      <span className="text-xs text-muted-foreground">%</span>
+                    </div>
+                  </td>
+                  <td className="py-2 text-right mono font-medium text-sm pr-2">
+                    {formatCurrency(lineAmount, currency)}
+                  </td>
+                  <td className="py-2">
+                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => onRemove(item.id)} disabled={items.length === 1}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <Button type="button" variant="ghost" size="sm" className="mt-2 text-primary" onClick={onAdd}>
+        <Plus className="mr-1.5 h-4 w-4" /> Add line item
+      </Button>
+    </div>
+  );
+}
