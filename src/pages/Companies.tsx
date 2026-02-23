@@ -127,15 +127,19 @@ export default function Companies() {
     );
   }, [companies, search]);
 
-  const handleSave = (c: Company) => {
-    if (editing) {
-      updateCompany(c);
+  const handleSave = async (c: Company) => {
+    if (editing?.id) {
+      await updateCompany(c);
       toast.success('Company updated');
     } else {
-      addCompany(c);
-      toast.success('Company added');
+      const success = await addCompany(c);
+      if (success) {
+        toast.success('Company added');
+      } else {
+        toast.error('Failed to add company. Please make sure you are logged in.');
+        return;
+      }
     }
-    // Track as last used
     localStorage.setItem('lastUsedCompanyId', c.id);
     setEditing(undefined);
   };
