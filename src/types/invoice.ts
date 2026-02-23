@@ -31,7 +31,7 @@ export interface Invoice {
   items: InvoiceItem[];
   taxRate: number;
   notes: string;
-  status: 'draft' | 'approved' | 'sent' | 'paid';
+  status: 'draft' | 'approved' | 'sent' | 'paid' | 'voided' | 'partially_paid';
   createdAt: string;
   dueDate: string;
   shareToken?: string;

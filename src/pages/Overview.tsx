@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
-import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatCurrency, calculateTotal, currencySymbols } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
+import type { Currency } from '@/types/invoice';
 import {
   FileText, Plus, TrendingUp, Clock, CheckCircle2, AlertCircle,
   ArrowUpRight, Send, Building2,
@@ -19,23 +20,46 @@ export default function Overview() {
     ? allInvoices.filter(i => i.companyId === activeCompanyId)
     : allInvoices;
 
-  const draft = invoices.filter(i => i.status === 'draft');
-  const sent = invoices.filter(i => i.status === 'sent');
-  const paid = invoices.filter(i => i.status === 'paid');
-  const overdue = invoices.filter(i => {
-    if (i.status !== 'sent') return false;
+  // Filter out voided
+  const activeInvoices = invoices.filter(i => i.status !== 'voided');
+
+  const draft = activeInvoices.filter(i => i.status === 'draft');
+  const sent = activeInvoices.filter(i => i.status === 'sent' || i.status === 'partially_paid');
+  const paid = activeInvoices.filter(i => i.status === 'paid');
+  const overdue = activeInvoices.filter(i => {
+    if (i.status !== 'sent' && i.status !== 'partially_paid') return false;
     return new Date(i.dueDate) < new Date();
   });
 
-  const totalOutstanding = sent.reduce((sum, inv) => sum + calculateTotal(inv.items, inv.taxRate), 0);
-  const totalPaid = paid.reduce((sum, inv) => sum + calculateTotal(inv.items, inv.taxRate), 0);
-  const currency = invoices[0]?.currency || 'ZAR';
+  // Group by currency
+  const currencies = [...new Set(activeInvoices.map(i => i.currency))] as Currency[];
+  const primaryCurrency: Currency = currencies[0] || 'ZAR';
 
-  const customerOwing: Record<string, { name: string; amount: number }> = {};
+  const byCurrency = (invs: typeof activeInvoices) => {
+    const groups: Record<string, number> = {};
+    invs.forEach(inv => {
+      const c = inv.currency;
+      groups[c] = (groups[c] || 0) + calculateTotal(inv.items, inv.taxRate);
+    });
+    return groups;
+  };
+
+  const outstandingByCurrency = byCurrency(sent);
+  const paidByCurrency = byCurrency(paid);
+  const overdueByCurrency = byCurrency(overdue);
+
+  const formatMultiCurrency = (groups: Record<string, number>) => {
+    const entries = Object.entries(groups).filter(([, v]) => v > 0);
+    if (entries.length === 0) return formatCurrency(0, primaryCurrency);
+    if (entries.length === 1) return formatCurrency(entries[0][1], entries[0][0] as Currency);
+    return entries.map(([c, v]) => formatCurrency(v, c as Currency)).join(' · ');
+  };
+
+  const customerOwing: Record<string, { name: string; amount: number; currency: Currency }> = {};
   sent.forEach(inv => {
     const total = calculateTotal(inv.items, inv.taxRate);
     if (!customerOwing[inv.clientName]) {
-      customerOwing[inv.clientName] = { name: inv.clientName, amount: 0 };
+      customerOwing[inv.clientName] = { name: inv.clientName, amount: 0, currency: inv.currency };
     }
     customerOwing[inv.clientName].amount += total;
   });
@@ -48,7 +72,7 @@ export default function Overview() {
     { label: 'Awaiting Payment', value: sent.length, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
     { label: 'Overdue', value: overdue.length, icon: AlertCircle, color: 'text-overdue', bg: 'bg-overdue/10' },
     { label: 'Paid', value: paid.length, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
-    { label: 'Total Invoices', value: invoices.length, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'Total Invoices', value: activeInvoices.length, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
   ];
 
   // Empty state: no companies yet
@@ -118,8 +142,8 @@ export default function Overview() {
             <Send className="h-4 w-4 text-warning" />
             <p className="text-sm font-medium text-muted-foreground">Outstanding</p>
           </div>
-          <p className="text-2xl font-semibold mono text-warning">
-            {formatCurrency(totalOutstanding, currency)}
+          <p className="text-xl font-semibold mono text-warning">
+            {formatMultiCurrency(outstandingByCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
         </div>
@@ -128,8 +152,8 @@ export default function Overview() {
             <CheckCircle2 className="h-4 w-4 text-success" />
             <p className="text-sm font-medium text-muted-foreground">Received</p>
           </div>
-          <p className="text-2xl font-semibold mono text-success">
-            {formatCurrency(totalPaid, currency)}
+          <p className="text-xl font-semibold mono text-success">
+            {formatMultiCurrency(paidByCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
         </div>
@@ -138,11 +162,8 @@ export default function Overview() {
             <AlertCircle className="h-4 w-4 text-overdue" />
             <p className="text-sm font-medium text-muted-foreground">Overdue</p>
           </div>
-          <p className="text-2xl font-semibold mono text-overdue">
-            {formatCurrency(
-              overdue.reduce((sum, inv) => sum + calculateTotal(inv.items, inv.taxRate), 0),
-              currency
-            )}
+          <p className="text-xl font-semibold mono text-overdue">
+            {formatMultiCurrency(overdueByCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
         </div>
@@ -151,7 +172,7 @@ export default function Overview() {
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Recent Invoices */}
         <div className="lg:col-span-3">
-          {invoices.length === 0 ? (
+          {activeInvoices.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
               <FileText className="h-10 w-10 text-muted-foreground/30" />
               <h3 className="mt-4 text-lg font-medium">No invoices yet</h3>
@@ -172,9 +193,9 @@ export default function Overview() {
                 <Link to="/invoices" className="text-xs text-primary hover:underline">View all</Link>
               </div>
               <div className="p-3">
-                {invoices.slice(0, 6).map((inv) => {
+                {activeInvoices.slice(0, 6).map((inv) => {
                   const total = calculateTotal(inv.items, inv.taxRate);
-                  const isOverdue = inv.status === 'sent' && new Date(inv.dueDate) < new Date();
+                  const isOverdue = (inv.status === 'sent' || inv.status === 'partially_paid') && new Date(inv.dueDate) < new Date();
                   return (
                     <Link
                       key={inv.id}
@@ -197,10 +218,12 @@ export default function Overview() {
                               ? 'bg-overdue/10 text-overdue'
                               : inv.status === 'sent'
                               ? 'bg-warning/10 text-warning'
+                              : inv.status === 'partially_paid'
+                              ? 'bg-info/10 text-info'
                               : 'bg-muted text-muted-foreground'
                           }`}
                         >
-                          {isOverdue ? 'Overdue' : inv.status === 'sent' ? 'Awaiting' : inv.status}
+                          {isOverdue ? 'Overdue' : inv.status === 'sent' ? 'Awaiting' : inv.status === 'partially_paid' ? 'Partial' : inv.status}
                         </span>
                       </div>
                     </Link>
@@ -226,7 +249,7 @@ export default function Overview() {
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium truncate max-w-[140px]">{customer.name}</span>
                         <span className="mono text-sm text-warning font-medium">
-                          {formatCurrency(customer.amount, currency)}
+                          {formatCurrency(customer.amount, customer.currency)}
                         </span>
                       </div>
                       <div className="h-1.5 rounded-full bg-muted overflow-hidden">

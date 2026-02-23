@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileCheck, Plus, Trash2, MoreHorizontal, Search, ArrowRight } from 'lucide-react';
+import { FileCheck, Plus, Trash2, MoreHorizontal, Search, ArrowRight, Edit } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ export default function Quotes() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingQuote, setEditingQuote] = useState<typeof quotes[0] | null>(null);
 
   const filtered = quotes
     .filter(q => !activeCompanyId || q.companyId === activeCompanyId)
@@ -55,26 +56,51 @@ export default function Quotes() {
     setItems([{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
     const d = new Date(); d.setDate(d.getDate() + 30);
     setValidUntil(d.toISOString().split('T')[0]);
+    setEditingQuote(null);
+  };
+
+  const openEdit = (q: typeof quotes[0]) => {
+    setEditingQuote(q);
+    setClientName(q.clientName);
+    setClientEmail(q.clientEmail);
+    setClientAddress(q.clientAddress);
+    setCurrency(q.currency);
+    setTaxRate(q.taxRate);
+    setNotes(q.notes);
+    setValidUntil(q.validUntil);
+    setItems(q.items.map(i => ({ ...i })));
+    setOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeCompanyId) { toast.error('Select a company first'); return; }
     if (!clientName) { toast.error('Enter client name'); return; }
-    const result = await addQuote({
-      id: uuidv4(),
-      companyId: activeCompanyId,
-      clientName, clientEmail, clientAddress,
-      items, taxRate, currency,
-      status: 'draft',
-      notes,
-      validUntil,
-    });
-    if (result) {
-      toast.success(`Quote ${result.quoteNumber} created`);
+
+    if (editingQuote) {
+      await updateQuote({
+        ...editingQuote,
+        clientName, clientEmail, clientAddress,
+        items, taxRate, currency, notes, validUntil,
+      });
+      toast.success(`Quote ${editingQuote.quoteNumber} updated`);
       resetForm(); setOpen(false);
     } else {
-      toast.error('Failed to create quote');
+      const result = await addQuote({
+        id: uuidv4(),
+        companyId: activeCompanyId,
+        clientName, clientEmail, clientAddress,
+        items, taxRate, currency,
+        status: 'draft',
+        notes,
+        validUntil,
+      });
+      if (result) {
+        toast.success(`Quote ${result.quoteNumber} created`);
+        resetForm(); setOpen(false);
+      } else {
+        toast.error('Failed to create quote');
+      }
     }
   };
 
@@ -108,12 +134,12 @@ export default function Quotes() {
           <h1 className="text-2xl font-semibold">Quotes</h1>
           <p className="mt-1 text-sm text-muted-foreground">Create and manage quotes for your customers.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
             <Button className="gap-1.5 rounded-lg"><Plus className="h-4 w-4" /> New Quote</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>New Quote</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingQuote ? 'Edit Quote' : 'New Quote'}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -170,8 +196,8 @@ export default function Quotes() {
                 <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit">Create Quote</Button>
+                <Button type="button" variant="outline" onClick={() => { setOpen(false); resetForm(); }}>Cancel</Button>
+                <Button type="submit">{editingQuote ? 'Update Quote' : 'Create Quote'}</Button>
               </div>
             </form>
           </DialogContent>
@@ -227,6 +253,11 @@ export default function Quotes() {
                           <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {q.status === 'draft' && (
+                            <DropdownMenuItem onClick={() => openEdit(q)}>
+                              <Edit className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                          )}
                           {(q.status === 'draft' || q.status === 'sent') && (
                             <DropdownMenuItem onClick={() => handleConvertToInvoice(q)}>
                               <ArrowRight className="mr-2 h-4 w-4" /> Convert to Invoice

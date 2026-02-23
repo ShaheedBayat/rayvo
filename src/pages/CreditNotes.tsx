@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Receipt, Plus, Trash2, MoreHorizontal, Search } from 'lucide-react';
+import { Receipt, Plus, Trash2, MoreHorizontal, Search, Edit, CheckCircle, Send } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
 import { useCreditNotes } from '@/hooks/useCreditNotes';
@@ -25,12 +25,13 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 export default function CreditNotes() {
-  const { creditNotes, addCreditNote, deleteCreditNote } = useCreditNotes();
+  const { creditNotes, addCreditNote, updateCreditNote, deleteCreditNote } = useCreditNotes();
   const { invoices } = useInvoices();
   const { activeCompany, activeCompanyId } = useActiveCompany();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingCN, setEditingCN] = useState<typeof creditNotes[0] | null>(null);
 
   const filtered = creditNotes
     .filter(cn => !activeCompanyId || cn.companyId === activeCompanyId)
@@ -52,6 +53,7 @@ export default function CreditNotes() {
     setClientName(''); setClientEmail(''); setClientAddress('');
     setInvoiceId(''); setCurrency('ZAR'); setTaxRate(15); setNotes('');
     setItems([{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
+    setEditingCN(null);
   };
 
   const handleSelectInvoice = (id: string) => {
@@ -67,27 +69,50 @@ export default function CreditNotes() {
     }
   };
 
+  const openEdit = (cn: typeof creditNotes[0]) => {
+    setEditingCN(cn);
+    setClientName(cn.clientName);
+    setClientEmail(cn.clientEmail);
+    setClientAddress(cn.clientAddress);
+    setInvoiceId(cn.invoiceId || '');
+    setCurrency(cn.currency);
+    setTaxRate(cn.taxRate);
+    setNotes(cn.notes);
+    setItems(cn.items.map(i => ({ ...i })));
+    setOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeCompanyId) { toast.error('Select a company first'); return; }
     if (!clientName) { toast.error('Enter client name'); return; }
-    const d = new Date(); d.setDate(d.getDate() + 30);
-    const result = await addCreditNote({
-      id: uuidv4(),
-      companyId: activeCompanyId,
-      invoiceId: invoiceId || null,
-      clientName, clientEmail, clientAddress,
-      items, taxRate, currency,
-      status: 'draft',
-      notes,
-      dueDate: d.toISOString().split('T')[0],
-    });
-    if (result) {
-      toast.success(`Credit note ${result.creditNoteNumber} created`);
-      resetForm();
-      setOpen(false);
+
+    if (editingCN) {
+      await updateCreditNote({
+        ...editingCN,
+        clientName, clientEmail, clientAddress,
+        items, taxRate, currency, notes,
+      });
+      toast.success(`Credit note ${editingCN.creditNoteNumber} updated`);
+      resetForm(); setOpen(false);
     } else {
-      toast.error('Failed to create credit note');
+      const d = new Date(); d.setDate(d.getDate() + 30);
+      const result = await addCreditNote({
+        id: uuidv4(),
+        companyId: activeCompanyId,
+        invoiceId: invoiceId || null,
+        clientName, clientEmail, clientAddress,
+        items, taxRate, currency,
+        status: 'draft',
+        notes,
+        dueDate: d.toISOString().split('T')[0],
+      });
+      if (result) {
+        toast.success(`Credit note ${result.creditNoteNumber} created`);
+        resetForm(); setOpen(false);
+      } else {
+        toast.error('Failed to create credit note');
+      }
     }
   };
 
@@ -105,14 +130,14 @@ export default function CreditNotes() {
           <h1 className="text-2xl font-semibold">Credit Notes</h1>
           <p className="mt-1 text-sm text-muted-foreground">Issue credit notes against invoices.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
             <Button className="gap-1.5 rounded-lg"><Plus className="h-4 w-4" /> New Credit Note</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>New Credit Note</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingCN ? 'Edit Credit Note' : 'New Credit Note'}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-              {companyInvoices.length > 0 && (
+              {!editingCN && companyInvoices.length > 0 && (
                 <div className="space-y-1.5">
                   <Label className="text-xs">Link to Invoice (optional)</Label>
                   <Select value={invoiceId} onValueChange={handleSelectInvoice}>
@@ -176,8 +201,8 @@ export default function CreditNotes() {
                 <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit">Create Credit Note</Button>
+                <Button type="button" variant="outline" onClick={() => { setOpen(false); resetForm(); }}>Cancel</Button>
+                <Button type="submit">{editingCN ? 'Update Credit Note' : 'Create Credit Note'}</Button>
               </div>
             </form>
           </DialogContent>
@@ -208,6 +233,7 @@ export default function CreditNotes() {
               <tr className="border-b bg-muted/20">
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Number</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Customer</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Invoice</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Date</th>
                 <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Amount</th>
                 <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
@@ -218,10 +244,12 @@ export default function CreditNotes() {
               {filtered.map(cn => {
                 const total = calculateTotal(cn.items, cn.taxRate);
                 const cfg = statusConfig[cn.status] || statusConfig.draft;
+                const linkedInvoice = cn.invoiceId ? invoices.find(i => i.id === cn.invoiceId) : null;
                 return (
                   <tr key={cn.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">
                     <td className="px-4 py-3.5 mono font-medium">{cn.creditNoteNumber}</td>
                     <td className="px-4 py-3.5">{cn.clientName}</td>
+                    <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell mono text-xs">{linkedInvoice?.invoiceNumber || '—'}</td>
                     <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{new Date(cn.createdAt).toLocaleDateString()}</td>
                     <td className="px-4 py-3.5 text-right mono font-medium">{formatCurrency(total, cn.currency)}</td>
                     <td className="px-4 py-3.5 text-center">
@@ -233,6 +261,22 @@ export default function CreditNotes() {
                           <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {cn.status === 'draft' && (
+                            <>
+                              <DropdownMenuItem onClick={() => openEdit(cn)}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { updateCreditNote({ ...cn, status: 'approved' }); toast.success('Marked as approved'); }}>
+                                <CheckCircle className="mr-2 h-4 w-4" /> Mark as Approved
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {(cn.status === 'draft' || cn.status === 'approved') && (
+                            <DropdownMenuItem onClick={() => { updateCreditNote({ ...cn, status: 'sent' }); toast.success('Marked as sent'); }}>
+                              <Send className="mr-2 h-4 w-4" /> Mark as Sent
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => setDeleteId(cn.id)} className="text-destructive focus:text-destructive">
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
