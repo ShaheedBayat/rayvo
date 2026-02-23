@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Palette, FileText, Shield, CreditCard, Landmark, Scale } from 'lucide-react';
+import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useTheme, colorThemes } from '@/hooks/useTheme';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
@@ -31,33 +31,39 @@ export default function SettingsPage() {
     {
       icon: Palette,
       title: 'Theme & Appearance',
-      description: 'Choose your preferred colour scheme and mode.',
+      description: 'Choose a vibe that matches your brand personality.',
       content: (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">Mode: {theme === 'dark' ? 'Dark' : 'Light'}</span>
-            <Button variant="outline" size="sm" onClick={toggleTheme}>
+            <Button variant="outline" size="sm" onClick={toggleTheme} className="gap-2">
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               Switch to {theme === 'dark' ? 'Light' : 'Dark'}
             </Button>
           </div>
           <div>
-            <Label className="text-xs mb-2 block">Color Theme</Label>
-            <div className="flex flex-wrap gap-2">
+            <Label className="text-xs mb-3 block">Choose Your Vibe</Label>
+            <div className="grid gap-3 sm:grid-cols-2">
               {colorThemes.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setColorTheme(t.id)}
-                  className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all ${
+                  className={`relative flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
                     colorTheme === t.id
-                      ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/20'
-                      : 'border-border bg-card hover:border-primary/40'
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                      : 'border-border bg-card hover:border-primary/30 hover:bg-accent/30'
                   }`}
                 >
                   <div
-                    className="h-4 w-4 rounded-full"
-                    style={{ backgroundColor: `hsl(${t.accent})` }}
+                    className="mt-0.5 h-5 w-5 shrink-0 rounded-full ring-2 ring-offset-2 ring-offset-background"
+                    style={{
+                      backgroundColor: `hsl(${t.accent})`,
+                      boxShadow: colorTheme === t.id ? `0 0 0 2px hsl(${t.accent})` : undefined,
+                    }}
                   />
-                  {t.label}
+                  <div>
+                    <span className="text-sm font-medium">{t.label}</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t.vibe}</p>
+                  </div>
                 </button>
               ))}
             </div>

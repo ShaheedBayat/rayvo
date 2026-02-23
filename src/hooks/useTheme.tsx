@@ -8,7 +8,6 @@ interface ThemeContextValue {
   colorTheme: ColorTheme;
   toggleMode: () => void;
   setColorTheme: (theme: ColorTheme) => void;
-  // Legacy compat
   theme: Mode;
   toggleTheme: () => void;
 }
@@ -22,11 +21,11 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggleTheme: () => {},
 });
 
-export const colorThemes: { id: ColorTheme; label: string; accent: string }[] = [
-  { id: 'teal', label: 'Teal', accent: '192 75% 36%' },
-  { id: 'blue', label: 'Blue Professional', accent: '217 71% 45%' },
-  { id: 'warm', label: 'Warm Neutral', accent: '30 50% 45%' },
-  { id: 'purple', label: 'Purple Modern', accent: '270 60% 50%' },
+export const colorThemes: { id: ColorTheme; label: string; accent: string; vibe: string }[] = [
+  { id: 'teal', label: 'Clean', accent: '192 75% 36%', vibe: 'Minimal & professional' },
+  { id: 'blue', label: 'Corporate', accent: '217 71% 45%', vibe: 'Structured & authoritative' },
+  { id: 'warm', label: 'Editorial', accent: '28 55% 42%', vibe: 'Earthy & refined' },
+  { id: 'purple', label: 'Creative', accent: '265 65% 52%', vibe: 'Bold & expressive' },
 ];
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -44,7 +43,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [mode]);
 
   useEffect(() => {
-    // Remove old theme classes
     document.documentElement.classList.remove('theme-teal', 'theme-blue', 'theme-warm', 'theme-purple');
     document.documentElement.classList.add(`theme-${colorTheme}`);
     localStorage.setItem('colorTheme', colorTheme);
