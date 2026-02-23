@@ -48,6 +48,7 @@ export function useInvoices() {
     const { data, error } = await supabase
       .from('invoices')
       .select('*')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
     if (!error && data) setInvoices(data.map(mapInvoice));
     setLoading(false);
@@ -57,10 +58,10 @@ export function useInvoices() {
 
   const addInvoice = useCallback(async (invoice: Invoice) => {
     if (!user) return;
-    const { error } = await supabase.from('invoices').insert({
+    const { data, error } = await supabase.from('invoices').insert({
       id: invoice.id,
       owner_id: user.id,
-      invoice_number: invoice.invoiceNumber,
+      invoice_number: 'TEMP', // will be overridden by DB trigger
       company_id: invoice.companyId || null,
       client_name: invoice.clientName,
       client_email: invoice.clientEmail,
@@ -71,8 +72,13 @@ export function useInvoices() {
       notes: invoice.notes,
       status: invoice.status,
       due_date: invoice.dueDate,
-    });
-    if (!error) setInvoices(prev => [invoice, ...prev]);
+    }).select().single();
+    if (!error && data) {
+      const newInvoice = mapInvoice(data);
+      setInvoices(prev => [newInvoice, ...prev]);
+      return newInvoice;
+    }
+    return null;
   }, [user]);
 
   const updateInvoice = useCallback(async (invoice: Invoice) => {
@@ -93,16 +99,40 @@ export function useInvoices() {
     if (!error) setInvoices(prev => prev.map(i => i.id === invoice.id ? invoice : i));
   }, []);
 
-  const deleteInvoice = useCallback(async (id: string) => {
-    const { error } = await supabase.from('invoices').delete().eq('id', id);
-    if (!error) setInvoices(prev => prev.filter(i => i.id !== id));
+  const softDeleteInvoice = useCallback(async (id: string) => {
+    const { data, error } = await supabase.rpc('soft_delete_invoice', { p_invoice_id: id });
+    if (error) {
+      return { error: error.message };
+    }
+    const result = data as any;
+    if (result?.error) {
+      return { error: result.error, blocked: false };
+    }
+    if (result?.blocked) {
+      setInvoices(prev => prev.filter(i => i.id !== id));
+      return { error: result.message, blocked: true };
+    }
+    setInvoices(prev => prev.filter(i => i.id !== id));
+    return { error: null, blocked: false };
   }, []);
+
+  // Fetch deleted invoices
+  const fetchDeletedInvoices = useCallback(async () => {
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*')
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false });
+    if (!error && data) return data.map(mapInvoice);
+    return [];
+  }, [user]);
 
   const getInvoice = useCallback((id: string) => {
     return invoices.find(i => i.id === id);
   }, [invoices]);
 
-  return { invoices, loading, addInvoice, updateInvoice, deleteInvoice, getInvoice, refetch: fetchInvoices };
+  return { invoices, loading, addInvoice, updateInvoice, softDeleteInvoice, getInvoice, fetchDeletedInvoices, refetch: fetchInvoices };
 }
 
 export function useCompanies() {

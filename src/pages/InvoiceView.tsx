@@ -25,7 +25,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getInvoice, updateInvoice, deleteInvoice } = useInvoices();
+  const { getInvoice, updateInvoice, softDeleteInvoice } = useInvoices();
   const { getCompany } = useCompanies();
   const docRef = useRef<HTMLDivElement>(null);
 
@@ -86,10 +86,16 @@ export default function InvoiceView() {
     toast.success('Invoice marked as sent');
   };
 
-  const handleDelete = () => {
-    deleteInvoice(invoice.id);
-    toast.success('Invoice deleted');
-    navigate('/invoices');
+  const handleDelete = async () => {
+    const result = await softDeleteInvoice(invoice.id);
+    if (result.blocked) {
+      toast.error(result.error);
+    } else if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success('Invoice moved to deleted');
+      navigate('/invoices');
+    }
   };
 
   return (

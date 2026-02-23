@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import AppLayout from '@/components/AppLayout';
+import { toast } from 'sonner';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
@@ -21,12 +22,25 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 export default function Invoices() {
-  const { invoices, deleteInvoice } = useInvoices();
+  const { invoices, softDeleteInvoice, fetchDeletedInvoices } = useInvoices();
   const { getCompany } = useCompanies();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [deletedInvoices, setDeletedInvoices] = useState<any[]>([]);
 
-  const filtered = invoices.filter((inv) => {
+  const handleShowDeleted = async () => {
+    if (!showDeleted) {
+      const deleted = await fetchDeletedInvoices();
+      setDeletedInvoices(deleted);
+    }
+    setShowDeleted(!showDeleted);
+    setStatusFilter(null);
+  };
+
+  const displayInvoices = showDeleted ? deletedInvoices : invoices;
+
+  const filtered = displayInvoices.filter((inv) => {
     const matchesSearch =
       !search ||
       inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -89,6 +103,16 @@ export default function Invoices() {
               {statusConfig[s]?.label || s}
             </button>
           ))}
+          <button
+            onClick={handleShowDeleted}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              showDeleted
+                ? 'bg-destructive text-destructive-foreground'
+                : 'bg-secondary text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Deleted
+          </button>
         </div>
       </div>
 
@@ -202,7 +226,16 @@ export default function Invoices() {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => deleteInvoice(inv.id)}
+                              onClick={async () => {
+                                const result = await softDeleteInvoice(inv.id);
+                                if (result.blocked) {
+                                  toast.error(result.error);
+                                } else if (result.error) {
+                                  toast.error(result.error);
+                                } else {
+                                  toast.success('Invoice moved to deleted');
+                                }
+                              }}
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" /> Delete
