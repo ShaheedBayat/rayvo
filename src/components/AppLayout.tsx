@@ -2,34 +2,17 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import raynLogo from '@/assets/rayn-logo.png';
 import {
-  LayoutDashboard,
-  FileText,
-  Users,
-  Package,
-  Building2,
-  BarChart3,
-  Settings,
-  Plus,
-  LogOut,
-  Sun,
-  Moon,
-  ChevronDown,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  CreditCard,
-  Receipt,
+  LayoutDashboard, FileText, Users, Package, Building2, BarChart3, Settings,
+  Plus, LogOut, Sun, Moon, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
+  CreditCard, Receipt,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompanies } from '@/hooks/useInvoiceStore';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
 interface NavItemProps {
@@ -109,9 +92,7 @@ function NavItem({ to, label, icon: Icon, active, collapsed, children }: NavItem
 const salesNav = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
   {
-    to: '/invoices',
-    label: 'Invoices',
-    icon: FileText,
+    to: '/invoices', label: 'Invoices', icon: FileText,
     children: [
       { to: '/invoices', label: 'All Invoices' },
       { to: '/invoices?status=draft', label: 'Draft' },
@@ -138,27 +119,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { signOut, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { companies } = useCompanies();
+  const { activeCompany, switchCompany } = useActiveCompany();
   const [collapsed, setCollapsed] = useState(false);
 
-  // Active company selection persisted in localStorage
-  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() =>
-    localStorage.getItem('activeCompanyId')
-  );
+  // Read cached company name/logo from localStorage for instant display
+  const cachedName = localStorage.getItem('activeCompanyName');
+  const cachedLogo = localStorage.getItem('activeCompanyLogo');
 
-  const activeCompany = companies.find(c => c.id === activeCompanyId) || companies[0] || null;
-
-  const switchCompany = (id: string) => {
-    setActiveCompanyId(id);
-    localStorage.setItem('activeCompanyId', id);
-  };
-
-  // Auto-select first company if none selected
-  if (!activeCompany && companies.length > 0) {
-    switchCompany(companies[0].id);
-  } else if (activeCompany && activeCompanyId !== activeCompany.id) {
-    // Sync if fallback was used
-    localStorage.setItem('activeCompanyId', activeCompany.id);
+  // Update cache when activeCompany changes
+  if (activeCompany) {
+    localStorage.setItem('activeCompanyName', activeCompany.name);
+    localStorage.setItem('activeCompanyLogo', activeCompany.logo || '');
   }
+
+  // Use activeCompany if loaded, otherwise use cached values
+  const displayName = activeCompany?.name || cachedName;
+  const displayLogo = activeCompany?.logo || cachedLogo || '';
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -175,18 +151,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       >
         {/* Logo / Active Company */}
         <div className="flex h-14 items-center gap-2 px-4">
-          {activeCompany ? (
+          {displayName ? (
             <>
-              {activeCompany.logo ? (
-                <img src={activeCompany.logo} alt={activeCompany.name} className="h-8 w-8 rounded-lg object-contain shrink-0" />
+              {displayLogo ? (
+                <img src={displayLogo} alt={displayName} className="h-8 w-8 rounded-lg object-contain shrink-0" />
               ) : (
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary text-sm font-semibold shrink-0">
-                  {activeCompany.name.charAt(0).toUpperCase()}
+                  {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
               {!collapsed && (
                 <span className="text-sm font-semibold text-foreground tracking-tight truncate">
-                  {activeCompany.name}
+                  {displayName}
                 </span>
               )}
             </>
@@ -251,11 +227,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onClick={() => setCollapsed(!collapsed)}
             className="flex w-full items-center justify-center rounded-lg p-2 text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors"
           >
-            {collapsed ? (
-              <ChevronsRight className="h-4 w-4" />
-            ) : (
-              <ChevronsLeft className="h-4 w-4" />
-            )}
+            {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
           </button>
         </div>
       </aside>
@@ -265,14 +237,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-sm px-6">
           <div className="flex items-center gap-4">
-            {activeCompany && (
+            {(activeCompany || companies.length > 0) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-1.5 text-sm font-medium hover:bg-secondary/80 transition-colors">
-                    {activeCompany.logo && (
-                      <img src={activeCompany.logo} alt="" className="h-5 w-5 rounded object-contain" />
+                    {displayLogo && (
+                      <img src={displayLogo} alt="" className="h-5 w-5 rounded object-contain" />
                     )}
-                    <span className="max-w-[160px] truncate">{activeCompany.name}</span>
+                    <span className="max-w-[160px] truncate">{displayName || 'Select Company'}</span>
                     <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
@@ -284,16 +256,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/companies">
-                      <Building2 className="mr-2 h-4 w-4" />
-                      Manage Companies
-                    </Link>
+                    <Link to="/companies"><Building2 className="mr-2 h-4 w-4" /> Manage Companies</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/companies?action=new">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create New Company
-                    </Link>
+                    <Link to="/companies?action=new"><Plus className="mr-2 h-4 w-4" /> Create New Company</Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -309,37 +275,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" className="gap-1.5 rounded-lg">
-                  <Plus className="h-4 w-4" />
-                  New
-                  <ChevronDown className="h-3 w-3 opacity-60" />
+                  <Plus className="h-4 w-4" /> New <ChevronDown className="h-3 w-3 opacity-60" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/invoices/new">
-                    <FileText className="mr-2 h-4 w-4" />
-                    New Invoice
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/invoices?tab=recurring&action=new">
-                    <Receipt className="mr-2 h-4 w-4" />
-                    New Recurring Invoice
-                  </Link>
-                </DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/invoices/new"><FileText className="mr-2 h-4 w-4" /> New Invoice</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/invoices?tab=recurring&action=new"><Receipt className="mr-2 h-4 w-4" /> New Recurring Invoice</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/customers">
-                    <Users className="mr-2 h-4 w-4" />
-                    New Customer
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/products">
-                    <Package className="mr-2 h-4 w-4" />
-                    New Product / Service
-                  </Link>
-                </DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/customers"><Users className="mr-2 h-4 w-4" /> New Customer</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/products"><Package className="mr-2 h-4 w-4" /> New Product / Service</Link></DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -353,13 +297,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user.email}</p>
-                  </div>
+                  <div className="px-2 py-1.5"><p className="text-sm font-medium">{user.email}</p></div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings">Settings</Link>
-                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
                   <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" /> Sign out
                   </DropdownMenuItem>

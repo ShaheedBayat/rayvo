@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
@@ -229,6 +230,7 @@ function RecurringTab() {
 export default function Invoices() {
   const { invoices, softDeleteInvoice, fetchDeletedInvoices } = useInvoices();
   const { getCompany } = useCompanies();
+  const { activeCompanyId } = useActiveCompany();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
@@ -262,7 +264,12 @@ export default function Invoices() {
 
   const displayInvoices = showDeleted ? deletedInvoices : invoices;
 
-  const filtered = displayInvoices.filter((inv) => {
+  // Filter by active company
+  const companyFiltered = activeCompanyId
+    ? displayInvoices.filter(inv => inv.companyId === activeCompanyId)
+    : displayInvoices;
+
+  const filtered = companyFiltered.filter((inv) => {
     const matchesSearch = !search || inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) || inv.clientName.toLowerCase().includes(search.toLowerCase());
     if (statusFilter === 'overdue') {
       return matchesSearch && inv.status === 'sent' && new Date(inv.dueDate) < new Date();
