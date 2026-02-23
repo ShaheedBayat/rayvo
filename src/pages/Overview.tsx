@@ -20,6 +20,7 @@ export default function Overview() {
     (sum, inv) => sum + calculateTotal(inv.items, inv.taxRate),
     0
   );
+  const totalReceived = totalPaid;
 
   const currency = invoices[0]?.currency || 'ZAR';
 
@@ -84,7 +85,7 @@ export default function Overview() {
       </div>
 
       {/* Money summary */}
-      <div className="grid gap-4 sm:grid-cols-2 mb-8">
+      <div className="grid gap-4 sm:grid-cols-3 mb-8">
         <div className="rounded-lg border bg-card p-6 invoice-shadow">
           <p className="text-sm text-muted-foreground mb-1">Outstanding</p>
           <p className="text-2xl font-semibold mono text-warning">
@@ -95,6 +96,12 @@ export default function Overview() {
           <p className="text-sm text-muted-foreground mb-1">Paid</p>
           <p className="text-2xl font-semibold mono text-success">
             {formatCurrency(totalPaid, currency)}
+          </p>
+        </div>
+        <div className="rounded-lg border bg-card p-6 invoice-shadow">
+          <p className="text-sm text-muted-foreground mb-1">Total Received</p>
+          <p className="text-2xl font-semibold mono text-primary">
+            {formatCurrency(totalReceived, currency)}
           </p>
         </div>
       </div>
