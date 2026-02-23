@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useCreditNotes } from '@/hooks/useCreditNotes';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
@@ -14,6 +16,7 @@ import { ArrowLeft, Download } from 'lucide-react';
 export default function CustomerStatement() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { customers } = useCustomers();
   const { invoices } = useInvoices();
   const { creditNotes } = useCreditNotes();
@@ -25,6 +28,25 @@ export default function CustomerStatement() {
     return d.toISOString().split('T')[0];
   });
   const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Fetch all payments for this customer's invoices
+  const [allPayments, setAllPayments] = useState<any[]>([]);
+  const customerInvoiceIds = useMemo(() =>
+    invoices.filter(i => i.clientName === customer?.name).map(i => i.id),
+    [invoices, customer]
+  );
+
+  const fetchPayments = useCallback(async () => {
+    if (!user || customerInvoiceIds.length === 0) { setAllPayments([]); return; }
+    const { data } = await supabase
+      .from('payments')
+      .select('*')
+      .in('invoice_id', customerInvoiceIds)
+      .order('payment_date', { ascending: true });
+    if (data) setAllPayments(data);
+  }, [user, customerInvoiceIds]);
+
+  useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
   const customerInvoices = useMemo(() =>
     invoices
@@ -48,6 +70,14 @@ export default function CustomerStatement() {
     [creditNotes, customer, dateFrom, dateTo]
   );
 
+  const filteredPayments = useMemo(() =>
+    allPayments.filter(p => {
+      const d = new Date(p.payment_date);
+      return d >= new Date(dateFrom) && d <= new Date(dateTo + 'T23:59:59');
+    }),
+    [allPayments, dateFrom, dateTo]
+  );
+
   // Build statement entries
   const entries = useMemo(() => {
     const items: { date: string; ref: string; type: string; amount: number; currency: Currency }[] = [];
@@ -69,8 +99,19 @@ export default function CustomerStatement() {
         currency: cn.currency,
       });
     });
+    // Add payments as negative entries (reducing balance)
+    filteredPayments.forEach(p => {
+      const inv = invoices.find(i => i.id === p.invoice_id);
+      items.push({
+        date: p.payment_date,
+        ref: p.reference || `Payment (${inv?.invoiceNumber || 'N/A'})`,
+        type: 'Payment',
+        amount: -Number(p.amount),
+        currency: (inv?.currency as Currency) || 'ZAR',
+      });
+    });
     return items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [customerInvoices, customerCreditNotes]);
+  }, [customerInvoices, customerCreditNotes, filteredPayments, invoices]);
 
   const handleExportPdf = async () => {
     const element = document.getElementById('statement-content');

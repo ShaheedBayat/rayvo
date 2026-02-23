@@ -383,8 +383,21 @@ export default function InvoiceView() {
                     <td className="px-4 py-2.5 mono text-xs text-muted-foreground">{p.reference || '—'}</td>
                     <td className="px-4 py-2.5 text-right mono font-medium text-success">{formatCurrency(p.amount, invoice.currency)}</td>
                     <td className="px-4 py-2.5">
-                      {!isVoided && invoice.status !== 'paid' && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => { deletePayment(p.id); toast.success('Payment removed'); }}>
+                      {!isVoided && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={async () => {
+                          await deletePayment(p.id);
+                          // Recalculate status after deletion
+                          const remainingPaid = totalPaid - p.amount;
+                          if (remainingPaid <= 0) {
+                            updateInvoice({ ...invoice, status: 'sent' });
+                            await logActivity('invoice', invoice.id, 'payment_removed', `Payment of ${formatCurrency(p.amount, invoice.currency)} removed. Status reverted to awaiting payment.`);
+                          } else if (remainingPaid < total) {
+                            updateInvoice({ ...invoice, status: 'partially_paid' });
+                            await logActivity('invoice', invoice.id, 'payment_removed', `Payment of ${formatCurrency(p.amount, invoice.currency)} removed. Remaining: ${formatCurrency(total - remainingPaid, invoice.currency)}`);
+                          }
+                          toast.success('Payment removed');
+                          fetchLogs('invoice', invoice.id).then(setActivityLogs);
+                        }}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       )}
