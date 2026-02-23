@@ -23,6 +23,7 @@ import CreditNotes from "./pages/CreditNotes";
 import Quotes from "./pages/Quotes";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import CustomerStatement from "./pages/CustomerStatement";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/invoices/:id/edit" element={<ProtectedRoute><EditInvoice /></ProtectedRoute>} />
               <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
               <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+              <Route path="/customers/:id/statement" element={<ProtectedRoute><CustomerStatement /></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/recurring" element={<Navigate to="/invoices?tab=recurring" replace />} />

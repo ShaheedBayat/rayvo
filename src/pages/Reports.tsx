@@ -1,21 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
-import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatCurrency, calculateTotal, calculateSubtotal, calculateTax } from '@/types/invoice';
 import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { DollarSign, TrendingUp, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, AlertCircle, CheckCircle2, Receipt } from 'lucide-react';
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--success))', 'hsl(var(--destructive))'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--success))', 'hsl(var(--destructive))', 'hsl(var(--info))'];
 
 export default function Reports() {
   const { invoices: allInvoices } = useInvoices();
   const { activeCompanyId } = useActiveCompany();
 
   const invoices = activeCompanyId ? allInvoices.filter(i => i.companyId === activeCompanyId) : allInvoices;
-  const currency: Currency = invoices[0]?.currency || 'ZAR';
+  const activeInvoices = invoices.filter(i => i.status !== 'voided');
+  const currencies = [...new Set(activeInvoices.map(i => i.currency))] as Currency[];
+  const primaryCurrency: Currency = currencies[0] || 'ZAR';
 
   // Revenue by month (last 6 months)
   const revenueByMonth = useMemo(() => {
@@ -26,7 +28,7 @@ export default function Reports() {
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       months[key] = 0;
     }
-    invoices.forEach(inv => {
+    activeInvoices.forEach(inv => {
       const d = new Date(inv.createdAt);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       if (key in months) {
@@ -34,14 +36,16 @@ export default function Reports() {
       }
     });
     return Object.entries(months).map(([month, revenue]) => ({ month, revenue }));
-  }, [invoices]);
+  }, [activeInvoices]);
 
   // Status breakdown
   const statusBreakdown = useMemo(() => {
-    const counts = { draft: 0, sent: 0, paid: 0, overdue: 0 };
-    invoices.forEach(inv => {
+    const counts = { draft: 0, sent: 0, paid: 0, overdue: 0, partially_paid: 0 };
+    activeInvoices.forEach(inv => {
       if (inv.status === 'sent' && new Date(inv.dueDate) < new Date()) {
         counts.overdue++;
+      } else if (inv.status === 'partially_paid') {
+        counts.partially_paid++;
       } else if (inv.status in counts) {
         counts[inv.status as keyof typeof counts]++;
       }
@@ -51,26 +55,28 @@ export default function Reports() {
       { name: 'Awaiting', value: counts.sent },
       { name: 'Paid', value: counts.paid },
       { name: 'Overdue', value: counts.overdue },
+      { name: 'Partial', value: counts.partially_paid },
     ].filter(s => s.value > 0);
-  }, [invoices]);
+  }, [activeInvoices]);
 
   // Top customers by revenue
   const topCustomers = useMemo(() => {
-    const map: Record<string, number> = {};
-    invoices.forEach(inv => {
-      map[inv.clientName] = (map[inv.clientName] || 0) + calculateTotal(inv.items, inv.taxRate);
+    const map: Record<string, { total: number; currency: Currency }> = {};
+    activeInvoices.forEach(inv => {
+      if (!map[inv.clientName]) map[inv.clientName] = { total: 0, currency: inv.currency };
+      map[inv.clientName].total += calculateTotal(inv.items, inv.taxRate);
     });
     return Object.entries(map)
-      .map(([name, total]) => ({ name, total }))
+      .map(([name, { total, currency }]) => ({ name, total, currency }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
-  }, [invoices]);
+  }, [activeInvoices]);
 
   // AR Aging
   const aging = useMemo(() => {
     const buckets = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 };
     const now = new Date();
-    invoices.filter(i => i.status === 'sent').forEach(inv => {
+    activeInvoices.filter(i => i.status === 'sent' || i.status === 'partially_paid').forEach(inv => {
       const days = Math.floor((now.getTime() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24));
       const amt = calculateTotal(inv.items, inv.taxRate);
       if (days <= 0) buckets['0-30'] += amt;
@@ -80,17 +86,48 @@ export default function Reports() {
       else buckets['90+'] += amt;
     });
     return Object.entries(buckets).map(([range, amount]) => ({ range, amount }));
-  }, [invoices]);
+  }, [activeInvoices]);
 
-  // Summary cards
-  const totalRevenue = invoices.reduce((s, i) => s + calculateTotal(i.items, i.taxRate), 0);
-  const totalPaid = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + calculateTotal(i.items, i.taxRate), 0);
-  const totalOutstanding = invoices.filter(i => i.status === 'sent').reduce((s, i) => s + calculateTotal(i.items, i.taxRate), 0);
-  const totalOverdue = invoices.filter(i => i.status === 'sent' && new Date(i.dueDate) < new Date()).reduce((s, i) => s + calculateTotal(i.items, i.taxRate), 0);
+  // Tax summary
+  const taxSummary = useMemo(() => {
+    const months: Record<string, { taxCollected: number; currency: Currency }> = {};
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+      months[key] = { taxCollected: 0, currency: primaryCurrency };
+    }
+    activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
+      const d = new Date(inv.createdAt);
+      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+      if (key in months) {
+        months[key].taxCollected += calculateTax(inv.items, inv.taxRate);
+      }
+    });
+    return Object.entries(months).map(([month, { taxCollected }]) => ({ month, tax: taxCollected }));
+  }, [activeInvoices, primaryCurrency]);
+
+  // Summary cards grouped by currency
+  const summaryByCurrency = useMemo(() => {
+    const groups: Record<string, { total: number; paid: number; outstanding: number; overdue: number }> = {};
+    activeInvoices.forEach(inv => {
+      const c = inv.currency;
+      if (!groups[c]) groups[c] = { total: 0, paid: 0, outstanding: 0, overdue: 0 };
+      const amt = calculateTotal(inv.items, inv.taxRate);
+      groups[c].total += amt;
+      if (inv.status === 'paid') groups[c].paid += amt;
+      if (inv.status === 'sent' || inv.status === 'partially_paid') {
+        groups[c].outstanding += amt;
+        if (new Date(inv.dueDate) < new Date()) groups[c].overdue += amt;
+      }
+    });
+    return groups;
+  }, [activeInvoices]);
 
   const chartConfig = {
     revenue: { label: 'Revenue', color: 'hsl(var(--primary))' },
     amount: { label: 'Amount', color: 'hsl(var(--warning))' },
+    tax: { label: 'Tax', color: 'hsl(var(--success))' },
   };
 
   return (
@@ -100,23 +137,30 @@ export default function Reports() {
         <p className="mt-1 text-sm text-muted-foreground">View summaries of your invoicing activity.</p>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        {[
-          { label: 'Total Revenue', value: totalRevenue, icon: DollarSign, color: 'text-primary', bg: 'bg-primary/10' },
-          { label: 'Paid', value: totalPaid, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
-          { label: 'Outstanding', value: totalOutstanding, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
-          { label: 'Overdue', value: totalOverdue, icon: AlertCircle, color: 'text-destructive', bg: 'bg-destructive/10' },
-        ].map(s => (
-          <div key={s.label} className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
-            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.bg} mb-3`}>
-              <s.icon className={`h-4 w-4 ${s.color}`} />
-            </div>
-            <p className="text-2xl font-semibold mono">{formatCurrency(s.value, currency)}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+      {/* Summary cards by currency */}
+      {Object.entries(summaryByCurrency).map(([currency, data]) => (
+        <div key={currency} className="mb-6">
+          {currencies.length > 1 && (
+            <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">{currency} Summary</h3>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: 'Total Revenue', value: data.total, icon: DollarSign, color: 'text-primary', bg: 'bg-primary/10' },
+              { label: 'Paid', value: data.paid, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
+              { label: 'Outstanding', value: data.outstanding, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
+              { label: 'Overdue', value: data.overdue, icon: AlertCircle, color: 'text-destructive', bg: 'bg-destructive/10' },
+            ].map(s => (
+              <div key={s.label} className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.bg} mb-3`}>
+                  <s.icon className={`h-4 w-4 ${s.color}`} />
+                </div>
+                <p className="text-2xl font-semibold mono">{formatCurrency(s.value, currency as Currency)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
 
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
         {/* Revenue by Month */}
@@ -164,7 +208,7 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 mb-8">
         {/* Top Customers */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Top Customers by Revenue</h2>
@@ -172,13 +216,13 @@ export default function Reports() {
             <p className="text-sm text-muted-foreground py-8 text-center">No data yet</p>
           ) : (
             <div className="space-y-3">
-              {topCustomers.map((c, i) => {
+              {topCustomers.map((c) => {
                 const pct = topCustomers[0].total > 0 ? (c.total / topCustomers[0].total) * 100 : 0;
                 return (
                   <div key={c.name}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium truncate max-w-[180px]">{c.name}</span>
-                      <span className="mono text-sm font-medium">{formatCurrency(c.total, currency)}</span>
+                      <span className="mono text-sm font-medium">{formatCurrency(c.total, c.currency)}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                       <div className="h-full rounded-full bg-primary/70 transition-all duration-500" style={{ width: `${pct}%` }} />
@@ -202,6 +246,21 @@ export default function Reports() {
             </BarChart>
           </ChartContainer>
         </div>
+      </div>
+
+      {/* Tax Summary */}
+      <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+        <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
+          <Receipt className="h-4 w-4" /> Tax Summary (Paid Invoices)
+        </h2>
+        <ChartContainer config={chartConfig} className="h-[250px] w-full">
+          <BarChart data={taxSummary}>
+            <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="tax" fill="var(--color-tax)" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ChartContainer>
       </div>
     </AppLayout>
   );

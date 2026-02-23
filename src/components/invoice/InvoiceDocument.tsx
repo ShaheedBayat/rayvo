@@ -6,13 +6,20 @@ interface Props {
   company: Company | undefined;
   bankingDetails?: string;
   termsConditions?: string;
+  showVoidWatermark?: boolean;
 }
 
-export default function InvoiceDocument({ invoice, company, bankingDetails, termsConditions }: Props) {
+export default function InvoiceDocument({ invoice, company, bankingDetails, termsConditions, showVoidWatermark }: Props) {
   const hasDiscount = invoice.items.some(i => (i.discount || 0) > 0);
+  const isVoided = showVoidWatermark || invoice.status === 'voided';
 
   return (
-    <div className="bg-card rounded-lg border invoice-shadow-lg max-w-[800px] mx-auto" id="invoice-document">
+    <div className="bg-card rounded-lg border invoice-shadow-lg max-w-[800px] mx-auto relative overflow-hidden" id="invoice-document">
+      {isVoided && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <span className="text-[120px] font-bold text-destructive/15 rotate-[-30deg] select-none tracking-widest">VOID</span>
+        </div>
+      )}
       <div className="h-1.5 bg-primary rounded-t-lg" />
       <div className="p-10">
         {/* Header */}

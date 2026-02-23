@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Plus, Search, Building2, User, Trash2, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Plus, Search, Building2, User, Trash2, Edit, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -163,6 +163,9 @@ export default function Customers() {
                       </Badge>
                     </td>
                     <td className="py-3 px-4 flex gap-1 justify-end" onClick={e => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/customers/${c.id}/statement`)} title="View Statement">
+                        <FileText className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
                         <Edit className="h-3.5 w-3.5" />
                       </Button>

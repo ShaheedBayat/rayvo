@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/formatDate';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import {
   FileText, Plus, MoreHorizontal, Trash2, Eye, Search, RefreshCw,
-  ToggleLeft, ToggleRight, ChevronDown, ChevronLeft, ChevronRight,
+  ToggleLeft, ToggleRight, ChevronDown, ChevronLeft, ChevronRight, Ban,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,8 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   sent: { label: 'Awaiting Payment', className: 'bg-warning/10 text-warning border-warning/20' },
   paid: { label: 'Paid', className: 'bg-success/10 text-success border-success/20' },
   overdue: { label: 'Overdue', className: 'bg-overdue/10 text-overdue border-overdue/20' },
+  voided: { label: 'Voided', className: 'bg-destructive/10 text-destructive border-destructive/20' },
+  partially_paid: { label: 'Partially Paid', className: 'bg-info/10 text-info border-info/20' },
 };
 
 function RecurringTab() {
@@ -234,7 +236,7 @@ function RecurringTab() {
 }
 
 export default function Invoices() {
-  const { invoices, softDeleteInvoice, fetchDeletedInvoices, loading } = useInvoices();
+  const { invoices, softDeleteInvoice, voidInvoice, fetchDeletedInvoices, loading } = useInvoices();
   const { getCompany } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -291,7 +293,7 @@ export default function Invoices() {
   const showFrom = filtered.length > 0 ? page * PAGE_SIZE + 1 : 0;
   const showTo = Math.min((page + 1) * PAGE_SIZE, filtered.length);
 
-  const statuses = ['draft', 'sent', 'paid', 'overdue'];
+  const statuses = ['draft', 'sent', 'paid', 'partially_paid', 'voided', 'overdue'];
 
   return (
     <AppLayout>
@@ -430,7 +432,7 @@ export default function Invoices() {
                             </td>
                             <td className="px-4 py-3.5 text-muted-foreground">{formatDate(inv.dueDate)}</td>
                             <td className="px-4 py-3.5 text-right">
-                              <span className="mono font-medium">{formatCurrency(calculateTotal(inv.items, inv.taxRate), inv.currency)}</span>
+                              <span className={`mono font-medium ${inv.status === 'voided' ? 'line-through text-muted-foreground' : ''}`}>{formatCurrency(calculateTotal(inv.items, inv.taxRate), inv.currency)}</span>
                             </td>
                             <td className="px-4 py-3.5 text-center">
                               <Badge variant="outline" className={`${config.className} text-[11px] capitalize`}>
@@ -444,17 +446,37 @@ export default function Invoices() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild><Link to={`/invoices/${inv.id}`}><Eye className="mr-2 h-4 w-4" /> View</Link></DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={async () => {
-                                      const result = await softDeleteInvoice(inv.id);
-                                      if (result.blocked) toast.error(result.error);
-                                      else if (result.error) toast.error(result.error);
-                                      else toast.success('Invoice moved to deleted');
-                                    }}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                  </DropdownMenuItem>
+                                  {(inv.status === 'approved' || inv.status === 'sent') && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={async () => {
+                                          const success = await voidInvoice(inv.id);
+                                          if (success) toast.success('Invoice voided');
+                                          else toast.error('Failed to void');
+                                        }}
+                                        className="text-destructive focus:text-destructive"
+                                      >
+                                        <Ban className="mr-2 h-4 w-4" /> Void
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                  {inv.status === 'draft' && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={async () => {
+                                          const result = await softDeleteInvoice(inv.id);
+                                          if (result.blocked) toast.error(result.error);
+                                          else if (result.error) toast.error(result.error);
+                                          else toast.success('Invoice moved to deleted');
+                                        }}
+                                        className="text-destructive focus:text-destructive"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </td>
@@ -482,7 +504,7 @@ export default function Invoices() {
                       <div className="text-sm">{inv.clientName}</div>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs text-muted-foreground">Due {formatDate(inv.dueDate)}</span>
-                        <span className="mono text-sm font-medium">{formatCurrency(calculateTotal(inv.items, inv.taxRate), inv.currency)}</span>
+                        <span className={`mono text-sm font-medium ${inv.status === 'voided' ? 'line-through text-muted-foreground' : ''}`}>{formatCurrency(calculateTotal(inv.items, inv.taxRate), inv.currency)}</span>
                       </div>
                     </Link>
                   );

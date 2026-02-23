@@ -116,6 +116,12 @@ export function useInvoices() {
     return { error: null, blocked: false };
   }, []);
 
+  const voidInvoice = useCallback(async (id: string) => {
+    const { error } = await supabase.from('invoices').update({ status: 'voided' }).eq('id', id);
+    if (!error) setInvoices(prev => prev.map(i => i.id === id ? { ...i, status: 'voided' as const } : i));
+    return !error;
+  }, []);
+
   // Fetch deleted invoices
   const fetchDeletedInvoices = useCallback(async () => {
     if (!user) return [];
@@ -132,7 +138,7 @@ export function useInvoices() {
     return invoices.find(i => i.id === id);
   }, [invoices]);
 
-  return { invoices, loading, addInvoice, updateInvoice, softDeleteInvoice, getInvoice, fetchDeletedInvoices, refetch: fetchInvoices };
+  return { invoices, loading, addInvoice, updateInvoice, softDeleteInvoice, voidInvoice, getInvoice, fetchDeletedInvoices, refetch: fetchInvoices };
 }
 
 export function useCompanies() {
