@@ -140,12 +140,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { companies } = useCompanies();
   const [collapsed, setCollapsed] = useState(false);
 
+  // Active company selection persisted in localStorage
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() =>
+    localStorage.getItem('activeCompanyId')
+  );
+
+  const activeCompany = companies.find(c => c.id === activeCompanyId) || companies[0] || null;
+
+  const switchCompany = (id: string) => {
+    setActiveCompanyId(id);
+    localStorage.setItem('activeCompanyId', id);
+  };
+
+  // Auto-select first company if none selected
+  if (!activeCompany && companies.length > 0) {
+    switchCompany(companies[0].id);
+  } else if (activeCompany && activeCompanyId !== activeCompany.id) {
+    // Sync if fallback was used
+    localStorage.setItem('activeCompanyId', activeCompany.id);
+  }
+
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);
   };
-
-  const activeCompany = companies[0];
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -260,8 +278,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
                   {companies.map((c) => (
-                    <DropdownMenuItem key={c.id}>
-                      <span className="truncate">{c.name}</span>
+                    <DropdownMenuItem key={c.id} onClick={() => switchCompany(c.id)}>
+                      <span className={`truncate ${c.id === activeCompany?.id ? 'font-semibold' : ''}`}>{c.name}</span>
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
