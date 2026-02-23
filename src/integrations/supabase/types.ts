@@ -110,6 +110,27 @@ export type Database = {
         }
         Relationships: []
       }
+      deletion_log: {
+        Row: {
+          deleted_at: string
+          id: string
+          invoice_id: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          id?: string
+          invoice_id: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          id?: string
+          invoice_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           client_address: string | null
@@ -118,6 +139,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           currency: string
+          deleted_at: string | null
           due_date: string
           id: string
           invoice_number: string
@@ -136,6 +158,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           currency?: string
+          deleted_at?: string | null
           due_date?: string
           id?: string
           invoice_number: string
@@ -154,6 +177,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           currency?: string
+          deleted_at?: string | null
           due_date?: string
           id?: string
           invoice_number?: string
@@ -177,21 +201,27 @@ export type Database = {
       }
       profiles: {
         Row: {
+          blocked_reason: string | null
           created_at: string
           display_name: string | null
           id: string
+          is_blocked: boolean
           user_id: string
         }
         Insert: {
+          blocked_reason?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          is_blocked?: boolean
           user_id: string
         }
         Update: {
+          blocked_reason?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          is_blocked?: boolean
           user_id?: string
         }
         Relationships: []
@@ -226,6 +256,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      soft_delete_invoice: { Args: { p_invoice_id: string }; Returns: Json }
+      unblock_user: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
