@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { ActiveCompanyProvider } from "@/hooks/useActiveCompany";
 import Overview from "./pages/Overview";
 import Invoices from "./pages/Invoices";
 import CreateInvoice from "./pages/CreateInvoice";
@@ -44,6 +45,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <ActiveCompanyProvider>
             <Routes>
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
               <Route path="/public/invoice/:id" element={<PublicInvoice />} />
@@ -61,6 +63,7 @@ const App = () => (
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </ActiveCompanyProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

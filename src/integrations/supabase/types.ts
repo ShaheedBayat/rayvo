@@ -304,6 +304,45 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_templates: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          items: Json
+          name: string
+          notes: string | null
+          owner_id: string
+          tax_rate: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          items?: Json
+          name: string
+          notes?: string | null
+          owner_id: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          items?: Json
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           client_address: string | null

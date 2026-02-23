@@ -79,14 +79,9 @@ export default function InvoiceView() {
     toast.success('Public link copied to clipboard!');
   };
 
-  const markApproved = () => {
-    updateInvoice({ ...invoice, status: 'approved' });
-    toast.success('Invoice approved');
-  };
-
-  const markSent = () => {
+  const markApproveAndSend = () => {
     updateInvoice({ ...invoice, status: 'sent' });
-    toast.success('Invoice marked as sent');
+    toast.success('Invoice approved & sent');
   };
 
   const markPaid = () => {
@@ -126,14 +121,9 @@ export default function InvoiceView() {
         </div>
 
         <div className="flex items-center gap-2">
-          {invoice.status === 'draft' && (
-            <Button variant="outline" size="sm" onClick={markApproved} className="text-info border-info/30 hover:bg-info/10">
-              <ShieldCheck className="mr-1.5 h-4 w-4" /> Approve
-            </Button>
-          )}
-          {invoice.status === 'approved' && (
-            <Button variant="outline" size="sm" onClick={markSent}>
-              <Send className="mr-1.5 h-4 w-4" /> Mark as Sent
+          {(invoice.status === 'draft' || invoice.status === 'approved') && (
+            <Button variant="outline" size="sm" onClick={markApproveAndSend} className="text-info border-info/30 hover:bg-info/10">
+              <Send className="mr-1.5 h-4 w-4" /> Approve & Send
             </Button>
           )}
           {invoice.status === 'sent' && (
