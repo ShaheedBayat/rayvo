@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
 import {
   FileText, Plus, TrendingUp, TrendingDown, Clock, CheckCircle2, AlertCircle,
@@ -8,8 +9,14 @@ import {
 import AppLayout from '@/components/AppLayout';
 
 export default function Overview() {
-  const { invoices } = useInvoices();
+  const { invoices: allInvoices } = useInvoices();
   const { companies } = useCompanies();
+  const { activeCompanyId } = useActiveCompany();
+
+  // Filter by active company
+  const invoices = activeCompanyId
+    ? allInvoices.filter(i => i.companyId === activeCompanyId)
+    : allInvoices;
 
   const draft = invoices.filter(i => i.status === 'draft');
   const sent = invoices.filter(i => i.status === 'sent');
