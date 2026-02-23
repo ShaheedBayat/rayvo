@@ -152,8 +152,8 @@ export function useCompanies() {
 
   useEffect(() => { fetchCompanies(); }, [fetchCompanies]);
 
-  const addCompany = useCallback(async (company: Company) => {
-    if (!user) return;
+  const addCompany = useCallback(async (company: Company): Promise<boolean> => {
+    if (!user) return false;
     const { error } = await supabase.from('companies').insert({
       id: company.id,
       owner_id: user.id,
@@ -166,7 +166,9 @@ export function useCompanies() {
       tax_number: company.taxNumber,
       logo: company.logo,
     });
-    if (!error) setCompanies(prev => [company, ...prev]);
+    if (error) return false;
+    setCompanies(prev => [company, ...prev]);
+    return true;
   }, [user]);
 
   const updateCompany = useCallback(async (company: Company) => {
