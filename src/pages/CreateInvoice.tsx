@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
+import { useInvoices } from '@/hooks/useInvoiceStore';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
 import { formatCurrency, calculateSubtotal, calculateTax, calculateTotal } from '@/types/invoice';
 import { Plus, Trash2, ArrowLeft } from 'lucide-react';
@@ -152,9 +153,8 @@ function InvoiceSummary({
 export default function CreateInvoice() {
   const navigate = useNavigate();
   const { addInvoice } = useInvoices();
-  const { companies } = useCompanies();
-
-  const [companyId, setCompanyId] = useState(companies[0]?.id || '');
+  const { activeCompany } = useActiveCompany();
+  const companyId = activeCompany?.id || '';
   const [currency, setCurrency] = useState<Currency>('ZAR');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -250,18 +250,9 @@ export default function CreateInvoice() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Company</Label>
-                  <Select value={companyId} onValueChange={setCompanyId}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Select company" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {companies.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <p className="h-9 flex items-center px-3 rounded-md border bg-muted/50 text-sm font-medium">
+                    {activeCompany?.name || 'No company selected'}
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Invoice Number</Label>
