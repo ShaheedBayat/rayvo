@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 type Mode = 'light' | 'dark';
-type ColorTheme = 'ocean' | 'corporate' | 'editorial' | 'creative' | 'midnight' | 'brutalist' | 'rose' | 'cyber';
+type ColorTheme = 'ocean' | 'slate' | 'forest' | 'berry';
 
 interface ThemeContextValue {
   mode: Mode;
@@ -29,14 +29,10 @@ export const colorThemes: {
   font: string;
   description: string;
 }[] = [
-  { id: 'ocean', label: 'Ocean', accent: '192 75% 36%', vibe: 'Clean & Professional', font: 'Inter', description: 'Minimal teal palette with crisp typography. The go-to for polished SaaS.' },
-  { id: 'corporate', label: 'Corporate', accent: '217 71% 45%', vibe: 'Structured & Authoritative', font: 'Space Grotesk', description: 'Deep blue palette with geometric type. Built for boardrooms.' },
-  { id: 'editorial', label: 'Editorial', accent: '28 55% 42%', vibe: 'Earthy & Refined', font: 'Playfair Display', description: 'Warm amber tones with serif headings. Magazine-quality elegance.' },
-  { id: 'creative', label: 'Creative', accent: '265 65% 52%', vibe: 'Bold & Expressive', font: 'DM Serif Display', description: 'Rich purple palette with decorative type. For brands that stand out.' },
-  { id: 'midnight', label: 'Midnight', accent: '190 85% 50%', vibe: 'Dark & Immersive', font: 'Outfit', description: 'Neon cyan on deep dark. Glassmorphism cards, futuristic glow effects.' },
-  { id: 'brutalist', label: 'Brutalist', accent: '0 0% 5%', vibe: 'Raw & Direct', font: 'IBM Plex Mono', description: 'Zero radius, heavy borders, monospace everything. Unapologetically stark.' },
-  { id: 'rose', label: 'Rose', accent: '340 55% 52%', vibe: 'Elegant & Soft', font: 'Crimson Pro', description: 'Blush pink with serif headings and extra-rounded corners. Refined luxury.' },
-  { id: 'cyber', label: 'Cyber', accent: '145 80% 38%', vibe: 'Futuristic & Bold', font: 'JetBrains Mono', description: 'Neon green with razor-sharp edges. Terminal aesthetic meets modern UI.' },
+  { id: 'ocean', label: 'Ocean', accent: '192 75% 36%', vibe: 'Clean & Professional', font: 'Inter', description: 'Crisp teal palette. The go-to for polished, professional invoicing.' },
+  { id: 'slate', label: 'Slate', accent: '215 20% 46%', vibe: 'Cool & Composed', font: 'Inter', description: 'Understated blue-gray tones. Calm, neutral, and versatile.' },
+  { id: 'forest', label: 'Forest', accent: '152 45% 38%', vibe: 'Natural & Grounded', font: 'Inter', description: 'Rich green palette inspired by nature. Balanced and trustworthy.' },
+  { id: 'berry', label: 'Berry', accent: '280 50% 52%', vibe: 'Vibrant & Distinctive', font: 'Inter', description: 'Bold purple accent that stands out. Memorable and expressive.' },
 ];
 
 const ALL_THEME_CLASSES = colorThemes.map(t => `theme-${t.id}`);
@@ -44,9 +40,16 @@ const ALL_THEME_CLASSES = colorThemes.map(t => `theme-${t.id}`);
 // Migration: map old theme IDs to new ones
 const THEME_MIGRATION: Record<string, ColorTheme> = {
   teal: 'ocean',
-  blue: 'corporate',
-  warm: 'editorial',
-  purple: 'creative',
+  blue: 'slate',
+  warm: 'forest',
+  purple: 'berry',
+  corporate: 'slate',
+  editorial: 'forest',
+  creative: 'berry',
+  midnight: 'ocean',
+  brutalist: 'ocean',
+  rose: 'ocean',
+  cyber: 'ocean',
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
