@@ -68,6 +68,15 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+          muted: "hsl(var(--sidebar-muted))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+        overdue: {
+          DEFAULT: "hsl(var(--overdue))",
+          foreground: "hsl(var(--overdue-foreground))",
         },
       },
       borderRadius: {
