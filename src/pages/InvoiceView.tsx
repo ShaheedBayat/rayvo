@@ -4,9 +4,11 @@ import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { usePayments } from '@/hooks/usePayments';
 import { useActivityLog, type ActivityEntry } from '@/hooks/useActivityLog';
+import { useAttachments } from '@/hooks/useAttachments';
 import { formatCurrency, calculateTotal } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import InvoiceDocument from '@/components/invoice/InvoiceDocument';
+import FileUpload from '@/components/FileUpload';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, Edit, Ban, CreditCard, Clock, Activity } from 'lucide-react';
+import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, Edit, Ban, CreditCard, Clock, Activity, Paperclip, Mail, FileText, Image } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -27,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
@@ -45,10 +48,12 @@ export default function InvoiceView() {
   const { settings } = useGlobalSettings();
   const { payments, addPayment, deletePayment, totalPaid } = usePayments(id);
   const { logActivity, fetchLogs } = useActivityLog();
+  const { attachments, uploadAttachment, deleteAttachment, getPublicUrl } = useAttachments('invoice', id || '');
   const docRef = useRef<HTMLDivElement>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
 
   // Payment form state
@@ -58,6 +63,10 @@ export default function InvoiceView() {
   const [payRef, setPayRef] = useState('');
   const [payNotes, setPayNotes] = useState('');
 
+  // Send email state
+  const [emailAddresses, setEmailAddresses] = useState('');
+  const [sending, setSending] = useState(false);
+
   const invoice = getInvoice(id || '');
 
   useEffect(() => {
@@ -65,6 +74,10 @@ export default function InvoiceView() {
       fetchLogs('invoice', id).then(setActivityLogs);
     }
   }, [id, fetchLogs]);
+
+  useEffect(() => {
+    if (invoice?.clientEmail) setEmailAddresses(invoice.clientEmail);
+  }, [invoice?.clientEmail]);
 
   if (!invoice) {
     return (
@@ -104,6 +117,44 @@ export default function InvoiceView() {
     const url = `${window.location.origin}/public/invoice/${invoice.id}?token=${token}`;
     navigator.clipboard.writeText(url);
     toast.success('Public link copied to clipboard!');
+  };
+
+  const handleSendEmail = async () => {
+    const emails = emailAddresses.split(',').map(e => e.trim()).filter(Boolean);
+    if (emails.length === 0) { toast.error('Enter at least one email address'); return; }
+
+    setSending(true);
+    // Ensure share token exists
+    let token = invoice.shareToken;
+    if (!token) {
+      token = crypto.randomUUID();
+      await updateInvoice({ ...invoice, shareToken: token });
+    }
+    const publicUrl = `${window.location.origin}/public/invoice/${invoice.id}?token=${token}`;
+
+    const { error } = await supabase.functions.invoke('send-invoice-email', {
+      body: {
+        emails,
+        invoiceNumber: invoice.invoiceNumber,
+        clientName: invoice.clientName,
+        amount: total.toFixed(2),
+        currency: invoice.currency,
+        dueDate: invoice.dueDate,
+        publicUrl,
+        companyName: company?.name || '',
+      },
+    });
+
+    if (error) {
+      toast.error('Failed to send email');
+      console.error(error);
+    } else {
+      toast.success(`Invoice sent to ${emails.join(', ')}`);
+      await logActivity('invoice', invoice.id, 'emailed', `Emailed to ${emails.join(', ')}`);
+      fetchLogs('invoice', invoice.id).then(setActivityLogs);
+    }
+    setSending(false);
+    setSendEmailOpen(false);
   };
 
   const markApproveAndSend = async () => {
@@ -206,6 +257,9 @@ export default function InvoiceView() {
                 <Send className="mr-1.5 h-4 w-4" /> Approve & Send
               </Button>
             )}
+            <Button variant="outline" size="sm" onClick={() => setSendEmailOpen(true)}>
+              <Mail className="mr-1.5 h-4 w-4" /> Email
+            </Button>
             {canRecordPayment && (
               <Button variant="outline" size="sm" onClick={() => { setPayAmount(amountDue.toFixed(2)); setPaymentOpen(true); }} className="text-success border-success/30 hover:bg-success/10">
                 <CreditCard className="mr-1.5 h-4 w-4" /> Record Payment
@@ -281,6 +335,34 @@ export default function InvoiceView() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Send Email dialog */}
+      <Dialog open={sendEmailOpen} onOpenChange={setSendEmailOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Send Invoice via Email</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="rounded-lg bg-muted/40 p-3 text-sm">
+              <p className="font-medium">{invoice.invoiceNumber}</p>
+              <p className="text-muted-foreground">{formatCurrency(total, invoice.currency)} — Due {formatDate(invoice.dueDate)}</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Email addresses (comma-separated)</Label>
+              <Textarea
+                value={emailAddresses}
+                onChange={e => setEmailAddresses(e.target.value)}
+                placeholder="client@example.com, accounts@example.com"
+                rows={2}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSendEmailOpen(false)}>Cancel</Button>
+              <Button onClick={handleSendEmail} disabled={sending}>
+                <Mail className="mr-1.5 h-4 w-4" /> {sending ? 'Sending...' : 'Send Invoice'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Record Payment dialog */}
       <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
@@ -358,6 +440,32 @@ export default function InvoiceView() {
         <InvoiceDocument invoice={invoice} company={company} bankingDetails={settings?.bankingDetails} termsConditions={settings?.termsConditions} />
       </div>
 
+      {/* Attachments */}
+      <div className="mt-8 max-w-[800px] mx-auto">
+        <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <Paperclip className="h-4 w-4" /> Attachments
+        </h2>
+        {attachments.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {attachments.map(a => (
+              <div key={a.id} className="flex items-center justify-between rounded-lg border px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  {a.mimeType.startsWith('image/') ? <Image className="h-4 w-4 text-muted-foreground" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
+                  <a href={getPublicUrl(a.filePath)} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary hover:underline">{a.fileName}</a>
+                  <span className="text-xs text-muted-foreground">({(a.fileSize / 1024).toFixed(0)} KB)</span>
+                </div>
+                {!isVoided && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteAttachment(a)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {!isVoided && <FileUpload onUpload={uploadAttachment} />}
+      </div>
+
       {/* Payment History */}
       {payments.length > 0 && (
         <div className="mt-8 max-w-[800px] mx-auto">
@@ -386,7 +494,6 @@ export default function InvoiceView() {
                       {!isVoided && (
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={async () => {
                           await deletePayment(p.id);
-                          // Recalculate status after deletion
                           const remainingPaid = totalPaid - p.amount;
                           if (remainingPaid <= 0) {
                             updateInvoice({ ...invoice, status: 'sent' });

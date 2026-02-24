@@ -1,18 +1,24 @@
 import { useMemo } from 'react';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useExpenses } from '@/hooks/useExpenses';
+import { usePayments } from '@/hooks/usePayments';
 import { formatCurrency, calculateTotal, calculateSubtotal, calculateTax } from '@/types/invoice';
 import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { DollarSign, TrendingUp, Clock, AlertCircle, CheckCircle2, Receipt } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, AlertCircle, CheckCircle2, Receipt, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportToCsv } from '@/lib/exportCsv';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--success))', 'hsl(var(--destructive))', 'hsl(var(--info))'];
 
 export default function Reports() {
   const { invoices: allInvoices } = useInvoices();
   const { activeCompanyId } = useActiveCompany();
+  const { expenses } = useExpenses();
 
   const invoices = activeCompanyId ? allInvoices.filter(i => i.companyId === activeCompanyId) : allInvoices;
   const activeInvoices = invoices.filter(i => i.status !== 'voided');
@@ -124,17 +130,82 @@ export default function Reports() {
     return groups;
   }, [activeInvoices]);
 
+  // P&L data
+  const pnlData = useMemo(() => {
+    const months: Record<string, { income: number; expenses: number }> = {};
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+      months[key] = { income: 0, expenses: 0 };
+    }
+    activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
+      const d = new Date(inv.createdAt);
+      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+      if (key in months) months[key].income += calculateTotal(inv.items, inv.taxRate);
+    });
+    expenses.forEach(exp => {
+      const d = new Date(exp.date);
+      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+      if (key in months) months[key].expenses += exp.amount;
+    });
+    return Object.entries(months).map(([month, data]) => ({
+      month,
+      income: data.income,
+      expenses: data.expenses,
+      profit: data.income - data.expenses,
+    }));
+  }, [activeInvoices, expenses]);
+
+  const totalIncome = pnlData.reduce((s, d) => s + d.income, 0);
+  const totalExpensesAmt = pnlData.reduce((s, d) => s + d.expenses, 0);
+  const netProfit = totalIncome - totalExpensesAmt;
+
   const chartConfig = {
     revenue: { label: 'Revenue', color: 'hsl(var(--primary))' },
     amount: { label: 'Amount', color: 'hsl(var(--warning))' },
     tax: { label: 'Tax', color: 'hsl(var(--success))' },
+    income: { label: 'Income', color: 'hsl(var(--success))' },
+    expenses: { label: 'Expenses', color: 'hsl(var(--destructive))' },
+  };
+
+  // CSV export handlers
+  const exportInvoices = () => {
+    exportToCsv('invoices.csv',
+      ['Number', 'Client', 'Status', 'Currency', 'Total', 'Due Date', 'Created'],
+      activeInvoices.map(i => [i.invoiceNumber, i.clientName, i.status, i.currency, calculateTotal(i.items, i.taxRate).toFixed(2), i.dueDate, i.createdAt.split('T')[0]])
+    );
+  };
+  const exportExpenses = () => {
+    exportToCsv('expenses.csv',
+      ['Date', 'Category', 'Description', 'Vendor', 'Amount', 'Currency'],
+      expenses.map(e => [e.date, e.category, e.description, e.vendor, e.amount.toFixed(2), e.currency])
+    );
+  };
+  const exportPnl = () => {
+    exportToCsv('profit-and-loss.csv',
+      ['Month', 'Income', 'Expenses', 'Net Profit'],
+      pnlData.map(d => [d.month, d.income.toFixed(2), d.expenses.toFixed(2), d.profit.toFixed(2)])
+    );
   };
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Reports</h1>
-        <p className="mt-1 text-sm text-muted-foreground">View summaries of your invoicing activity.</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Reports</h1>
+          <p className="mt-1 text-sm text-muted-foreground">View summaries of your invoicing activity.</p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm"><Download className="mr-1.5 h-4 w-4" /> Export</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={exportInvoices}>Export Invoices (CSV)</DropdownMenuItem>
+            <DropdownMenuItem onClick={exportExpenses}>Export Expenses (CSV)</DropdownMenuItem>
+            <DropdownMenuItem onClick={exportPnl}>Export P&L (CSV)</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Summary cards by currency */}
@@ -162,7 +233,40 @@ export default function Reports() {
         </div>
       ))}
 
+      {/* P&L Summary Cards */}
+      <div className="mb-6">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Profit & Loss (Last 6 Months)</h3>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+            <p className="text-xs text-muted-foreground mb-1">Total Income</p>
+            <p className="text-2xl font-semibold mono text-success">R {totalIncome.toFixed(2)}</p>
+          </div>
+          <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+            <p className="text-xs text-muted-foreground mb-1">Total Expenses</p>
+            <p className="text-2xl font-semibold mono text-destructive">R {totalExpensesAmt.toFixed(2)}</p>
+          </div>
+          <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+            <p className="text-xs text-muted-foreground mb-1">Net Profit</p>
+            <p className={`text-2xl font-semibold mono ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>R {netProfit.toFixed(2)}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
+        {/* P&L Chart */}
+        <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+          <h2 className="text-sm font-semibold mb-4">Income vs Expenses</h2>
+          <ChartContainer config={chartConfig} className="h-[250px] w-full">
+            <BarChart data={pnlData}>
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expenses" fill="var(--color-expenses)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
+
         {/* Revenue by Month */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Revenue by Month</h2>
@@ -175,7 +279,9 @@ export default function Reports() {
             </BarChart>
           </ChartContainer>
         </div>
+      </div>
 
+      <div className="grid gap-6 lg:grid-cols-2 mb-8">
         {/* Status Breakdown */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Invoice Status Breakdown</h2>
@@ -206,9 +312,7 @@ export default function Reports() {
             </div>
           )}
         </div>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 mb-8">
         {/* Top Customers */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Top Customers by Revenue</h2>
@@ -233,7 +337,9 @@ export default function Reports() {
             </div>
           )}
         </div>
+      </div>
 
+      <div className="grid gap-6 lg:grid-cols-2 mb-8">
         {/* AR Aging */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Accounts Receivable Aging</h2>
@@ -246,21 +352,21 @@ export default function Reports() {
             </BarChart>
           </ChartContainer>
         </div>
-      </div>
 
-      {/* Tax Summary */}
-      <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
-        <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
-          <Receipt className="h-4 w-4" /> Tax Summary (Paid Invoices)
-        </h2>
-        <ChartContainer config={chartConfig} className="h-[250px] w-full">
-          <BarChart data={taxSummary}>
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="tax" fill="var(--color-tax)" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ChartContainer>
+        {/* Tax Summary */}
+        <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
+          <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
+            <Receipt className="h-4 w-4" /> Tax Summary (Paid Invoices)
+          </h2>
+          <ChartContainer config={chartConfig} className="h-[250px] w-full">
+            <BarChart data={taxSummary}>
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="tax" fill="var(--color-tax)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
       </div>
     </AppLayout>
   );
