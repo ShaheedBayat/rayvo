@@ -109,6 +109,7 @@ const salesNav = [
   { to: '/credit-notes', label: 'Credit Notes', icon: Receipt },
   { to: '/quotes', label: 'Quotes', icon: FileCheck },
   { to: '/customers', label: 'Customers', icon: Users },
+  { to: '/customer-statements', label: 'Statements', icon: FileText },
   { to: '/products', label: 'Products & Services', icon: Package },
   { to: '/online-payments', label: 'Online Payments', icon: CreditCard },
 ];
