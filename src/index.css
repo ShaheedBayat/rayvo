@@ -6,9 +6,9 @@
 
 @layer base {
   /* ============================================================
-     THEME 1: OCEAN — Clean & Professional (Default)
+     THEME 1: OCEAN — Clean & Professional (Default + Fallback)
      ============================================================ */
-  :root, .theme-ocean {
+  :root {
     --background: 192 30% 97%;
     --foreground: 200 30% 8%;
     --card: 0 0% 100%;
@@ -55,7 +55,7 @@
     --theme-heading-tracking: -0.025em;
   }
 
-  .dark.theme-ocean, .dark:not(.theme-slate):not(.theme-forest):not(.theme-crimson) {
+  .dark.theme-ocean {
     --background: 200 20% 9%;
     --foreground: 192 10% 90%;
     --card: 200 20% 12%;
@@ -99,7 +99,7 @@
   /* ============================================================
      THEME 2: SLATE — Cool & Composed
      ============================================================ */
-  .theme-slate {
+  [data-theme="slate"] {
     --background: 215 20% 97%;
     --foreground: 215 25% 8%;
     --card: 0 0% 100%;
@@ -120,15 +120,15 @@
     --input: 215 15% 88%;
     --ring: 215 55% 42%;
     --radius: 0.5rem;
-    --sidebar-background: 215 45% 18%;
-    --sidebar-foreground: 215 5% 92%;
-    --sidebar-primary: 215 80% 60%;
+    --sidebar-background: 215 60% 25%;
+    --sidebar-foreground: 215 10% 95%;
+    --sidebar-primary: 215 80% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 35% 24%;
+    --sidebar-accent: 215 50% 32%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 215 30% 22%;
-    --sidebar-ring: 215 80% 60%;
-    --sidebar-muted: 215 5% 78%;
+    --sidebar-border: 215 45% 30%;
+    --sidebar-ring: 215 80% 65%;
+    --sidebar-muted: 215 15% 75%;
     --success: 152 56% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -145,7 +145,7 @@
     --theme-heading-weight: 600;
     --theme-heading-tracking: -0.025em;
   }
-  .dark.theme-slate {
+  .dark[data-theme="slate"] {
     --background: 215 20% 9%;
     --foreground: 215 10% 90%;
     --card: 215 20% 12%;
@@ -189,7 +189,7 @@
   /* ============================================================
      THEME 3: FOREST — Natural & Grounded (Green)
      ============================================================ */
-  .theme-forest {
+  [data-theme="forest"] {
     --background: 152 20% 97%;
     --foreground: 152 25% 8%;
     --card: 0 0% 100%;
@@ -210,15 +210,15 @@
     --input: 152 15% 88%;
     --ring: 152 75% 30%;
     --radius: 0.5rem;
-    --sidebar-background: 152 45% 18%;
-    --sidebar-foreground: 152 5% 92%;
-    --sidebar-primary: 152 80% 55%;
+    --sidebar-background: 152 55% 22%;
+    --sidebar-foreground: 152 10% 95%;
+    --sidebar-primary: 152 70% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 152 35% 24%;
+    --sidebar-accent: 152 45% 28%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 152 30% 22%;
-    --sidebar-ring: 152 80% 55%;
-    --sidebar-muted: 152 5% 78%;
+    --sidebar-border: 152 40% 26%;
+    --sidebar-ring: 152 70% 60%;
+    --sidebar-muted: 152 15% 75%;
     --success: 152 56% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -235,7 +235,7 @@
     --theme-heading-weight: 600;
     --theme-heading-tracking: -0.025em;
   }
-  .dark.theme-forest {
+  .dark[data-theme="forest"] {
     --background: 152 20% 9%;
     --foreground: 152 10% 90%;
     --card: 152 20% 12%;
@@ -279,7 +279,7 @@
   /* ============================================================
      THEME 4: CRIMSON — Bold & Confident (Red)
      ============================================================ */
-  .theme-crimson {
+  [data-theme="crimson"] {
     --background: 0 20% 97%;
     --foreground: 0 25% 8%;
     --card: 0 0% 100%;
@@ -300,15 +300,15 @@
     --input: 0 15% 88%;
     --ring: 0 72% 42%;
     --radius: 0.5rem;
-    --sidebar-background: 0 45% 20%;
-    --sidebar-foreground: 0 5% 92%;
-    --sidebar-primary: 0 80% 65%;
+    --sidebar-background: 0 55% 25%;
+    --sidebar-foreground: 0 10% 95%;
+    --sidebar-primary: 0 75% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 35% 26%;
+    --sidebar-accent: 0 45% 32%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 30% 24%;
-    --sidebar-ring: 0 80% 65%;
-    --sidebar-muted: 0 5% 78%;
+    --sidebar-border: 0 40% 30%;
+    --sidebar-ring: 0 75% 65%;
+    --sidebar-muted: 0 15% 75%;
     --success: 152 56% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -325,7 +325,7 @@
     --theme-heading-weight: 600;
     --theme-heading-tracking: -0.025em;
   }
-  .dark.theme-crimson {
+  .dark[data-theme="crimson"] {
     --background: 0 20% 9%;
     --foreground: 0 10% 90%;
     --card: 0 20% 12%;

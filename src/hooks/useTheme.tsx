@@ -72,6 +72,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [mode]);
 
   useEffect(() => {
+    // Use data attribute for theme (more reliable than classes for CSS specificity)
+    document.documentElement.setAttribute('data-theme', colorTheme);
+    // Also keep class for backward compat
     ALL_THEME_CLASSES.forEach(cls => document.documentElement.classList.remove(cls));
     document.documentElement.classList.add(`theme-${colorTheme}`);
     localStorage.setItem('colorTheme', colorTheme);

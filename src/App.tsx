@@ -24,6 +24,7 @@ import Quotes from "./pages/Quotes";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CustomerStatement from "./pages/CustomerStatement";
+import CustomerStatements from "./pages/CustomerStatements";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="/invoices/:id/edit" element={<ProtectedRoute><EditInvoice /></ProtectedRoute>} />
               <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
               <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+              <Route path="/customer-statements" element={<ProtectedRoute><CustomerStatements /></ProtectedRoute>} />
               <Route path="/customers/:id/statement" element={<ProtectedRoute><CustomerStatement /></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
