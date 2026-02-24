@@ -1,19 +1,32 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check } from 'lucide-react';
+import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check, Users, Bell, Plus, Trash2 } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useTheme, colorThemes } from '@/hooks/useTheme';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
+import { useTeam } from '@/hooks/useTeam';
+import { useReminderSettings } from '@/hooks/useReminderSettings';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { formatDate } from '@/lib/formatDate';
 
 export default function SettingsPage() {
   const { theme, toggleTheme, colorTheme, setColorTheme } = useTheme();
   const { settings, saveSettings } = useGlobalSettings();
+  const { invites, members, sendInvite, deleteInvite } = useTeam();
+  const { settings: reminderSettings, saveSettings: saveReminders } = useReminderSettings();
   const [banking, setBanking] = useState('');
   const [terms, setTerms] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('user');
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [reminderDays, setReminderDays] = useState('1,7,14,30');
 
   useEffect(() => {
     if (settings) {
@@ -22,9 +35,31 @@ export default function SettingsPage() {
     }
   }, [settings]);
 
+  useEffect(() => {
+    if (reminderSettings) {
+      setRemindersEnabled(reminderSettings.enabled);
+      setReminderDays(reminderSettings.daysAfterDue.join(','));
+    }
+  }, [reminderSettings]);
+
   const handleSaveSettings = async () => {
     const ok = await saveSettings(banking, terms);
     if (ok) toast.success('Settings saved');
+    else toast.error('Failed to save');
+  };
+
+  const handleInvite = async () => {
+    if (!inviteEmail) { toast.error('Enter an email'); return; }
+    const result = await sendInvite(inviteEmail, inviteRole);
+    if (result) { toast.success(`Invite sent to ${inviteEmail}`); setInviteEmail(''); }
+    else toast.error('Failed to send invite');
+  };
+
+  const handleSaveReminders = async () => {
+    const days = reminderDays.split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d) && d > 0);
+    if (days.length === 0) { toast.error('Enter at least one valid number'); return; }
+    const ok = await saveReminders(remindersEnabled, days);
+    if (ok) toast.success('Reminder settings saved');
     else toast.error('Failed to save');
   };
 
@@ -56,7 +91,6 @@ export default function SettingsPage() {
                         : 'border-border bg-card hover:border-primary/30 hover:bg-accent/30'
                     }`}
                   >
-                    {/* Mini color preview bar */}
                     <div className="mb-3 flex items-center gap-1.5">
                       <div
                         className="h-6 w-6 rounded-full ring-2 ring-offset-2 ring-offset-background"
@@ -130,11 +164,90 @@ export default function SettingsPage() {
       ),
     },
     {
-      icon: Shield,
-      title: 'Users & Permissions',
-      description: 'Manage team members, roles, and access controls.',
+      icon: Users,
+      title: 'Team Members',
+      description: 'Invite team members by email, assign roles, and manage access.',
       content: (
-        <p className="text-sm text-muted-foreground">Coming soon — invite users and assign roles like Owner, Admin, Finance, or Viewer.</p>
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Email address"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+              className="h-9 flex-1"
+            />
+            <Select value={inviteRole} onValueChange={setInviteRole}>
+              <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={handleInvite}><Plus className="mr-1 h-3 w-3" /> Invite</Button>
+          </div>
+
+          {members.length > 0 && (
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">Current Members</Label>
+              <div className="space-y-2">
+                {members.map(m => (
+                  <div key={m.userId} className="flex items-center justify-between rounded-lg border px-4 py-2.5">
+                    <span className="text-sm font-medium">{m.displayName}</span>
+                    <Badge variant="outline" className="capitalize">{m.role}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {invites.length > 0 && (
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">Pending Invites</Label>
+              <div className="space-y-2">
+                {invites.filter(i => i.status === 'pending').map(i => (
+                  <div key={i.id} className="flex items-center justify-between rounded-lg border px-4 py-2.5">
+                    <div>
+                      <span className="text-sm font-medium">{i.email}</span>
+                      <span className="text-xs text-muted-foreground ml-2">({i.role})</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">Pending</Badge>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteInvite(i.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      icon: Bell,
+      title: 'Overdue Reminders',
+      description: 'Automatically send email reminders when invoices are past due.',
+      content: (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Switch checked={remindersEnabled} onCheckedChange={setRemindersEnabled} />
+            <span className="text-sm">{remindersEnabled ? 'Reminders enabled' : 'Reminders disabled'}</span>
+          </div>
+          {remindersEnabled && (
+            <div className="space-y-2">
+              <Label className="text-xs">Days after due date (comma-separated)</Label>
+              <Input
+                value={reminderDays}
+                onChange={e => setReminderDays(e.target.value)}
+                placeholder="1, 7, 14, 30"
+                className="h-9 w-64"
+              />
+              <p className="text-[11px] text-muted-foreground">E.g. "1,7,14,30" means reminders at 1, 7, 14, and 30 days overdue.</p>
+            </div>
+          )}
+          <Button size="sm" onClick={handleSaveReminders}>Save Reminder Settings</Button>
+        </div>
       ),
     },
     {

@@ -4,7 +4,7 @@ import raynLogo from '@/assets/rayn-logo.png';
 import {
   LayoutDashboard, FileText, Users, Package, Building2, BarChart3, Settings,
   Plus, LogOut, Sun, Moon, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
-  CreditCard, Receipt, FileCheck, Menu, X,
+  CreditCard, Receipt, FileCheck, Menu, X, Wallet,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompanies } from '@/hooks/useInvoiceStore';
@@ -112,6 +112,7 @@ const salesNav = [
   { to: '/customer-statements', label: 'Statements', icon: FileText },
   { to: '/products', label: 'Products & Services', icon: Package },
   { to: '/online-payments', label: 'Online Payments', icon: CreditCard },
+  { to: '/expenses', label: 'Expenses', icon: Wallet },
 ];
 
 const manageNav = [

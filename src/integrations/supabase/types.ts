@@ -44,6 +44,42 @@ export type Database = {
         }
         Relationships: []
       }
+      attachments: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
       branding_themes: {
         Row: {
           accent_color: string
@@ -588,6 +624,62 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          company_id: string | null
+          created_at: string
+          currency: string
+          date: string
+          description: string
+          id: string
+          notes: string | null
+          owner_id: string
+          reference: string | null
+          updated_at: string
+          vendor: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          company_id?: string | null
+          created_at?: string
+          currency?: string
+          date?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          owner_id: string
+          reference?: string | null
+          updated_at?: string
+          vendor?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          company_id?: string | null
+          created_at?: string
+          currency?: string
+          date?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          reference?: string | null
+          updated_at?: string
+          vendor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_settings: {
         Row: {
           banking_details: string | null
@@ -733,6 +825,7 @@ export type Database = {
           owner_id: string
           payment_date: string
           reference: string | null
+          stripe_session_id: string | null
         }
         Insert: {
           amount: number
@@ -744,6 +837,7 @@ export type Database = {
           owner_id: string
           payment_date?: string
           reference?: string | null
+          stripe_session_id?: string | null
         }
         Update: {
           amount?: number
@@ -755,6 +849,7 @@ export type Database = {
           owner_id?: string
           payment_date?: string
           reference?: string | null
+          stripe_session_id?: string | null
         }
         Relationships: [
           {
@@ -990,6 +1085,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reminder_log: {
+        Row: {
+          days_overdue: number
+          id: string
+          invoice_id: string
+          owner_id: string
+          sent_at: string
+        }
+        Insert: {
+          days_overdue?: number
+          id?: string
+          invoice_id: string
+          owner_id: string
+          sent_at?: string
+        }
+        Update: {
+          days_overdue?: number
+          id?: string
+          invoice_id?: string
+          owner_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_log_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminder_settings: {
+        Row: {
+          created_at: string
+          days_after_due: number[]
+          email_template: string | null
+          enabled: boolean
+          id: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          days_after_due?: number[]
+          email_template?: string | null
+          enabled?: boolean
+          id?: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          days_after_due?: number[]
+          email_template?: string | null
+          enabled?: boolean
+          id?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      team_invites: {
+        Row: {
+          accepted_at: string | null
+          email: string
+          id: string
+          invited_at: string
+          owner_id: string
+          role: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          email: string
+          id?: string
+          invited_at?: string
+          owner_id: string
+          role?: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          email?: string
+          id?: string
+          invited_at?: string
+          owner_id?: string
+          role?: string
+          status?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
