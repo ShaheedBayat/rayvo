@@ -6,268 +6,89 @@
 
 @layer base {
   /* ============================================================
-     STRUCTURAL DEFAULTS (no colors here — avoids specificity issues)
+     THEME 1: OCEAN — Clean & Professional (Default)
      ============================================================ */
-  :root {
+  :root, .theme-ocean {
+    --background: 192 30% 97%;
+    --foreground: 200 30% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 200 30% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 30% 8%;
+    --primary: 192 75% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 192 20% 94%;
+    --secondary-foreground: 200 30% 8%;
+    --muted: 192 18% 93%;
+    --muted-foreground: 200 15% 35%;
+    --accent: 192 40% 92%;
+    --accent-foreground: 192 75% 28%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 192 18% 88%;
+    --input: 192 18% 88%;
+    --ring: 192 75% 36%;
     --radius: 0.5rem;
+    --sidebar-background: 192 45% 18%;
+    --sidebar-foreground: 192 5% 92%;
+    --sidebar-primary: 192 80% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 192 35% 24%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 192 30% 22%;
+    --sidebar-ring: 192 80% 60%;
+    --sidebar-muted: 192 5% 78%;
+    --success: 152 56% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 80% 52%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 72% 51%;
+    --overdue-foreground: 0 0% 100%;
     --theme-font: 'Inter', system-ui, sans-serif;
     --theme-heading-font: 'Inter', system-ui, sans-serif;
     --theme-card-radius: 0.5rem;
+    --theme-shadow: 0 1px 3px 0 hsl(192 30% 30% / 0.06), 0 1px 2px -1px hsl(192 30% 30% / 0.04);
+    --theme-shadow-lg: 0 10px 25px -3px hsl(192 30% 30% / 0.08), 0 4px 6px -4px hsl(192 30% 30% / 0.04);
     --theme-heading-weight: 600;
     --theme-heading-tracking: -0.025em;
   }
 
-  /* ============================================================
-     THEME 1: OCEAN — Refined Teal
-     Primary #134E4A | Accent #0EA5A4 | Soft #CCFBF1
-     ============================================================ */
-  .theme-ocean {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 180 84% 35%;
+  .dark.theme-ocean, .dark:not(.theme-slate):not(.theme-forest):not(.theme-berry) {
+    --background: 220 18% 10%;
+    --foreground: 220 14% 90%;
+    --card: 220 18% 13%;
+    --card-foreground: 220 14% 90%;
+    --popover: 220 18% 13%;
+    --popover-foreground: 220 14% 90%;
+    --primary: 192 70% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 166 30% 95%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 15% 40%;
-    --accent: 166 86% 89%;
-    --accent-foreground: 176 61% 19%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 180 84% 35%;
-    --sidebar-background: 176 61% 19%;
-    --sidebar-foreground: 166 40% 92%;
-    --sidebar-primary: 180 84% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 176 50% 25%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 176 45% 22%;
-    --sidebar-ring: 180 84% 45%;
-    --sidebar-muted: 176 20% 65%;
-    --success: 160 84% 30%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --info: 210 80% 52%;
-    --info-foreground: 0 0% 100%;
-    --overdue: 0 72% 51%;
-    --overdue-foreground: 0 0% 100%;
-    --theme-shadow: 0 1px 3px 0 hsl(210 20% 30% / 0.06), 0 1px 2px -1px hsl(210 20% 30% / 0.04);
-    --theme-shadow-lg: 0 10px 25px -3px hsl(210 20% 30% / 0.08), 0 4px 6px -4px hsl(210 20% 30% / 0.04);
-  }
-
-  .dark.theme-ocean {
-    --background: 222 47% 11%;
-    --foreground: 215 28% 91%;
-    --card: 222 40% 14%;
-    --card-foreground: 215 28% 91%;
-    --popover: 222 40% 14%;
-    --popover-foreground: 215 28% 91%;
-    --primary: 172 66% 50%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 176 30% 16%;
-    --secondary-foreground: 215 28% 91%;
-    --muted: 222 35% 18%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 176 61% 19%;
-    --accent-foreground: 172 66% 60%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 215 28% 95%;
-    --border: 222 30% 20%;
-    --input: 222 30% 20%;
-    --ring: 172 66% 50%;
-    --sidebar-background: 176 77% 15%;
-    --sidebar-foreground: 172 25% 70%;
-    --sidebar-primary: 172 66% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 176 50% 20%;
-    --sidebar-accent-foreground: 172 30% 90%;
-    --sidebar-border: 176 40% 18%;
-    --sidebar-ring: 172 66% 50%;
-    --sidebar-muted: 176 15% 50%;
-    --success: 160 70% 35%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 85% 48%;
-    --warning-foreground: 0 0% 100%;
-    --info: 210 70% 48%;
-    --info-foreground: 0 0% 100%;
-    --overdue: 0 62% 40%;
-    --overdue-foreground: 0 0% 100%;
-    --theme-shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.15), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --theme-shadow-lg: 0 10px 25px -3px hsl(0 0% 0% / 0.2), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
-  }
-
-  /* ============================================================
-     THEME 2: NAVY — Premium Navy + Emerald
-     Primary #0B1F3A | Accent #059669 | Soft #D1FAE5
-     ============================================================ */
-  .theme-navy {
-    --background: 220 33% 97%;
-    --foreground: 215 28% 17%;
-    --card: 0 0% 100%;
-    --card-foreground: 215 28% 17%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 17%;
-    --primary: 160 94% 30%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 149 30% 95%;
-    --secondary-foreground: 215 28% 17%;
-    --muted: 220 18% 95%;
-    --muted-foreground: 215 15% 40%;
-    --accent: 149 80% 90%;
-    --accent-foreground: 215 70% 14%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 18% 90%;
-    --input: 220 18% 90%;
-    --ring: 160 94% 30%;
-    --sidebar-background: 215 70% 14%;
-    --sidebar-foreground: 149 30% 92%;
-    --sidebar-primary: 160 80% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 55% 20%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 215 50% 18%;
-    --sidebar-ring: 160 80% 42%;
-    --sidebar-muted: 215 20% 55%;
-    --success: 160 94% 30%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --info: 210 80% 52%;
-    --info-foreground: 0 0% 100%;
-    --overdue: 0 72% 51%;
-    --overdue-foreground: 0 0% 100%;
-    --theme-shadow: 0 1px 3px 0 hsl(215 30% 20% / 0.06), 0 1px 2px -1px hsl(215 30% 20% / 0.04);
-    --theme-shadow-lg: 0 10px 25px -3px hsl(215 30% 20% / 0.08), 0 4px 6px -4px hsl(215 30% 20% / 0.04);
-  }
-
-  .dark.theme-navy {
-    --background: 220 52% 8%;
-    --foreground: 220 13% 91%;
-    --card: 217 40% 12%;
-    --card-foreground: 220 13% 91%;
-    --popover: 217 40% 12%;
-    --popover-foreground: 220 13% 91%;
-    --primary: 160 60% 52%;
-    --primary-foreground: 220 52% 8%;
-    --secondary: 163 40% 14%;
-    --secondary-foreground: 220 13% 91%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 220 12% 55%;
-    --accent: 163 88% 16%;
-    --accent-foreground: 160 60% 62%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 220 13% 95%;
-    --border: 217 28% 18%;
-    --input: 217 28% 18%;
-    --ring: 160 60% 52%;
-    --sidebar-background: 217 33% 12%;
-    --sidebar-foreground: 220 12% 68%;
-    --sidebar-primary: 160 60% 52%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 163 40% 18%;
-    --sidebar-accent-foreground: 160 30% 90%;
-    --sidebar-border: 217 30% 15%;
-    --sidebar-ring: 160 60% 52%;
-    --sidebar-muted: 220 10% 48%;
-    --success: 160 55% 40%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 85% 48%;
-    --warning-foreground: 0 0% 100%;
-    --info: 210 70% 48%;
-    --info-foreground: 0 0% 100%;
-    --overdue: 0 62% 40%;
-    --overdue-foreground: 0 0% 100%;
-    --theme-shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.15), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --theme-shadow-lg: 0 10px 25px -3px hsl(0 0% 0% / 0.2), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
-  }
-
-  /* ============================================================
-     THEME 3: SAPPHIRE — Modern SaaS Blue (Stripe-Style)
-     Primary #1E3A8A | Accent #2563EB | Soft #DBEAFE
-     ============================================================ */
-  .theme-sapphire {
-    --background: 210 20% 98%;
-    --foreground: 224 39% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 39% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 39% 11%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 214 40% 95%;
-    --secondary-foreground: 224 39% 11%;
-    --muted: 210 18% 95%;
-    --muted-foreground: 220 15% 40%;
-    --accent: 214 95% 93%;
-    --accent-foreground: 224 64% 33%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 20% 90%;
-    --input: 214 20% 90%;
-    --ring: 221 83% 53%;
-    --sidebar-background: 224 64% 33%;
-    --sidebar-foreground: 214 50% 92%;
-    --sidebar-primary: 221 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 224 55% 40%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 224 50% 36%;
-    --sidebar-ring: 221 83% 58%;
-    --sidebar-muted: 224 25% 60%;
-    --success: 152 56% 42%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --info: 221 83% 53%;
-    --info-foreground: 0 0% 100%;
-    --overdue: 0 72% 51%;
-    --overdue-foreground: 0 0% 100%;
-    --theme-shadow: 0 1px 3px 0 hsl(224 30% 20% / 0.06), 0 1px 2px -1px hsl(224 30% 20% / 0.04);
-    --theme-shadow-lg: 0 10px 25px -3px hsl(224 30% 20% / 0.08), 0 4px 6px -4px hsl(224 30% 20% / 0.04);
-  }
-
-  .dark.theme-sapphire {
-    --background: 222 47% 11%;
-    --foreground: 220 14% 96%;
-    --card: 224 42% 14%;
-    --card-foreground: 220 14% 96%;
-    --popover: 224 42% 14%;
-    --popover-foreground: 220 14% 96%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 224 35% 18%;
-    --secondary-foreground: 220 14% 96%;
-    --muted: 222 35% 18%;
-    --muted-foreground: 220 12% 55%;
-    --accent: 224 70% 40%;
-    --accent-foreground: 213 94% 68%;
+    --secondary: 220 16% 18%;
+    --secondary-foreground: 220 14% 90%;
+    --muted: 220 14% 20%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 192 30% 18%;
+    --accent-foreground: 192 60% 70%;
     --destructive: 0 62% 30%;
     --destructive-foreground: 220 14% 95%;
-    --border: 222 30% 20%;
-    --input: 222 30% 20%;
-    --ring: 217 91% 60%;
-    --sidebar-background: 224 50% 14%;
-    --sidebar-foreground: 220 12% 68%;
-    --sidebar-primary: 217 91% 60%;
+    --border: 220 14% 20%;
+    --input: 220 14% 20%;
+    --ring: 192 70% 45%;
+    --sidebar-background: 192 35% 10%;
+    --sidebar-foreground: 192 10% 70%;
+    --sidebar-primary: 192 70% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 224 45% 22%;
-    --sidebar-accent-foreground: 213 50% 90%;
-    --sidebar-border: 224 40% 18%;
-    --sidebar-ring: 217 91% 60%;
-    --sidebar-muted: 220 10% 48%;
+    --sidebar-accent: 192 25% 16%;
+    --sidebar-accent-foreground: 192 14% 90%;
+    --sidebar-border: 192 20% 14%;
+    --sidebar-ring: 192 70% 45%;
+    --sidebar-muted: 192 10% 55%;
     --success: 152 50% 38%;
     --success-foreground: 0 0% 100%;
     --warning: 38 85% 48%;
     --warning-foreground: 0 0% 100%;
-    --info: 217 91% 60%;
+    --info: 210 70% 48%;
     --info-foreground: 0 0% 100%;
     --overdue: 0 62% 40%;
     --overdue-foreground: 0 0% 100%;
@@ -276,84 +97,88 @@
   }
 
   /* ============================================================
-     THEME 4: SLATE — Slate + Cyan (Minimal & Ultra Clean)
-     Primary #334155 | Accent #06B6D4 | Soft #CFFAFE
+     THEME 2: SLATE — Cool & Composed
      ============================================================ */
   .theme-slate {
-    --background: 210 40% 96%;
-    --foreground: 222 47% 11%;
+    --background: 215 20% 97%;
+    --foreground: 215 25% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 215 25% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 189 95% 43%;
+    --popover-foreground: 215 25% 8%;
+    --primary: 215 20% 46%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 183 35% 95%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 15% 40%;
-    --accent: 183 92% 90%;
-    --accent-foreground: 215 25% 27%;
+    --secondary: 215 15% 94%;
+    --secondary-foreground: 215 25% 8%;
+    --muted: 215 12% 93%;
+    --muted-foreground: 215 10% 35%;
+    --accent: 215 20% 92%;
+    --accent-foreground: 215 20% 32%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 18% 90%;
-    --input: 210 18% 90%;
-    --ring: 189 95% 43%;
-    --sidebar-background: 215 25% 27%;
-    --sidebar-foreground: 183 35% 92%;
-    --sidebar-primary: 189 95% 50%;
+    --border: 215 15% 88%;
+    --input: 215 15% 88%;
+    --ring: 215 20% 46%;
+    --radius: 0.5rem;
+    --sidebar-background: 215 55% 25%;
+    --sidebar-foreground: 215 10% 95%;
+    --sidebar-primary: 215 60% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 22% 34%;
+    --sidebar-accent: 215 45% 30%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 215 20% 31%;
-    --sidebar-ring: 189 95% 50%;
-    --sidebar-muted: 215 15% 58%;
+    --sidebar-border: 215 40% 28%;
+    --sidebar-ring: 215 60% 65%;
+    --sidebar-muted: 215 15% 75%;
     --success: 152 56% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --info: 189 95% 43%;
+    --info: 210 80% 52%;
     --info-foreground: 0 0% 100%;
     --overdue: 0 72% 51%;
     --overdue-foreground: 0 0% 100%;
-    --theme-shadow: 0 1px 3px 0 hsl(215 15% 30% / 0.06), 0 1px 2px -1px hsl(215 15% 30% / 0.04);
-    --theme-shadow-lg: 0 10px 25px -3px hsl(215 15% 30% / 0.08), 0 4px 6px -4px hsl(215 15% 30% / 0.04);
+    --theme-font: 'Inter', system-ui, sans-serif;
+    --theme-heading-font: 'Inter', system-ui, sans-serif;
+    --theme-card-radius: 0.5rem;
+    --theme-shadow: 0 1px 3px 0 hsl(215 20% 30% / 0.06), 0 1px 2px -1px hsl(215 20% 30% / 0.04);
+    --theme-shadow-lg: 0 10px 25px -3px hsl(215 20% 30% / 0.08), 0 4px 6px -4px hsl(215 20% 30% / 0.04);
+    --theme-heading-weight: 600;
+    --theme-heading-tracking: -0.025em;
   }
-
   .dark.theme-slate {
-    --background: 220 52% 8%;
-    --foreground: 215 28% 91%;
-    --card: 217 35% 12%;
-    --card-foreground: 215 28% 91%;
-    --popover: 217 35% 12%;
-    --popover-foreground: 215 28% 91%;
-    --primary: 188 85% 53%;
-    --primary-foreground: 220 52% 8%;
-    --secondary: 195 30% 16%;
-    --secondary-foreground: 215 28% 91%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 18% 55%;
-    --accent: 195 63% 24%;
-    --accent-foreground: 188 85% 63%;
+    --background: 215 18% 10%;
+    --foreground: 215 14% 90%;
+    --card: 215 18% 13%;
+    --card-foreground: 215 14% 90%;
+    --popover: 215 18% 13%;
+    --popover-foreground: 215 14% 90%;
+    --primary: 215 25% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 16% 18%;
+    --secondary-foreground: 215 14% 90%;
+    --muted: 215 14% 20%;
+    --muted-foreground: 215 10% 55%;
+    --accent: 215 20% 18%;
+    --accent-foreground: 215 25% 70%;
     --destructive: 0 62% 30%;
-    --destructive-foreground: 215 28% 95%;
-    --border: 217 25% 18%;
-    --input: 217 25% 18%;
-    --ring: 188 85% 53%;
-    --sidebar-background: 217 33% 12%;
-    --sidebar-foreground: 215 18% 68%;
-    --sidebar-primary: 188 85% 53%;
+    --destructive-foreground: 215 14% 95%;
+    --border: 215 14% 20%;
+    --input: 215 14% 20%;
+    --ring: 215 25% 55%;
+    --sidebar-background: 215 35% 10%;
+    --sidebar-foreground: 215 10% 70%;
+    --sidebar-primary: 215 35% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 195 35% 18%;
-    --sidebar-accent-foreground: 188 40% 90%;
-    --sidebar-border: 217 28% 15%;
-    --sidebar-ring: 188 85% 53%;
-    --sidebar-muted: 215 12% 48%;
+    --sidebar-accent: 215 30% 14%;
+    --sidebar-accent-foreground: 215 14% 90%;
+    --sidebar-border: 215 28% 12%;
+    --sidebar-ring: 215 35% 55%;
+    --sidebar-muted: 215 10% 55%;
     --success: 152 50% 38%;
     --success-foreground: 0 0% 100%;
     --warning: 38 85% 48%;
     --warning-foreground: 0 0% 100%;
-    --info: 188 85% 53%;
+    --info: 210 70% 48%;
     --info-foreground: 0 0% 100%;
     --overdue: 0 62% 40%;
     --overdue-foreground: 0 0% 100%;
@@ -362,82 +187,176 @@
   }
 
   /* ============================================================
-     THEME 5: COPPER — Dark Teal + Warm Copper (Premium & Unique)
-     Primary #134E4A | Accent #B45309 | Soft #FED7AA
+     THEME 3: FOREST — Natural & Grounded
      ============================================================ */
-  .theme-copper {
-    --background: 0 0% 98%;
-    --foreground: 224 39% 11%;
+  .theme-forest {
+    --background: 152 20% 97%;
+    --foreground: 152 25% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 224 39% 11%;
+    --card-foreground: 152 25% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 39% 11%;
-    --primary: 33 90% 37%;
+    --popover-foreground: 152 25% 8%;
+    --primary: 152 45% 38%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 30 40% 95%;
-    --secondary-foreground: 224 39% 11%;
-    --muted: 30 12% 95%;
-    --muted-foreground: 224 15% 40%;
-    --accent: 30 98% 83%;
-    --accent-foreground: 176 61% 19%;
+    --secondary: 152 15% 94%;
+    --secondary-foreground: 152 25% 8%;
+    --muted: 152 12% 93%;
+    --muted-foreground: 152 10% 35%;
+    --accent: 152 25% 92%;
+    --accent-foreground: 152 45% 28%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 30 15% 90%;
-    --input: 30 15% 90%;
-    --ring: 33 90% 37%;
-    --sidebar-background: 176 61% 19%;
-    --sidebar-foreground: 30 40% 92%;
-    --sidebar-primary: 33 90% 45%;
+    --border: 152 15% 88%;
+    --input: 152 15% 88%;
+    --ring: 152 45% 38%;
+    --radius: 0.5rem;
+    --sidebar-background: 152 65% 18%;
+    --sidebar-foreground: 152 10% 95%;
+    --sidebar-primary: 152 60% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 176 50% 25%;
+    --sidebar-accent: 152 55% 23%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 176 45% 22%;
-    --sidebar-ring: 33 90% 45%;
-    --sidebar-muted: 176 20% 60%;
-    --success: 160 84% 30%;
+    --sidebar-border: 152 50% 21%;
+    --sidebar-ring: 152 60% 55%;
+    --sidebar-muted: 152 15% 75%;
+    --success: 152 56% 42%;
     --success-foreground: 0 0% 100%;
-    --warning: 33 90% 37%;
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     --info: 210 80% 52%;
     --info-foreground: 0 0% 100%;
     --overdue: 0 72% 51%;
     --overdue-foreground: 0 0% 100%;
-    --theme-shadow: 0 1px 3px 0 hsl(30 15% 25% / 0.06), 0 1px 2px -1px hsl(30 15% 25% / 0.04);
-    --theme-shadow-lg: 0 10px 25px -3px hsl(30 15% 25% / 0.08), 0 4px 6px -4px hsl(30 15% 25% / 0.04);
+    --theme-font: 'Inter', system-ui, sans-serif;
+    --theme-heading-font: 'Inter', system-ui, sans-serif;
+    --theme-card-radius: 0.5rem;
+    --theme-shadow: 0 1px 3px 0 hsl(152 20% 30% / 0.06), 0 1px 2px -1px hsl(152 20% 30% / 0.04);
+    --theme-shadow-lg: 0 10px 25px -3px hsl(152 20% 30% / 0.08), 0 4px 6px -4px hsl(152 20% 30% / 0.04);
+    --theme-heading-weight: 600;
+    --theme-heading-tracking: -0.025em;
+  }
+  .dark.theme-forest {
+    --background: 152 18% 10%;
+    --foreground: 152 14% 90%;
+    --card: 152 18% 13%;
+    --card-foreground: 152 14% 90%;
+    --popover: 152 18% 13%;
+    --popover-foreground: 152 14% 90%;
+    --primary: 152 40% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 152 16% 18%;
+    --secondary-foreground: 152 14% 90%;
+    --muted: 152 14% 20%;
+    --muted-foreground: 152 10% 55%;
+    --accent: 152 25% 18%;
+    --accent-foreground: 152 40% 65%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 152 14% 95%;
+    --border: 152 14% 20%;
+    --input: 152 14% 20%;
+    --ring: 152 40% 45%;
+    --sidebar-background: 152 40% 9%;
+    --sidebar-foreground: 152 10% 70%;
+    --sidebar-primary: 152 45% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 152 35% 14%;
+    --sidebar-accent-foreground: 152 14% 90%;
+    --sidebar-border: 152 30% 12%;
+    --sidebar-ring: 152 45% 45%;
+    --sidebar-muted: 152 10% 55%;
+    --success: 152 50% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 85% 48%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 70% 48%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 62% 40%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.15), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --theme-shadow-lg: 0 10px 25px -3px hsl(0 0% 0% / 0.2), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
   }
 
-  .dark.theme-copper {
-    --background: 224 39% 11%;
-    --foreground: 220 14% 96%;
-    --card: 224 35% 14%;
-    --card-foreground: 220 14% 96%;
-    --popover: 224 35% 14%;
-    --popover-foreground: 220 14% 96%;
-    --primary: 40 93% 50%;
-    --primary-foreground: 224 39% 11%;
-    --secondary: 15 35% 18%;
-    --secondary-foreground: 220 14% 96%;
-    --muted: 224 30% 18%;
-    --muted-foreground: 220 12% 55%;
-    --accent: 15 74% 28%;
-    --accent-foreground: 40 93% 60%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 220 14% 95%;
-    --border: 224 25% 20%;
-    --input: 224 25% 20%;
-    --ring: 40 93% 50%;
-    --sidebar-background: 176 77% 15%;
-    --sidebar-foreground: 40 25% 70%;
-    --sidebar-primary: 40 93% 50%;
+  /* ============================================================
+     THEME 4: BERRY — Vibrant & Distinctive
+     ============================================================ */
+  .theme-berry {
+    --background: 280 20% 97%;
+    --foreground: 280 25% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 280 25% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 280 25% 8%;
+    --primary: 280 50% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 280 15% 94%;
+    --secondary-foreground: 280 25% 8%;
+    --muted: 280 12% 93%;
+    --muted-foreground: 280 10% 35%;
+    --accent: 280 25% 92%;
+    --accent-foreground: 280 50% 38%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 280 15% 88%;
+    --input: 280 15% 88%;
+    --ring: 280 50% 52%;
+    --radius: 0.5rem;
+    --sidebar-background: 280 55% 22%;
+    --sidebar-foreground: 280 10% 95%;
+    --sidebar-primary: 280 60% 68%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 176 50% 20%;
-    --sidebar-accent-foreground: 40 30% 90%;
-    --sidebar-border: 176 40% 18%;
-    --sidebar-ring: 40 93% 50%;
-    --sidebar-muted: 176 15% 48%;
-    --success: 160 70% 35%;
+    --sidebar-accent: 280 45% 28%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 280 40% 26%;
+    --sidebar-ring: 280 60% 68%;
+    --sidebar-muted: 280 15% 75%;
+    --success: 152 56% 42%;
     --success-foreground: 0 0% 100%;
-    --warning: 40 93% 50%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 80% 52%;
+    --info-foreground: 0 0% 100%;
+    --overdue: 0 72% 51%;
+    --overdue-foreground: 0 0% 100%;
+    --theme-font: 'Inter', system-ui, sans-serif;
+    --theme-heading-font: 'Inter', system-ui, sans-serif;
+    --theme-card-radius: 0.5rem;
+    --theme-shadow: 0 1px 3px 0 hsl(280 20% 30% / 0.06), 0 1px 2px -1px hsl(280 20% 30% / 0.04);
+    --theme-shadow-lg: 0 10px 25px -3px hsl(280 20% 30% / 0.08), 0 4px 6px -4px hsl(280 20% 30% / 0.04);
+    --theme-heading-weight: 600;
+    --theme-heading-tracking: -0.025em;
+  }
+  .dark.theme-berry {
+    --background: 280 18% 10%;
+    --foreground: 280 14% 90%;
+    --card: 280 18% 13%;
+    --card-foreground: 280 14% 90%;
+    --popover: 280 18% 13%;
+    --popover-foreground: 280 14% 90%;
+    --primary: 280 45% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 280 16% 18%;
+    --secondary-foreground: 280 14% 90%;
+    --muted: 280 14% 20%;
+    --muted-foreground: 280 10% 55%;
+    --accent: 280 25% 18%;
+    --accent-foreground: 280 45% 70%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 280 14% 95%;
+    --border: 280 14% 20%;
+    --input: 280 14% 20%;
+    --ring: 280 45% 58%;
+    --sidebar-background: 280 40% 10%;
+    --sidebar-foreground: 280 10% 70%;
+    --sidebar-primary: 280 50% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 280 35% 14%;
+    --sidebar-accent-foreground: 280 14% 90%;
+    --sidebar-border: 280 30% 12%;
+    --sidebar-ring: 280 50% 58%;
+    --sidebar-muted: 280 10% 55%;
+    --success: 152 50% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 85% 48%;
     --warning-foreground: 0 0% 100%;
     --info: 210 70% 48%;
     --info-foreground: 0 0% 100%;

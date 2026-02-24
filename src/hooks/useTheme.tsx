@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 type Mode = 'light' | 'dark';
-type ColorTheme = 'ocean' | 'navy' | 'sapphire' | 'slate' | 'copper';
+type ColorTheme = 'ocean' | 'slate' | 'forest' | 'berry';
 
 interface ThemeContextValue {
   mode: Mode;
@@ -29,11 +29,10 @@ export const colorThemes: {
   font: string;
   description: string;
 }[] = [
-  { id: 'ocean', label: 'Refined Teal', accent: '180 84% 35%', vibe: 'Clean & Professional', font: 'Inter', description: 'Crisp teal palette. Feels financial, looks expensive, safe but powerful.' },
-  { id: 'navy', label: 'Navy Emerald', accent: '160 94% 30%', vibe: 'Enterprise Level', font: 'Inter', description: 'Premium navy + emerald. CFO-approved, more serious than Xero.' },
-  { id: 'sapphire', label: 'SaaS Blue', accent: '221 83% 53%', vibe: 'Modern & Tech-Forward', font: 'Inter', description: 'Stripe-style clean blue. Very modern with insane dark mode.' },
-  { id: 'slate', label: 'Slate Cyan', accent: '189 95% 43%', vibe: 'Minimal & Ultra Clean', font: 'Inter', description: 'Neutral slate + cyan. Extremely clean, feels like a 2026 SaaS.' },
-  { id: 'copper', label: 'Teal Copper', accent: '33 90% 37%', vibe: 'Premium & Unique', font: 'Inter', description: 'Dark teal + warm copper. Luxury feel, stands out in accounting.' },
+  { id: 'ocean', label: 'Ocean', accent: '192 75% 36%', vibe: 'Clean & Professional', font: 'Inter', description: 'Crisp teal palette. The go-to for polished, professional invoicing.' },
+  { id: 'slate', label: 'Slate', accent: '215 20% 46%', vibe: 'Cool & Composed', font: 'Inter', description: 'Understated blue-gray tones. Calm, neutral, and versatile.' },
+  { id: 'forest', label: 'Forest', accent: '152 45% 38%', vibe: 'Natural & Grounded', font: 'Inter', description: 'Rich green palette inspired by nature. Balanced and trustworthy.' },
+  { id: 'berry', label: 'Berry', accent: '280 50% 52%', vibe: 'Vibrant & Distinctive', font: 'Inter', description: 'Bold purple accent that stands out. Memorable and expressive.' },
 ];
 
 const ALL_THEME_CLASSES = colorThemes.map(t => `theme-${t.id}`);
@@ -41,18 +40,16 @@ const ALL_THEME_CLASSES = colorThemes.map(t => `theme-${t.id}`);
 // Migration: map old theme IDs to new ones
 const THEME_MIGRATION: Record<string, ColorTheme> = {
   teal: 'ocean',
-  blue: 'sapphire',
-  warm: 'copper',
-  purple: 'sapphire',
-  corporate: 'navy',
-  editorial: 'navy',
-  creative: 'copper',
-  midnight: 'navy',
-  brutalist: 'slate',
-  rose: 'copper',
-  cyber: 'sapphire',
-  forest: 'navy',
-  berry: 'sapphire',
+  blue: 'slate',
+  warm: 'forest',
+  purple: 'berry',
+  corporate: 'slate',
+  editorial: 'forest',
+  creative: 'berry',
+  midnight: 'ocean',
+  brutalist: 'ocean',
+  rose: 'ocean',
+  cyber: 'ocean',
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

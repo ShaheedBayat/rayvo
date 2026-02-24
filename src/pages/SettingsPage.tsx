@@ -43,7 +43,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <Label className="text-xs mb-4 block uppercase tracking-wider text-muted-foreground">Choose Your Experience</Label>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {colorThemes.map((t) => {
                 const isActive = colorTheme === t.id;
                 return (
