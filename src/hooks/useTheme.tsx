@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 type Mode = 'light' | 'dark';
-type ColorTheme = 'ocean' | 'slate' | 'forest' | 'berry';
+type ColorTheme = 'ocean' | 'slate' | 'forest' | 'crimson';
 
 interface ThemeContextValue {
   mode: Mode;
@@ -30,9 +30,9 @@ export const colorThemes: {
   description: string;
 }[] = [
   { id: 'ocean', label: 'Ocean', accent: '192 75% 36%', vibe: 'Clean & Professional', font: 'Inter', description: 'Crisp teal palette. The go-to for polished, professional invoicing.' },
-  { id: 'slate', label: 'Slate', accent: '215 20% 46%', vibe: 'Cool & Composed', font: 'Inter', description: 'Understated blue-gray tones. Calm, neutral, and versatile.' },
-  { id: 'forest', label: 'Forest', accent: '152 45% 38%', vibe: 'Natural & Grounded', font: 'Inter', description: 'Rich green palette inspired by nature. Balanced and trustworthy.' },
-  { id: 'berry', label: 'Berry', accent: '280 50% 52%', vibe: 'Vibrant & Distinctive', font: 'Inter', description: 'Bold purple accent that stands out. Memorable and expressive.' },
+  { id: 'slate', label: 'Slate', accent: '215 55% 42%', vibe: 'Cool & Composed', font: 'Inter', description: 'Deep blue tones. Calm, neutral, and versatile.' },
+  { id: 'forest', label: 'Forest', accent: '152 75% 30%', vibe: 'Natural & Grounded', font: 'Inter', description: 'Rich green palette inspired by nature. Balanced and trustworthy.' },
+  { id: 'crimson', label: 'Crimson', accent: '0 72% 42%', vibe: 'Bold & Confident', font: 'Inter', description: 'Striking red accent. Powerful and attention-grabbing.' },
 ];
 
 const ALL_THEME_CLASSES = colorThemes.map(t => `theme-${t.id}`);
@@ -42,13 +42,14 @@ const THEME_MIGRATION: Record<string, ColorTheme> = {
   teal: 'ocean',
   blue: 'slate',
   warm: 'forest',
-  purple: 'berry',
+  purple: 'crimson',
+  berry: 'crimson',
   corporate: 'slate',
   editorial: 'forest',
-  creative: 'berry',
+  creative: 'crimson',
   midnight: 'ocean',
   brutalist: 'ocean',
-  rose: 'ocean',
+  rose: 'crimson',
   cyber: 'ocean',
 };
 
