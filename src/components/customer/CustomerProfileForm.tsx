@@ -221,6 +221,12 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
               <Field label="Tax ID Number">
                 <Input value={data.taxIdNumber} onChange={e => set('taxIdNumber', e.target.value)} className="h-9" />
               </Field>
+              <Field label="Email">
+                <Input type="email" value={data.email} onChange={e => set('email', e.target.value)} placeholder="email@example.com" className="h-9" />
+              </Field>
+              <Field label="Phone">
+                <Input value={data.phone} onChange={e => set('phone', e.target.value)} placeholder="+27..." className="h-9" />
+              </Field>
               <Field label="Website">
                 <Input value={data.website} onChange={e => set('website', e.target.value)} placeholder="https://" className="h-9" />
               </Field>

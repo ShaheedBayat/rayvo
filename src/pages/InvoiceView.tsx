@@ -158,7 +158,7 @@ export default function InvoiceView() {
   };
 
   const markApproveAndSend = async () => {
-    updateInvoice({ ...invoice, status: 'sent' });
+    await updateInvoice({ ...invoice, status: 'sent' });
     await logActivity('invoice', invoice.id, 'approved_and_sent', `Invoice ${invoice.invoiceNumber} approved & sent`);
     toast.success('Invoice approved & sent');
     fetchLogs('invoice', invoice.id).then(setActivityLogs);
