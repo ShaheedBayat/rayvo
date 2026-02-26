@@ -6,19 +6,23 @@ import type { Company } from '@/types/invoice';
 interface ActiveCompanyContextType {
   activeCompany: Company | null;
   activeCompanyId: string | null;
+  companies: Company[];
   switchCompany: (id: string) => void;
+  refetchCompanies: () => void;
   loading: boolean;
 }
 
 const ActiveCompanyContext = createContext<ActiveCompanyContextType>({
   activeCompany: null,
   activeCompanyId: null,
+  companies: [],
   switchCompany: () => {},
+  refetchCompanies: () => {},
   loading: true,
 });
 
 export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
-  const { companies, loading } = useCompanies();
+  const { companies, loading, refetch } = useCompanies();
   const navigate = useNavigate();
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(
     () => localStorage.getItem('activeCompanyId')
@@ -43,7 +47,7 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ActiveCompanyContext.Provider value={{ activeCompany, activeCompanyId, switchCompany, loading }}>
+    <ActiveCompanyContext.Provider value={{ activeCompany, activeCompanyId, companies, switchCompany, refetchCompanies: refetch, loading }}>
       {children}
     </ActiveCompanyContext.Provider>
   );
