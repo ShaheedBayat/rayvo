@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCompanies } from '@/hooks/useInvoiceStore';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 import type { Company } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -109,6 +110,7 @@ function CompanyForm({
 
 export default function Companies() {
   const { companies, addCompany, updateCompany, deleteCompany } = useCompanies();
+  const { refetchCompanies } = useActiveCompany();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Company | undefined>();
   const [search, setSearch] = useState('');
@@ -142,6 +144,7 @@ export default function Companies() {
     }
     localStorage.setItem('lastUsedCompanyId', c.id);
     setEditing(undefined);
+    refetchCompanies();
   };
 
   const handleEdit = (c: Company) => {

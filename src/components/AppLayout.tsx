@@ -7,7 +7,6 @@ import {
   CreditCard, Receipt, FileCheck, Menu, X, Wallet,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
@@ -173,8 +172,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { companies } = useCompanies();
-  const { activeCompany, switchCompany } = useActiveCompany();
+  const { activeCompany, companies, switchCompany } = useActiveCompany();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 

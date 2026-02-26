@@ -33,34 +33,41 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
   const [purchaseEnabled, setPurchaseEnabled] = useState(editing?.purchaseEnabled ?? true);
   const [purchasePrice, setPurchasePrice] = useState(editing?.purchasePrice?.toString() || '');
   const [purchaseDescription, setPurchaseDescription] = useState(editing?.purchaseDescription || '');
-  const [purchaseTaxRate, setPurchaseTaxRate] = useState(editing?.purchaseTaxRate?.toString() || '15');
+  const [purchaseTaxRate, setPurchaseTaxRate] = useState(editing?.purchaseTaxRate?.toString() ?? '0');
   const [sellEnabled, setSellEnabled] = useState(editing?.sellEnabled ?? true);
   const [sellPrice, setSellPrice] = useState(editing?.sellPrice?.toString() || '');
   const [sellDescription, setSellDescription] = useState(editing?.sellDescription || '');
-  const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() || '15');
+  const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() ?? '0');
+  const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!code.trim()) { toast.error('Code is required'); return; }
-    const result = await onSave({
-      companyId: activeCompanyId || '',
-      code: code.trim(),
-      name: name.trim(),
-      type: isTracked ? 'product' : 'service',
-      isTracked,
-      purchaseEnabled,
-      purchasePrice: parseFloat(purchasePrice) || 0,
-      purchaseDescription,
-      purchaseTaxRate: parseFloat(purchaseTaxRate) || 15,
-      sellEnabled,
-      sellPrice: parseFloat(sellPrice) || 0,
-      sellDescription,
-      sellTaxRate: parseFloat(sellTaxRate) || 15,
-      status: 'active',
-    });
-    if (result) {
-      toast.success(editing ? 'Item updated' : 'Item created');
-      onOpenChange(false);
+    setSaving(true);
+    try {
+      const result = await onSave({
+        companyId: activeCompanyId || '',
+        code: code.trim(),
+        name: name.trim(),
+        type: isTracked ? 'product' : 'service',
+        isTracked,
+        purchaseEnabled,
+        purchasePrice: parseFloat(purchasePrice) || 0,
+        purchaseDescription,
+        purchaseTaxRate: parseFloat(purchaseTaxRate),
+        sellEnabled,
+        sellPrice: parseFloat(sellPrice) || 0,
+        sellDescription,
+        sellTaxRate: parseFloat(sellTaxRate),
+        status: 'active',
+      });
+      if (result) {
+        toast.success(editing ? 'Item updated' : 'Item created');
+        onOpenChange(false);
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -154,7 +161,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
           <Separator />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit">{editing ? 'Save Changes' : 'Save'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : editing ? 'Save Changes' : 'Save'}</Button>
           </div>
         </form>
       </DialogContent>
@@ -213,12 +220,15 @@ export default function Products() {
         </div>
       </div>
 
-      <NewItemDialog
-        open={dialogOpen}
-        onOpenChange={v => { setDialogOpen(v); if (!v) setEditing(undefined); }}
-        onSave={handleSave}
-        editing={editing}
-      />
+      {dialogOpen && (
+        <NewItemDialog
+          key={editing?.id || 'new'}
+          open={dialogOpen}
+          onOpenChange={v => { setDialogOpen(v); if (!v) setEditing(undefined); }}
+          onSave={handleSave}
+          editing={editing}
+        />
+      )}
 
       {loading ? (
         <div className="space-y-3">
