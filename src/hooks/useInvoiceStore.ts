@@ -15,6 +15,8 @@ function mapCompany(row: any): Company {
     country: row.country,
     taxNumber: row.tax_number || '',
     logo: row.logo || '',
+    isVatRegistered: row.is_vat_registered ?? false,
+    vatRate: row.vat_rate ?? 15,
   };
 }
 
@@ -171,6 +173,8 @@ export function useCompanies() {
       country: company.country,
       tax_number: company.taxNumber,
       logo: company.logo,
+      is_vat_registered: company.isVatRegistered ?? false,
+      vat_rate: company.vatRate ?? 15,
     });
     if (error) return false;
     setCompanies(prev => [company, ...prev]);
@@ -187,6 +191,8 @@ export function useCompanies() {
       country: company.country,
       tax_number: company.taxNumber,
       logo: company.logo,
+      is_vat_registered: company.isVatRegistered ?? false,
+      vat_rate: company.vatRate ?? 15,
     }).eq('id', company.id);
     if (!error) setCompanies(prev => prev.map(c => c.id === company.id ? company : c));
   }, []);

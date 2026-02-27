@@ -36,6 +36,7 @@ export default function EditInvoice() {
   const [clientAddress, setClientAddress] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [taxRate, setTaxRate] = useState(15);
+  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const [notes, setNotes] = useState('');
   const [paymentTerms, setPaymentTerms] = useState('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
@@ -193,9 +194,11 @@ export default function EditInvoice() {
                 onRemove={removeItem}
                 onUpdate={updateItem}
               />
-              <div className="mt-6 border-t pt-4">
-                <InvoiceSummary items={items} taxRate={taxRate} currency={currency} onTaxRateChange={setTaxRate} />
-              </div>
+              {isVatRegistered && (
+                <div className="mt-6 border-t pt-4">
+                  <InvoiceSummary items={items} taxRate={taxRate} currency={currency} onTaxRateChange={setTaxRate} />
+                </div>
+              )}
             </div>
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
@@ -236,10 +239,12 @@ export default function EditInvoice() {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="mono">{formatCurrency(calculateSubtotal(items), currency)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tax ({taxRate}%)</span>
-                  <span className="mono">{formatCurrency(calculateTax(items, taxRate), currency)}</span>
-                </div>
+                {isVatRegistered && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tax ({taxRate}%)</span>
+                    <span className="mono">{formatCurrency(calculateTax(items, taxRate), currency)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-semibold text-base border-t pt-2">
                   <span>Total</span>
                   <span className="mono text-primary">{formatCurrency(calculateTotal(items, taxRate), currency)}</span>

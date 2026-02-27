@@ -10,6 +10,8 @@ export interface Company {
   country: string;
   taxNumber?: string;
   logo?: string; // base64 data URL
+  isVatRegistered?: boolean;
+  vatRate?: number;
 }
 
 export interface InvoiceItem {

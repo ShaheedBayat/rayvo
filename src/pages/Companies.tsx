@@ -7,6 +7,7 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Building2, Plus, Trash2, Pencil, Upload, Search, Clock } from 'lucide-react';
 import {
   Dialog,
@@ -34,6 +35,8 @@ function CompanyForm({
   const [country, setCountry] = useState(initial?.country || '');
   const [taxNumber, setTaxNumber] = useState(initial?.taxNumber || '');
   const [logo, setLogo] = useState(initial?.logo || '');
+  const [isVatRegistered, setIsVatRegistered] = useState(initial?.isVatRegistered ?? false);
+  const [vatRate, setVatRate] = useState(initial?.vatRate?.toString() ?? '15');
 
   const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,6 +51,8 @@ function CompanyForm({
     onSave({
       id: initial?.id || uuidv4(),
       name, email, phone, address, city, country, taxNumber, logo,
+      isVatRegistered,
+      vatRate: parseFloat(vatRate) || 15,
     });
     onClose();
   };
@@ -84,10 +89,6 @@ function CompanyForm({
           <Input value={phone} onChange={e => setPhone(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Tax / VAT Number</Label>
-          <Input value={taxNumber} onChange={e => setTaxNumber(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
           <Label>Address</Label>
           <Input required value={address} onChange={e => setAddress(e.target.value)} />
         </div>
@@ -99,6 +100,27 @@ function CompanyForm({
           <Label>Country</Label>
           <Input required value={country} onChange={e => setCountry(e.target.value)} />
         </div>
+      </div>
+      <div className="space-y-4 pt-2">
+        <div className="flex items-start gap-3">
+          <Checkbox checked={isVatRegistered} onCheckedChange={(v) => setIsVatRegistered(!!v)} id="vat-reg" className="mt-0.5" />
+          <div>
+            <Label htmlFor="vat-reg" className="text-sm font-semibold cursor-pointer">VAT Registered</Label>
+            <p className="text-sm text-muted-foreground mt-0.5">Enable this if the company is registered for VAT. Tax fields will be shown on invoices and products.</p>
+          </div>
+        </div>
+        {isVatRegistered && (
+          <div className="grid gap-4 sm:grid-cols-2 ml-7">
+            <div className="space-y-1.5">
+              <Label>VAT / Tax Number</Label>
+              <Input value={taxNumber} onChange={e => setTaxNumber(e.target.value)} placeholder="e.g. 4123456789" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Default VAT Rate (%)</Label>
+              <Input type="number" min={0} max={100} step="0.5" value={vatRate} onChange={e => setVatRate(e.target.value)} />
+            </div>
+          </div>
+        )}
       </div>
       <div className="flex gap-2 pt-2">
         <Button type="submit">{initial ? 'Update' : 'Add'} Company</Button>
