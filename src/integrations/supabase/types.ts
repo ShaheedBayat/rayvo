@@ -214,12 +214,14 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_vat_registered: boolean
           logo: string | null
           name: string
           owner_id: string
           phone: string | null
           tax_number: string | null
           updated_at: string
+          vat_rate: number
         }
         Insert: {
           address: string
@@ -228,12 +230,14 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          is_vat_registered?: boolean
           logo?: string | null
           name: string
           owner_id: string
           phone?: string | null
           tax_number?: string | null
           updated_at?: string
+          vat_rate?: number
         }
         Update: {
           address?: string
@@ -242,12 +246,14 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_vat_registered?: boolean
           logo?: string | null
           name?: string
           owner_id?: string
           phone?: string | null
           tax_number?: string | null
           updated_at?: string
+          vat_rate?: number
         }
         Relationships: []
       }
