@@ -26,7 +26,8 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
   onSave: (product: Omit<Product, 'id' | 'createdAt'>) => Promise<any>;
   editing?: Product;
 }) {
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
+  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const [code, setCode] = useState(editing?.code || '');
   const [name, setName] = useState(editing?.name || '');
   const [isTracked, setIsTracked] = useState(editing?.isTracked || false);
@@ -105,7 +106,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                 <p className="text-sm text-muted-foreground mt-0.5">Add item to bills and purchase transactions</p>
               </div>
             </div>
-            {purchaseEnabled && (
+            {isVatRegistered && purchaseEnabled && (
               <div className="ml-7 space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
@@ -126,6 +127,20 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                 </div>
               </div>
             )}
+            {!isVatRegistered && purchaseEnabled && (
+              <div className="ml-7 space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Cost price</Label>
+                    <Input type="number" step="0.01" value={purchasePrice} onChange={e => setPurchasePrice(e.target.value)} placeholder="0.00" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Description</Label>
+                  <Textarea value={purchaseDescription} onChange={e => setPurchaseDescription(e.target.value)} rows={2} placeholder="Purchase description..." />
+                </div>
+              </div>
+            )}
           </div>
           <Separator />
           <div className="space-y-4">
@@ -136,7 +151,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                 <p className="text-sm text-muted-foreground mt-0.5">Add item to invoices, quotes, and sales transactions</p>
               </div>
             </div>
-            {sellEnabled && (
+            {isVatRegistered && sellEnabled && (
               <div className="ml-7 space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
@@ -149,6 +164,20 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{TAX_RATES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                     </Select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Description</Label>
+                  <Textarea value={sellDescription} onChange={e => setSellDescription(e.target.value)} rows={2} placeholder="Sales description..." />
+                </div>
+              </div>
+            )}
+            {!isVatRegistered && sellEnabled && (
+              <div className="ml-7 space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Sale price</Label>
+                    <Input type="number" step="0.01" value={sellPrice} onChange={e => setSellPrice(e.target.value)} placeholder="0.00" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -171,6 +200,8 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { activeCompany } = useActiveCompany();
+  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | undefined>(undefined);
   const [search, setSearch] = useState('');
@@ -275,7 +306,7 @@ export default function Products() {
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">Type</th>
                   <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">Cost</th>
                   <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">Sale Price</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-20">Tax</th>
+                  {isVatRegistered && <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-20">Tax</th>}
                   <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground w-20">Status</th>
                   <th className="px-4 py-3 w-10" />
                 </tr>
@@ -294,7 +325,7 @@ export default function Products() {
                     <td className="px-4 py-3.5 text-right mono font-medium">
                       {p.sellEnabled ? p.sellPrice.toFixed(2) : '—'}
                     </td>
-                    <td className="px-4 py-3.5 text-right text-muted-foreground">{p.sellTaxRate}%</td>
+                    {isVatRegistered && <td className="px-4 py-3.5 text-right text-muted-foreground">{p.sellTaxRate}%</td>}
                     <td className="px-4 py-3.5 text-center">
                       <Badge variant={p.status === 'active' ? 'default' : 'outline'} className="text-[11px]">{p.status}</Badge>
                     </td>
