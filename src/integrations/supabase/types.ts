@@ -691,25 +691,31 @@ export type Database = {
           banking_details: string | null
           created_at: string
           id: string
+          is_vat_registered: boolean
           owner_id: string
           terms_conditions: string | null
           updated_at: string
+          vat_rate: number
         }
         Insert: {
           banking_details?: string | null
           created_at?: string
           id?: string
+          is_vat_registered?: boolean
           owner_id: string
           terms_conditions?: string | null
           updated_at?: string
+          vat_rate?: number
         }
         Update: {
           banking_details?: string | null
           created_at?: string
           id?: string
+          is_vat_registered?: boolean
           owner_id?: string
           terms_conditions?: string | null
           updated_at?: string
+          vat_rate?: number
         }
         Relationships: []
       }
