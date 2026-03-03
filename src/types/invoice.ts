@@ -1,5 +1,7 @@
 export type Currency = 'ZAR' | 'USD' | 'EUR' | 'GBP';
 
+export type PricingMode = 'exclusive' | 'inclusive';
+
 export interface Company {
   id: string;
   name: string;
@@ -12,6 +14,7 @@ export interface Company {
   logo?: string; // base64 data URL
   isVatRegistered?: boolean;
   vatRate?: number;
+  pricingMode?: PricingMode;
 }
 
 export interface InvoiceItem {
@@ -20,6 +23,8 @@ export interface InvoiceItem {
   quantity: number;
   unitPrice: number;
   discount?: number; // percentage discount
+  taxRate?: number; // per-line tax rate
+  taxRateName?: string; // name of the tax rate applied
 }
 
 export interface Invoice {

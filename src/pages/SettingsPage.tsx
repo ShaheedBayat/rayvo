@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check, Users, Bell, Plus, Trash2, Receipt } from 'lucide-react';
+import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check, Users, Bell, Plus, Trash2 } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { useTheme, colorThemes } from '@/hooks/useTheme';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
@@ -23,8 +23,6 @@ export default function SettingsPage() {
   const { settings: reminderSettings, saveSettings: saveReminders } = useReminderSettings();
   const [banking, setBanking] = useState('');
   const [terms, setTerms] = useState('');
-  const [isVatRegistered, setIsVatRegistered] = useState(false);
-  const [vatRate, setVatRate] = useState('15');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
   const [remindersEnabled, setRemindersEnabled] = useState(false);
@@ -34,8 +32,6 @@ export default function SettingsPage() {
     if (settings) {
       setBanking(settings.bankingDetails);
       setTerms(settings.termsConditions);
-      setIsVatRegistered(settings.isVatRegistered);
-      setVatRate(String(settings.vatRate));
     }
   }, [settings]);
 
@@ -47,7 +43,7 @@ export default function SettingsPage() {
   }, [reminderSettings]);
 
   const handleSaveSettings = async () => {
-    const ok = await saveSettings(banking, terms, isVatRegistered, parseFloat(vatRate) || 15);
+    const ok = await saveSettings(banking, terms);
     if (ok) toast.success('Settings saved');
     else toast.error('Failed to save');
   };
@@ -151,35 +147,6 @@ export default function SettingsPage() {
             rows={5}
           />
           <Button size="sm" onClick={handleSaveSettings}>Save Terms & Conditions</Button>
-        </div>
-      ),
-    },
-    {
-      icon: Receipt,
-      title: 'VAT / Tax Registration',
-      description: 'Set your VAT registration status and default rate. This applies globally to all invoices, products, and quotes.',
-      content: (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Switch checked={isVatRegistered} onCheckedChange={setIsVatRegistered} />
-            <span className="text-sm">{isVatRegistered ? 'VAT Registered' : 'Not VAT Registered'}</span>
-          </div>
-          {isVatRegistered && (
-            <div className="space-y-2">
-              <Label className="text-xs">Default VAT Rate (%)</Label>
-              <Input
-                type="number"
-                value={vatRate}
-                onChange={e => setVatRate(e.target.value)}
-                className="h-9 w-32"
-                min="0"
-                max="100"
-                step="0.5"
-              />
-              <p className="text-[11px] text-muted-foreground">This rate is used as the default on new invoices, quotes, and products.</p>
-            </div>
-          )}
-          <Button size="sm" onClick={handleSaveSettings}>Save VAT Settings</Button>
         </div>
       ),
     },

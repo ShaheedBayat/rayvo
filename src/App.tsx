@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import CustomerStatement from "./pages/CustomerStatement";
 import CustomerStatements from "./pages/CustomerStatements";
 import Expenses from "./pages/Expenses";
+import VatReport from "./pages/VatReport";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="/quotes" element={<ProtectedRoute><Quotes /></ProtectedRoute>} />
               <Route path="/settings/invoice" element={<ProtectedRoute><InvoiceSettings /></ProtectedRoute>} />
               <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
+              <Route path="/vat-report" element={<ProtectedRoute><VatReport /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

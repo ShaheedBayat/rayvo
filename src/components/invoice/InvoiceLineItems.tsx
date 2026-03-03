@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import type { InvoiceItem, Currency } from '@/types/invoice';
 import type { Product } from '@/hooks/useProducts';
+import type { TaxRate } from '@/hooks/useTaxRates';
 import { formatCurrency } from '@/types/invoice';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function ProductSearch({ products, onSelect, value, onChange }: {
   products?: Product[];
@@ -66,20 +68,23 @@ interface Props {
   items: InvoiceItem[];
   currency: Currency;
   products?: Product[];
+  taxRates?: TaxRate[];
+  isVatRegistered?: boolean;
   onAdd: () => void;
   onRemove: (id: string) => void;
   onUpdate: (id: string, field: keyof InvoiceItem, value: string | number) => void;
   onProductSelect?: (itemId: string, product: Product) => void;
 }
 
-export default function InvoiceLineItems({ items, currency, products, onAdd, onRemove, onUpdate, onProductSelect }: Props) {
+export default function InvoiceLineItems({ items, currency, products, taxRates, isVatRegistered, onAdd, onRemove, onUpdate, onProductSelect }: Props) {
   const handleProductSelect = (itemId: string, product: Product) => {
     onUpdate(itemId, 'description', product.sellDescription || product.name);
     onUpdate(itemId, 'unitPrice', product.sellPrice);
     onProductSelect?.(itemId, product);
   };
 
-  const hasDiscount = items.some(i => (i as any).discount);
+  const activeTaxRates = (taxRates || []).filter(t => t.active);
+  const showTaxColumn = isVatRegistered && activeTaxRates.length > 0;
 
   return (
     <div>
@@ -91,13 +96,16 @@ export default function InvoiceLineItems({ items, currency, products, onAdd, onR
               <th className="py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-20">Qty</th>
               <th className="py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-32">Unit Price</th>
               <th className="py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">Discount</th>
+              {showTaxColumn && (
+                <th className="py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-36">Tax Rate</th>
+              )}
               <th className="py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-32">Amount</th>
               <th className="py-2.5 w-10" />
             </tr>
           </thead>
           <tbody>
             {items.map((item) => {
-              const discount = (item as any).discount || 0;
+              const discount = item.discount || 0;
               const lineAmount = item.quantity * item.unitPrice * (1 - discount / 100);
               return (
                 <tr key={item.id} className="border-b last:border-0 group">
@@ -121,6 +129,31 @@ export default function InvoiceLineItems({ items, currency, products, onAdd, onR
                       <span className="text-xs text-muted-foreground">%</span>
                     </div>
                   </td>
+                  {showTaxColumn && (
+                    <td className="py-2">
+                      <Select
+                        value={item.taxRateName || activeTaxRates[0]?.name || ''}
+                        onValueChange={(v) => {
+                          const selected = activeTaxRates.find(t => t.name === v);
+                          if (selected) {
+                            onUpdate(item.id, 'taxRate', selected.rate);
+                            onUpdate(item.id, 'taxRateName' as any, selected.name);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="border-0 shadow-none bg-transparent h-9 focus:ring-0 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activeTaxRates.map(t => (
+                            <SelectItem key={t.id} value={t.name}>
+                              {t.name} ({t.rate}%)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                  )}
                   <td className="py-2 text-right mono font-medium text-sm pr-2">
                     {formatCurrency(lineAmount, currency)}
                   </td>

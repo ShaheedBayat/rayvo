@@ -2,6 +2,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
+import { useVatLedger } from '@/hooks/useVatLedger';
 import { usePayments } from '@/hooks/usePayments';
 import { useActivityLog, type ActivityEntry } from '@/hooks/useActivityLog';
 import { useAttachments } from '@/hooks/useAttachments';
@@ -47,6 +48,7 @@ export default function InvoiceView() {
   const { getCompany } = useCompanies();
   const { settings } = useGlobalSettings();
   const { payments, addPayment, deletePayment, totalPaid } = usePayments(id);
+  const { createVatEntries, reverseVatEntries } = useVatLedger();
   const { logActivity, fetchLogs } = useActivityLog();
   const { attachments, uploadAttachment, deleteAttachment, getPublicUrl } = useAttachments('invoice', id || '');
   const docRef = useRef<HTMLDivElement>(null);
@@ -159,6 +161,8 @@ export default function InvoiceView() {
 
   const markApproveAndSend = async () => {
     await updateInvoice({ ...invoice, status: 'sent' });
+    // Create VAT ledger entries when invoice is sent
+    await createVatEntries(invoice);
     await logActivity('invoice', invoice.id, 'approved_and_sent', `Invoice ${invoice.invoiceNumber} approved & sent`);
     toast.success('Invoice approved & sent');
     fetchLogs('invoice', invoice.id).then(setActivityLogs);
@@ -167,6 +171,8 @@ export default function InvoiceView() {
   const handleVoid = async () => {
     const success = await voidInvoice(invoice.id);
     if (success) {
+      // Reverse VAT ledger entries when voided
+      await reverseVatEntries(invoice);
       await logActivity('invoice', invoice.id, 'voided', `Invoice ${invoice.invoiceNumber} voided`);
       toast.success('Invoice voided');
       fetchLogs('invoice', invoice.id).then(setActivityLogs);

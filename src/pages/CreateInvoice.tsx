@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useProducts } from '@/hooks/useProducts';
+import { useTaxRates } from '@/hooks/useTaxRates';
 import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
 import { formatCurrency, calculateSubtotal, calculateTax, calculateTotal } from '@/types/invoice';
 import { ArrowLeft } from 'lucide-react';
@@ -28,9 +29,19 @@ export default function CreateInvoice() {
   const { customers } = useCustomers();
   const { products } = useProducts();
   const companyId = activeCompany?.id || '';
+  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
+  const pricingMode = activeCompany?.pricingMode || 'exclusive';
+  const { taxRates, ensureDefaults } = useTaxRates(companyId);
+
+  // Ensure default tax rates exist when VAT registered
+  useEffect(() => {
+    if (isVatRegistered && companyId) ensureDefaults();
+  }, [isVatRegistered, companyId, ensureDefaults]);
 
   // Support duplicate: pre-populate from location state
   const dupState = location.state as Partial<Invoice> | null;
+
+  const defaultRate = isVatRegistered ? (activeCompany?.vatRate ?? 15) : 0;
 
   const [currency, setCurrency] = useState<Currency>(dupState?.currency || 'ZAR');
   const [clientName, setClientName] = useState(dupState?.clientName || '');
@@ -43,15 +54,20 @@ export default function CreateInvoice() {
     d.setDate(d.getDate() + 30);
     return d.toISOString().split('T')[0];
   });
-  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
-  const [taxRate, setTaxRate] = useState(dupState?.taxRate ?? (isVatRegistered ? (activeCompany?.vatRate ?? 15) : 0));
+  const [taxRate, setTaxRate] = useState(dupState?.taxRate ?? defaultRate);
   const [notes, setNotes] = useState(dupState?.notes || '');
   const [items, setItems] = useState<InvoiceItem[]>(
     dupState?.items?.map(i => ({ ...i, id: uuidv4() })) || [{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]
   );
 
   const addItem = () => {
-    setItems((prev) => [...prev, { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
+    const newItem: InvoiceItem = { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 };
+    if (isVatRegistered && taxRates.length > 0) {
+      const defaultTax = taxRates.find(t => t.type === 'standard' && t.active) || taxRates[0];
+      newItem.taxRate = defaultTax.rate;
+      newItem.taxRateName = defaultTax.name;
+    }
+    setItems((prev) => [...prev, newItem]);
   };
 
   const removeItem = (id: string) => {
@@ -76,12 +92,40 @@ export default function CreateInvoice() {
     }
   };
 
+  // Calculate totals considering per-line tax rates and pricing mode
+  const calcTotals = () => {
+    if (!isVatRegistered) {
+      const sub = calculateSubtotal(items);
+      return { subtotal: sub, tax: 0, total: sub };
+    }
+    let subtotal = 0;
+    let totalTax = 0;
+    items.forEach(item => {
+      const rate = item.taxRate ?? taxRate;
+      const discount = item.discount || 0;
+      const lineTotal = item.quantity * item.unitPrice * (1 - discount / 100);
+      if (pricingMode === 'inclusive' && rate > 0) {
+        const taxable = lineTotal / (1 + rate / 100);
+        subtotal += taxable;
+        totalTax += lineTotal - taxable;
+      } else {
+        subtotal += lineTotal;
+        totalTax += lineTotal * (rate / 100);
+      }
+    });
+    return { subtotal, tax: totalTax, total: subtotal + totalTax };
+  };
+
+  const totals = calcTotals();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId) {
       toast.error('Please add a company first in the Companies section.');
       return;
     }
+    // Force 0% tax if not VAT registered
+    const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
     const invoice: Invoice = {
       id: uuidv4(),
       invoiceNumber: '',
@@ -90,8 +134,8 @@ export default function CreateInvoice() {
       clientEmail,
       clientAddress,
       currency,
-      items,
-      taxRate,
+      items: finalItems,
+      taxRate: isVatRegistered ? taxRate : 0,
       notes,
       status: 'draft',
       createdAt: new Date().toISOString(),
@@ -173,13 +217,22 @@ export default function CreateInvoice() {
                 items={items}
                 currency={currency}
                 products={products}
+                taxRates={taxRates}
+                isVatRegistered={isVatRegistered}
                 onAdd={addItem}
                 onRemove={removeItem}
                 onUpdate={updateItem}
               />
               {isVatRegistered && (
                 <div className="mt-6 border-t pt-4">
-                  <InvoiceSummary items={items} taxRate={taxRate} currency={currency} onTaxRateChange={setTaxRate} />
+                  <InvoiceSummary
+                    items={items}
+                    taxRate={taxRate}
+                    currency={currency}
+                    onTaxRateChange={setTaxRate}
+                    isVatRegistered={isVatRegistered}
+                    pricingMode={pricingMode}
+                  />
                 </div>
               )}
             </div>
@@ -214,17 +267,17 @@ export default function CreateInvoice() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="mono">{formatCurrency(calculateSubtotal(items), currency)}</span>
+                  <span className="mono">{formatCurrency(totals.subtotal, currency)}</span>
                 </div>
                 {isVatRegistered && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tax ({taxRate}%)</span>
-                    <span className="mono">{formatCurrency(calculateTax(items, taxRate), currency)}</span>
+                    <span className="text-muted-foreground">VAT</span>
+                    <span className="mono">{formatCurrency(totals.tax, currency)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-semibold text-base border-t pt-2">
                   <span>Total</span>
-                  <span className="mono text-primary">{formatCurrency(calculateTotal(items, taxRate), currency)}</span>
+                  <span className="mono text-primary">{formatCurrency(totals.total, currency)}</span>
                 </div>
               </div>
             </div>
