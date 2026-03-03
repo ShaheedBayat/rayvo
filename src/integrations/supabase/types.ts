@@ -219,6 +219,7 @@ export type Database = {
           name: string
           owner_id: string
           phone: string | null
+          pricing_mode: string
           tax_number: string | null
           updated_at: string
           vat_rate: number
@@ -235,6 +236,7 @@ export type Database = {
           name: string
           owner_id: string
           phone?: string | null
+          pricing_mode?: string
           tax_number?: string | null
           updated_at?: string
           vat_rate?: number
@@ -251,6 +253,7 @@ export type Database = {
           name?: string
           owner_id?: string
           phone?: string | null
+          pricing_mode?: string
           tax_number?: string | null
           updated_at?: string
           vat_rate?: number
@@ -1160,6 +1163,50 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_rates: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          rate: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          rate?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          rate?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_rates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_invites: {
         Row: {
           accepted_at: string | null
@@ -1207,6 +1254,72 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vat_ledger_entries: {
+        Row: {
+          company_id: string
+          created_at: string
+          customer_name: string
+          entry_type: string
+          id: string
+          invoice_date: string
+          invoice_id: string | null
+          invoice_number: string
+          owner_id: string
+          status: string
+          tax_rate: number
+          tax_rate_name: string
+          taxable_amount: number
+          vat_amount: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          customer_name: string
+          entry_type?: string
+          id?: string
+          invoice_date: string
+          invoice_id?: string | null
+          invoice_number: string
+          owner_id: string
+          status?: string
+          tax_rate?: number
+          tax_rate_name?: string
+          taxable_amount?: number
+          vat_amount?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          customer_name?: string
+          entry_type?: string
+          id?: string
+          invoice_date?: string
+          invoice_id?: string | null
+          invoice_number?: string
+          owner_id?: string
+          status?: string
+          tax_rate?: number
+          tax_rate_name?: string
+          taxable_amount?: number
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vat_ledger_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vat_ledger_entries_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

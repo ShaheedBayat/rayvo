@@ -5,9 +5,10 @@ import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useProducts } from '@/hooks/useProducts';
+import { useTaxRates } from '@/hooks/useTaxRates';
 import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
-import { formatCurrency, calculateSubtotal, calculateTax, calculateTotal } from '@/types/invoice';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { formatCurrency, calculateSubtotal } from '@/types/invoice';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +28,13 @@ export default function EditInvoice() {
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
   const { products } = useProducts();
+  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
+  const pricingMode = activeCompany?.pricingMode || 'exclusive';
+  const { taxRates, ensureDefaults } = useTaxRates(activeCompany?.id);
+
+  useEffect(() => {
+    if (isVatRegistered && activeCompany?.id) ensureDefaults();
+  }, [isVatRegistered, activeCompany?.id, ensureDefaults]);
 
   const invoice = getInvoice(id || '');
 
@@ -36,7 +44,6 @@ export default function EditInvoice() {
   const [clientAddress, setClientAddress] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [taxRate, setTaxRate] = useState(15);
-  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const [notes, setNotes] = useState('');
   const [paymentTerms, setPaymentTerms] = useState('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
@@ -72,7 +79,13 @@ export default function EditInvoice() {
   }
 
   const addItem = () => {
-    setItems(prev => [...prev, { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
+    const newItem: InvoiceItem = { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 };
+    if (isVatRegistered && taxRates.length > 0) {
+      const defaultTax = taxRates.find(t => t.type === 'standard' && t.active) || taxRates[0];
+      newItem.taxRate = defaultTax.rate;
+      newItem.taxRateName = defaultTax.name;
+    }
+    setItems(prev => [...prev, newItem]);
   };
 
   const removeItem = (itemId: string) => {
@@ -97,16 +110,43 @@ export default function EditInvoice() {
     }
   };
 
+  // Calculate totals
+  const calcTotals = () => {
+    if (!isVatRegistered) {
+      const sub = calculateSubtotal(items);
+      return { subtotal: sub, tax: 0, total: sub };
+    }
+    let subtotal = 0;
+    let totalTax = 0;
+    items.forEach(item => {
+      const rate = item.taxRate ?? taxRate;
+      const discount = item.discount || 0;
+      const lineTotal = item.quantity * item.unitPrice * (1 - discount / 100);
+      if (pricingMode === 'inclusive' && rate > 0) {
+        const taxable = lineTotal / (1 + rate / 100);
+        subtotal += taxable;
+        totalTax += lineTotal - taxable;
+      } else {
+        subtotal += lineTotal;
+        totalTax += lineTotal * (rate / 100);
+      }
+    });
+    return { subtotal, tax: totalTax, total: subtotal + totalTax };
+  };
+
+  const totals = calcTotals();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
     const updated: Invoice = {
       ...invoice,
       clientName,
       clientEmail,
       clientAddress,
       currency,
-      items,
-      taxRate,
+      items: finalItems,
+      taxRate: isVatRegistered ? taxRate : 0,
       notes,
       dueDate,
     };
@@ -143,9 +183,7 @@ export default function EditInvoice() {
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">
-                Invoice Details
-              </h2>
+              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Invoice Details</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Company</Label>
@@ -183,37 +221,40 @@ export default function EditInvoice() {
             </div>
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">
-                Line Items
-              </h2>
+              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Line Items</h2>
               <InvoiceLineItems
                 items={items}
                 currency={currency}
                 products={products}
+                taxRates={taxRates}
+                isVatRegistered={isVatRegistered}
                 onAdd={addItem}
                 onRemove={removeItem}
                 onUpdate={updateItem}
               />
               {isVatRegistered && (
                 <div className="mt-6 border-t pt-4">
-                  <InvoiceSummary items={items} taxRate={taxRate} currency={currency} onTaxRateChange={setTaxRate} />
+                  <InvoiceSummary
+                    items={items}
+                    taxRate={taxRate}
+                    currency={currency}
+                    onTaxRateChange={setTaxRate}
+                    isVatRegistered={isVatRegistered}
+                    pricingMode={pricingMode}
+                  />
                 </div>
               )}
             </div>
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">
-                Notes & Terms
-              </h2>
+              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Notes & Terms</h2>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Payment terms, bank details..." rows={3} />
             </div>
           </div>
 
           <div className="space-y-6">
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">
-                Bill To
-              </h2>
+              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Bill To</h2>
               <CustomerCombobox
                 customers={customers}
                 clientName={clientName}
@@ -227,9 +268,7 @@ export default function EditInvoice() {
             </div>
 
             <div className="rounded-lg border bg-primary/5 p-6 invoice-shadow">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
-                Invoice Summary
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Invoice Summary</p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Items</span>
@@ -237,17 +276,17 @@ export default function EditInvoice() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="mono">{formatCurrency(calculateSubtotal(items), currency)}</span>
+                  <span className="mono">{formatCurrency(totals.subtotal, currency)}</span>
                 </div>
                 {isVatRegistered && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tax ({taxRate}%)</span>
-                    <span className="mono">{formatCurrency(calculateTax(items, taxRate), currency)}</span>
+                    <span className="text-muted-foreground">VAT</span>
+                    <span className="mono">{formatCurrency(totals.tax, currency)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-semibold text-base border-t pt-2">
                   <span>Total</span>
-                  <span className="mono text-primary">{formatCurrency(calculateTotal(items, taxRate), currency)}</span>
+                  <span className="mono text-primary">{formatCurrency(totals.total, currency)}</span>
                 </div>
               </div>
             </div>

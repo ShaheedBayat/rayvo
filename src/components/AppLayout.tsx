@@ -117,6 +117,7 @@ const salesNav = [
 const manageNav = [
   { to: '/companies', label: 'Companies', icon: Building2 },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
+  { to: '/vat-report', label: 'VAT Report', icon: Receipt },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 

@@ -2,12 +2,13 @@ import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
-import type { Company } from '@/types/invoice';
+import type { Company, PricingMode } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building2, Plus, Trash2, Pencil, Upload, Search, Clock } from 'lucide-react';
 import {
   Dialog,
@@ -37,6 +38,7 @@ function CompanyForm({
   const [logo, setLogo] = useState(initial?.logo || '');
   const [isVatRegistered, setIsVatRegistered] = useState(initial?.isVatRegistered ?? false);
   const [vatRate, setVatRate] = useState(initial?.vatRate?.toString() ?? '15');
+  const [pricingMode, setPricingMode] = useState<PricingMode>(initial?.pricingMode || 'exclusive');
 
   const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,11 +50,15 @@ function CompanyForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isVatRegistered && !taxNumber.trim()) {
+      return; // VAT number required
+    }
     onSave({
       id: initial?.id || uuidv4(),
       name, email, phone, address, city, country, taxNumber, logo,
       isVatRegistered,
       vatRate: parseFloat(vatRate) || 15,
+      pricingMode,
     });
     onClose();
   };
@@ -112,12 +118,25 @@ function CompanyForm({
         {isVatRegistered && (
           <div className="grid gap-4 sm:grid-cols-2 ml-7">
             <div className="space-y-1.5">
-              <Label>VAT / Tax Number</Label>
-              <Input value={taxNumber} onChange={e => setTaxNumber(e.target.value)} placeholder="e.g. 4123456789" />
+              <Label>VAT / Tax Number <span className="text-destructive">*</span></Label>
+              <Input required value={taxNumber} onChange={e => setTaxNumber(e.target.value)} placeholder="e.g. 4123456789" />
             </div>
             <div className="space-y-1.5">
               <Label>Default VAT Rate (%)</Label>
               <Input type="number" min={0} max={100} step="0.5" value={vatRate} onChange={e => setVatRate(e.target.value)} />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Pricing Mode</Label>
+              <Select value={pricingMode} onValueChange={(v) => setPricingMode(v as PricingMode)}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="exclusive">Prices are VAT Exclusive</SelectItem>
+                  <SelectItem value="inclusive">Prices are VAT Inclusive</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {pricingMode === 'inclusive' ? 'Line item prices include VAT. VAT will be reverse-calculated.' : 'VAT will be added on top of line item prices.'}
+              </p>
             </div>
           </div>
         )}
