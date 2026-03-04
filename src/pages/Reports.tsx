@@ -239,15 +239,15 @@ export default function Reports() {
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
             <p className="text-xs text-muted-foreground mb-1">Total Income</p>
-            <p className="text-2xl font-semibold mono text-success">R {totalIncome.toFixed(2)}</p>
+            <p className="text-2xl font-semibold mono text-success">{formatCurrency(totalIncome, primaryCurrency)}</p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
             <p className="text-xs text-muted-foreground mb-1">Total Expenses</p>
-            <p className="text-2xl font-semibold mono text-destructive">R {totalExpensesAmt.toFixed(2)}</p>
+            <p className="text-2xl font-semibold mono text-destructive">{formatCurrency(totalExpensesAmt, primaryCurrency)}</p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
             <p className="text-xs text-muted-foreground mb-1">Net Profit</p>
-            <p className={`text-2xl font-semibold mono ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>R {netProfit.toFixed(2)}</p>
+            <p className={`text-2xl font-semibold mono ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(netProfit, primaryCurrency)}</p>
           </div>
         </div>
       </div>

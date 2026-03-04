@@ -71,3 +71,39 @@ export function calculateTax(items: InvoiceItem[], taxRate: number): number {
 export function calculateTotal(items: InvoiceItem[], taxRate: number): number {
   return calculateSubtotal(items) + calculateTax(items, taxRate);
 }
+
+/**
+ * Smart total calculation that respects per-line tax rates and pricing modes.
+ * Use this for all display totals throughout the app.
+ */
+export function calculateSmartTotals(
+  items: InvoiceItem[],
+  defaultTaxRate: number,
+  pricingMode: PricingMode = 'exclusive',
+  isVatRegistered: boolean = true
+): { subtotal: number; tax: number; total: number } {
+  if (!isVatRegistered) {
+    const sub = calculateSubtotal(items);
+    return { subtotal: sub, tax: 0, total: sub };
+  }
+
+  let subtotal = 0;
+  let totalTax = 0;
+
+  items.forEach(item => {
+    const rate = item.taxRate ?? defaultTaxRate;
+    const discount = item.discount || 0;
+    const lineTotal = item.quantity * item.unitPrice * (1 - discount / 100);
+
+    if (pricingMode === 'inclusive' && rate > 0) {
+      const taxable = lineTotal / (1 + rate / 100);
+      subtotal += taxable;
+      totalTax += lineTotal - taxable;
+    } else {
+      subtotal += lineTotal;
+      totalTax += lineTotal * (rate / 100);
+    }
+  });
+
+  return { subtotal, tax: totalTax, total: subtotal + totalTax };
+}

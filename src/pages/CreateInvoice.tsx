@@ -223,18 +223,16 @@ export default function CreateInvoice() {
                 onRemove={removeItem}
                 onUpdate={updateItem}
               />
-              {isVatRegistered && (
-                <div className="mt-6 border-t pt-4">
-                  <InvoiceSummary
+            <div className="mt-6 border-t pt-4">
+                <InvoiceSummary
                     items={items}
                     taxRate={taxRate}
                     currency={currency}
                     onTaxRateChange={setTaxRate}
                     isVatRegistered={isVatRegistered}
                     pricingMode={pricingMode}
-                  />
-                </div>
-              )}
+                />
+              </div>
             </div>
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
