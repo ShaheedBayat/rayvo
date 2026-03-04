@@ -47,16 +47,31 @@ export function useVatLedger() {
     // Group items by tax rate
     const rateGroups: Record<string, { taxableAmount: number; vatAmount: number; rateName: string }> = {};
     
+    // We need to know pricing mode - fetch company
+    const { data: companyData } = await supabase
+      .from('companies')
+      .select('pricing_mode')
+      .eq('id', invoice.companyId)
+      .maybeSingle();
+    const pricingMode = companyData?.pricing_mode || 'exclusive';
+
     invoice.items.forEach(item => {
       const rate = item.taxRate ?? invoice.taxRate;
       const rateName = item.taxRateName || (rate === 0 ? 'Zero-rated' : 'Standard');
       const discount = item.discount || 0;
-      const lineSubtotal = item.quantity * item.unitPrice * (1 - discount / 100);
+      const lineTotal = item.quantity * item.unitPrice * (1 - discount / 100);
       const key = `${rate}-${rateName}`;
       
       if (!rateGroups[key]) rateGroups[key] = { taxableAmount: 0, vatAmount: 0, rateName };
-      rateGroups[key].taxableAmount += lineSubtotal;
-      rateGroups[key].vatAmount += lineSubtotal * (rate / 100);
+      
+      if (pricingMode === 'inclusive' && rate > 0) {
+        const taxable = lineTotal / (1 + rate / 100);
+        rateGroups[key].taxableAmount += taxable;
+        rateGroups[key].vatAmount += lineTotal - taxable;
+      } else {
+        rateGroups[key].taxableAmount += lineTotal;
+        rateGroups[key].vatAmount += lineTotal * (rate / 100);
+      }
     });
 
     const entries = Object.entries(rateGroups).map(([key, group]) => ({

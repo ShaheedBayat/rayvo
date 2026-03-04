@@ -6,7 +6,7 @@ import { useVatLedger } from '@/hooks/useVatLedger';
 import { usePayments } from '@/hooks/usePayments';
 import { useActivityLog, type ActivityEntry } from '@/hooks/useActivityLog';
 import { useAttachments } from '@/hooks/useAttachments';
-import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatCurrency, calculateTotal, calculateSmartTotals } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import InvoiceDocument from '@/components/invoice/InvoiceDocument';
 import FileUpload from '@/components/FileUpload';
@@ -94,7 +94,10 @@ export default function InvoiceView() {
 
   const company = getCompany(invoice.companyId);
   const config = statusConfig[invoice.status] || statusConfig.draft;
-  const total = calculateTotal(invoice.items, invoice.taxRate);
+  const pricingMode = company?.pricingMode || 'exclusive';
+  const isVatRegistered = company?.isVatRegistered ?? (invoice.taxRate > 0);
+  const smartTotals = calculateSmartTotals(invoice.items, invoice.taxRate, pricingMode, isVatRegistered);
+  const total = smartTotals.total;
   const canEdit = invoice.status === 'draft' || invoice.status === 'approved';
   const isVoided = invoice.status === 'voided';
   const isDraft = invoice.status === 'draft';

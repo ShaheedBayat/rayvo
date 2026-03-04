@@ -1,5 +1,5 @@
 import type { Invoice, Company } from '@/types/invoice';
-import { formatCurrency, calculateSubtotal, calculateTax, calculateTotal } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 
 interface Props {
   invoice: Invoice;
@@ -96,22 +96,64 @@ export default function InvoiceDocument({ invoice, company, bankingDetails, term
         </table>
 
         {/* Totals */}
-        <div className="flex justify-end">
-          <div className="w-72 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="mono">{formatCurrency(calculateSubtotal(invoice.items), invoice.currency)}</span>
+        {(() => {
+          const isVatRegistered = company?.isVatRegistered ?? (invoice.taxRate > 0);
+          const pricingMode = company?.pricingMode || 'exclusive';
+          const totals = calculateSmartTotals(invoice.items, invoice.taxRate, pricingMode, isVatRegistered);
+          
+          // VAT breakdown by rate
+          const vatGroups: Record<string, { rateName: string; vat: number }> = {};
+          if (isVatRegistered) {
+            invoice.items.forEach(item => {
+              const rate = item.taxRate ?? invoice.taxRate;
+              const rateName = item.taxRateName || (rate === 0 ? 'Zero-rated' : `Tax ${rate}%`);
+              const discount = item.discount || 0;
+              const lineTotal = item.quantity * item.unitPrice * (1 - discount / 100);
+              const key = `${rate}-${rateName}`;
+              if (!vatGroups[key]) vatGroups[key] = { rateName, vat: 0 };
+              if (pricingMode === 'inclusive' && rate > 0) {
+                vatGroups[key].vat += lineTotal - lineTotal / (1 + rate / 100);
+              } else {
+                vatGroups[key].vat += lineTotal * (rate / 100);
+              }
+            });
+          }
+          
+          return (
+            <div className="flex justify-end">
+              <div className="w-72 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Subtotal {isVatRegistered && pricingMode === 'inclusive' ? '(incl. VAT)' : ''}
+                  </span>
+                  <span className="mono">
+                    {formatCurrency(pricingMode === 'inclusive' && isVatRegistered 
+                      ? totals.subtotal + totals.tax 
+                      : totals.subtotal, invoice.currency)}
+                  </span>
+                </div>
+                {isVatRegistered && Object.entries(vatGroups).map(([key, group]) => (
+                  group.vat !== 0 && (
+                    <div key={key} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">VAT — {group.rateName}</span>
+                      <span className="mono">{pricingMode === 'inclusive' ? '(incl.)' : ''} {formatCurrency(group.vat, invoice.currency)}</span>
+                    </div>
+                  )
+                ))}
+                {!isVatRegistered && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span className="mono">{formatCurrency(0, invoice.currency)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-lg font-semibold border-t-2 border-border pt-3 mt-1">
+                  <span>Total</span>
+                  <span className="mono text-primary">{formatCurrency(totals.total, invoice.currency)}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax ({invoice.taxRate}%)</span>
-              <span className="mono">{formatCurrency(calculateTax(invoice.items, invoice.taxRate), invoice.currency)}</span>
-            </div>
-            <div className="flex justify-between text-lg font-semibold border-t-2 border-border pt-3 mt-1">
-              <span>Total</span>
-              <span className="mono text-primary">{formatCurrency(calculateTotal(invoice.items, invoice.taxRate), invoice.currency)}</span>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {invoice.notes && (
           <div className="mt-10 pt-6 border-t">
