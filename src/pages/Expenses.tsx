@@ -12,6 +12,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Pencil, Trash2, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/formatDate';
+import { formatCurrency } from '@/types/invoice';
+import type { Currency } from '@/types/invoice';
 
 export default function Expenses() {
   const { expenses, loading, addExpense, updateExpense, deleteExpense } = useExpenses();
@@ -103,7 +105,7 @@ export default function Expenses() {
           </SelectContent>
         </Select>
         <div className="ml-auto text-sm text-muted-foreground">
-          Total: <span className="mono font-semibold text-foreground">R {totalExpenses.toFixed(2)}</span>
+          Total: <span className="mono font-semibold text-foreground">{formatCurrency(totalExpenses, (filtered[0]?.currency || 'ZAR') as Currency)}</span>
         </div>
       </div>
 
@@ -137,7 +139,7 @@ export default function Expenses() {
                   </td>
                   <td className="px-4 py-2.5 max-w-[200px] truncate">{e.description || '—'}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{e.vendor || '—'}</td>
-                  <td className="px-4 py-2.5 text-right mono font-medium">R {e.amount.toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-right mono font-medium">{formatCurrency(e.amount, (e.currency || 'ZAR') as Currency)}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1 justify-end">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(e)}><Pencil className="h-3 w-3" /></Button>

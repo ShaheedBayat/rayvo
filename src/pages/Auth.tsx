@@ -76,7 +76,14 @@ export default function Auth() {
                   <button
                     type="button"
                     className="text-xs text-primary hover:underline"
-                    onClick={() => toast.info('Password reset coming soon')}
+                    onClick={async () => {
+                      if (!email) { toast.error('Enter your email first'); return; }
+                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: window.location.origin,
+                      });
+                      if (error) toast.error(error.message);
+                      else toast.success('Password reset email sent! Check your inbox.');
+                    }}
                   >
                     Forgot password?
                   </button>

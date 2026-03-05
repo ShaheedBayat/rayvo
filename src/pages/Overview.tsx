@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
-import { formatCurrency, calculateTotal, currencySymbols } from '@/types/invoice';
+import { formatCurrency, calculateTotal, calculateSmartTotals, currencySymbols } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
 import {
@@ -35,11 +35,18 @@ export default function Overview() {
   const currencies = [...new Set(activeInvoices.map(i => i.currency))] as Currency[];
   const primaryCurrency: Currency = currencies[0] || 'ZAR';
 
+  const getInvoiceTotal = (inv: typeof activeInvoices[0]) => {
+    const company = companies.find(c => c.id === inv.companyId);
+    const pricingMode = company?.pricingMode || 'exclusive';
+    const isVat = company?.isVatRegistered ?? false;
+    return calculateSmartTotals(inv.items, inv.taxRate, pricingMode, isVat).total;
+  };
+
   const byCurrency = (invs: typeof activeInvoices) => {
     const groups: Record<string, number> = {};
     invs.forEach(inv => {
       const c = inv.currency;
-      groups[c] = (groups[c] || 0) + calculateTotal(inv.items, inv.taxRate);
+      groups[c] = (groups[c] || 0) + getInvoiceTotal(inv);
     });
     return groups;
   };
@@ -57,7 +64,7 @@ export default function Overview() {
 
   const customerOwing: Record<string, { name: string; amount: number; currency: Currency }> = {};
   sent.forEach(inv => {
-    const total = calculateTotal(inv.items, inv.taxRate);
+    const total = getInvoiceTotal(inv);
     if (!customerOwing[inv.clientName]) {
       customerOwing[inv.clientName] = { name: inv.clientName, amount: 0, currency: inv.currency };
     }
@@ -194,7 +201,7 @@ export default function Overview() {
               </div>
               <div className="p-3">
                 {activeInvoices.slice(0, 6).map((inv) => {
-                  const total = calculateTotal(inv.items, inv.taxRate);
+                  const total = getInvoiceTotal(inv);
                   const isOverdue = (inv.status === 'sent' || inv.status === 'partially_paid') && new Date(inv.dueDate) < new Date();
                   return (
                     <Link

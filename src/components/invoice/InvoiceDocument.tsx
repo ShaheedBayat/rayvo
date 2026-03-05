@@ -97,7 +97,7 @@ export default function InvoiceDocument({ invoice, company, bankingDetails, term
 
         {/* Totals */}
         {(() => {
-          const isVatRegistered = company?.isVatRegistered ?? (invoice.taxRate > 0);
+          const isVatRegistered = company?.isVatRegistered ?? false;
           const pricingMode = company?.pricingMode || 'exclusive';
           const totals = calculateSmartTotals(invoice.items, invoice.taxRate, pricingMode, isVatRegistered);
           

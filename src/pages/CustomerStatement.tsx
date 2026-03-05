@@ -5,7 +5,8 @@ import { useCreditNotes } from '@/hooks/useCreditNotes';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatCurrency, calculateTotal, calculateSmartTotals } from '@/types/invoice';
+import { useCompanies } from '@/hooks/useInvoiceStore';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
@@ -19,6 +20,7 @@ export default function CustomerStatement() {
   const { user } = useAuth();
   const { customers } = useCustomers();
   const { invoices } = useInvoices();
+  const { getCompany } = useCompanies();
   const { creditNotes } = useCreditNotes();
 
   const customer = customers.find(c => c.id === id);
@@ -86,7 +88,10 @@ export default function CustomerStatement() {
         date: inv.createdAt,
         ref: inv.invoiceNumber,
         type: inv.status === 'paid' ? 'Invoice (Paid)' : 'Invoice',
-        amount: calculateTotal(inv.items, inv.taxRate),
+        amount: (() => {
+          const co = getCompany(inv.companyId);
+          return calculateSmartTotals(inv.items, inv.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
+        })(),
         currency: inv.currency,
       });
     });
@@ -95,7 +100,7 @@ export default function CustomerStatement() {
         date: cn.createdAt,
         ref: cn.creditNoteNumber,
         type: 'Credit Note',
-        amount: -calculateTotal(cn.items, cn.taxRate),
+        amount: -calculateTotal(cn.items, cn.taxRate), // Credit notes use simple calculation
         currency: cn.currency,
       });
     });

@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useCreditNotes } from '@/hooks/useCreditNotes';
-import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatCurrency, calculateTotal, calculateSmartTotals } from '@/types/invoice';
+import { useCompanies } from '@/hooks/useInvoiceStore';
 import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { FileText } from 'lucide-react';
@@ -11,6 +12,7 @@ import { FileText } from 'lucide-react';
 export default function CustomerStatements() {
   const { customers } = useCustomers();
   const { invoices } = useInvoices();
+  const { getCompany } = useCompanies();
   const { creditNotes } = useCreditNotes();
 
   const customerBalances = useMemo(() => {
@@ -18,7 +20,10 @@ export default function CustomerStatements() {
       const custInvoices = invoices.filter(i => i.clientName === c.name && i.status !== 'voided' && i.status !== 'draft');
       const custCreditNotes = creditNotes.filter(cn => cn.clientName === c.name);
 
-      const invoiceTotal = custInvoices.reduce((sum, i) => sum + calculateTotal(i.items, i.taxRate), 0);
+      const invoiceTotal = custInvoices.reduce((sum, i) => {
+        const co = getCompany(i.companyId);
+        return sum + calculateSmartTotals(i.items, i.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
+      }, 0);
       const creditTotal = custCreditNotes.reduce((sum, cn) => sum + calculateTotal(cn.items, cn.taxRate), 0);
       const balance = invoiceTotal - creditTotal;
       const currency = (custInvoices[0]?.currency || 'ZAR') as Currency;
