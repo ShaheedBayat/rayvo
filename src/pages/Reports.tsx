@@ -3,7 +3,8 @@ import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useExpenses } from '@/hooks/useExpenses';
 import { usePayments } from '@/hooks/usePayments';
-import { formatCurrency, calculateTotal, calculateSubtotal, calculateTax } from '@/types/invoice';
+import { formatCurrency, calculateTotal, calculateSubtotal, calculateTax, calculateSmartTotals } from '@/types/invoice';
+import { useCompanies } from '@/hooks/useInvoiceStore';
 import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -17,8 +18,23 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--success
 
 export default function Reports() {
   const { invoices: allInvoices } = useInvoices();
+  const { getCompany } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const { expenses } = useExpenses();
+
+  const getInvoiceTotal = (inv: typeof allInvoices[0]) => {
+    const company = getCompany(inv.companyId);
+    const pricingMode = company?.pricingMode || 'exclusive';
+    const isVat = company?.isVatRegistered ?? false;
+    return calculateSmartTotals(inv.items, inv.taxRate, pricingMode, isVat).total;
+  };
+
+  const getInvoiceTax = (inv: typeof allInvoices[0]) => {
+    const company = getCompany(inv.companyId);
+    const pricingMode = company?.pricingMode || 'exclusive';
+    const isVat = company?.isVatRegistered ?? false;
+    return calculateSmartTotals(inv.items, inv.taxRate, pricingMode, isVat).tax;
+  };
 
   const invoices = activeCompanyId ? allInvoices.filter(i => i.companyId === activeCompanyId) : allInvoices;
   const activeInvoices = invoices.filter(i => i.status !== 'voided');
@@ -38,11 +54,11 @@ export default function Reports() {
       const d = new Date(inv.createdAt);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       if (key in months) {
-        months[key] += calculateTotal(inv.items, inv.taxRate);
+      months[key] += getInvoiceTotal(inv);
       }
     });
     return Object.entries(months).map(([month, revenue]) => ({ month, revenue }));
-  }, [activeInvoices]);
+  }, [activeInvoices, getInvoiceTotal]);
 
   // Status breakdown
   const statusBreakdown = useMemo(() => {
@@ -70,7 +86,7 @@ export default function Reports() {
     const map: Record<string, { total: number; currency: Currency }> = {};
     activeInvoices.forEach(inv => {
       if (!map[inv.clientName]) map[inv.clientName] = { total: 0, currency: inv.currency };
-      map[inv.clientName].total += calculateTotal(inv.items, inv.taxRate);
+      map[inv.clientName].total += getInvoiceTotal(inv);
     });
     return Object.entries(map)
       .map(([name, { total, currency }]) => ({ name, total, currency }))
@@ -84,7 +100,7 @@ export default function Reports() {
     const now = new Date();
     activeInvoices.filter(i => i.status === 'sent' || i.status === 'partially_paid').forEach(inv => {
       const days = Math.floor((now.getTime() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24));
-      const amt = calculateTotal(inv.items, inv.taxRate);
+      const amt = getInvoiceTotal(inv);
       if (days <= 0) buckets['0-30'] += amt;
       else if (days <= 30) buckets['0-30'] += amt;
       else if (days <= 60) buckets['31-60'] += amt;
@@ -107,7 +123,7 @@ export default function Reports() {
       const d = new Date(inv.createdAt);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       if (key in months) {
-        months[key].taxCollected += calculateTax(inv.items, inv.taxRate);
+        months[key].taxCollected += getInvoiceTax(inv);
       }
     });
     return Object.entries(months).map(([month, { taxCollected }]) => ({ month, tax: taxCollected }));
@@ -119,7 +135,7 @@ export default function Reports() {
     activeInvoices.forEach(inv => {
       const c = inv.currency;
       if (!groups[c]) groups[c] = { total: 0, paid: 0, outstanding: 0, overdue: 0 };
-      const amt = calculateTotal(inv.items, inv.taxRate);
+      const amt = getInvoiceTotal(inv);
       groups[c].total += amt;
       if (inv.status === 'paid') groups[c].paid += amt;
       if (inv.status === 'sent' || inv.status === 'partially_paid') {
@@ -142,7 +158,7 @@ export default function Reports() {
     activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
       const d = new Date(inv.createdAt);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
-      if (key in months) months[key].income += calculateTotal(inv.items, inv.taxRate);
+      if (key in months) months[key].income += getInvoiceTotal(inv);
     });
     expenses.forEach(exp => {
       const d = new Date(exp.date);
@@ -173,7 +189,7 @@ export default function Reports() {
   const exportInvoices = () => {
     exportToCsv('invoices.csv',
       ['Number', 'Client', 'Status', 'Currency', 'Total', 'Due Date', 'Created'],
-      activeInvoices.map(i => [i.invoiceNumber, i.clientName, i.status, i.currency, calculateTotal(i.items, i.taxRate).toFixed(2), i.dueDate, i.createdAt.split('T')[0]])
+      activeInvoices.map(i => [i.invoiceNumber, i.clientName, i.status, i.currency, getInvoiceTotal(i).toFixed(2), i.dueDate, i.createdAt.split('T')[0]])
     );
   };
   const exportExpenses = () => {

@@ -95,7 +95,7 @@ export default function InvoiceView() {
   const company = getCompany(invoice.companyId);
   const config = statusConfig[invoice.status] || statusConfig.draft;
   const pricingMode = company?.pricingMode || 'exclusive';
-  const isVatRegistered = company?.isVatRegistered ?? (invoice.taxRate > 0);
+  const isVatRegistered = company?.isVatRegistered ?? false;
   const smartTotals = calculateSmartTotals(invoice.items, invoice.taxRate, pricingMode, isVatRegistered);
   const total = smartTotals.total;
   const canEdit = invoice.status === 'draft' || invoice.status === 'approved';
