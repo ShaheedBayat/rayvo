@@ -5,7 +5,7 @@ import { useCreditNotes } from '@/hooks/useCreditNotes';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency, calculateTotal, calculateSmartTotals } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
@@ -100,7 +100,7 @@ export default function CustomerStatement() {
         date: cn.createdAt,
         ref: cn.creditNoteNumber,
         type: 'Credit Note',
-        amount: -calculateTotal(cn.items, cn.taxRate), // Credit notes use simple calculation
+        amount: -calculateSmartTotals(cn.items, cn.taxRate).total,
         currency: cn.currency,
       });
     });

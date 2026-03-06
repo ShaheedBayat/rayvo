@@ -179,7 +179,7 @@ export default function Expenses() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">Amount (R)</Label>
+                <Label className="text-xs">Amount</Label>
                 <Input type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} className="h-9" required />
               </div>
               <div className="space-y-1.5">

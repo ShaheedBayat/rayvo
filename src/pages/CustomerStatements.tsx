@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useCreditNotes } from '@/hooks/useCreditNotes';
-import { formatCurrency, calculateTotal, calculateSmartTotals } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
@@ -24,7 +24,7 @@ export default function CustomerStatements() {
         const co = getCompany(i.companyId);
         return sum + calculateSmartTotals(i.items, i.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
       }, 0);
-      const creditTotal = custCreditNotes.reduce((sum, cn) => sum + calculateTotal(cn.items, cn.taxRate), 0);
+      const creditTotal = custCreditNotes.reduce((sum, cn) => sum + calculateSmartTotals(cn.items, cn.taxRate).total, 0);
       const balance = invoiceTotal - creditTotal;
       const currency = (custInvoices[0]?.currency || 'ZAR') as Currency;
       const invoiceCount = custInvoices.length;
