@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import AppLayout from '@/components/AppLayout';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
-import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { toast } from 'sonner';
 
@@ -236,7 +236,7 @@ export default function Quotes() {
             </thead>
             <tbody>
               {filtered.map(q => {
-                const total = calculateTotal(q.items, q.taxRate);
+                const total = calculateSmartTotals(q.items, q.taxRate).total;
                 const cfg = statusConfig[q.status] || statusConfig.draft;
                 return (
                   <tr key={q.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">

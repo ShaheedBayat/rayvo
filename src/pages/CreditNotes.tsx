@@ -14,7 +14,7 @@ import AppLayout from '@/components/AppLayout';
 import { useCreditNotes } from '@/hooks/useCreditNotes';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
-import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { toast } from 'sonner';
 
@@ -242,7 +242,7 @@ export default function CreditNotes() {
             </thead>
             <tbody>
               {filtered.map(cn => {
-                const total = calculateTotal(cn.items, cn.taxRate);
+                const total = calculateSmartTotals(cn.items, cn.taxRate).total;
                 const cfg = statusConfig[cn.status] || statusConfig.draft;
                 const linkedInvoice = cn.invoiceId ? invoices.find(i => i.id === cn.invoiceId) : null;
                 return (
