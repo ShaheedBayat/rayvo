@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
-import { formatCurrency, calculateTotal, calculateSmartTotals } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import {
