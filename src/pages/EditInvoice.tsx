@@ -7,7 +7,7 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
 import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
-import { formatCurrency, calculateSubtotal } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,31 +110,7 @@ export default function EditInvoice() {
     }
   };
 
-  // Calculate totals
-  const calcTotals = () => {
-    if (!isVatRegistered) {
-      const sub = calculateSubtotal(items);
-      return { subtotal: sub, tax: 0, total: sub };
-    }
-    let subtotal = 0;
-    let totalTax = 0;
-    items.forEach(item => {
-      const rate = item.taxRate ?? taxRate;
-      const discount = item.discount || 0;
-      const lineTotal = item.quantity * item.unitPrice * (1 - discount / 100);
-      if (pricingMode === 'inclusive' && rate > 0) {
-        const taxable = lineTotal / (1 + rate / 100);
-        subtotal += taxable;
-        totalTax += lineTotal - taxable;
-      } else {
-        subtotal += lineTotal;
-        totalTax += lineTotal * (rate / 100);
-      }
-    });
-    return { subtotal, tax: totalTax, total: subtotal + totalTax };
-  };
-
-  const totals = calcTotals();
+  const totals = calculateSmartTotals(items, taxRate, pricingMode, isVatRegistered);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -295,7 +295,7 @@ export default function Invoices() {
   const filtered = companyFiltered.filter((inv) => {
     const matchesSearch = !search || inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) || inv.clientName.toLowerCase().includes(search.toLowerCase());
     if (statusFilter === 'overdue') {
-      return matchesSearch && inv.status === 'sent' && new Date(inv.dueDate) < new Date();
+      return matchesSearch && (inv.status === 'sent' || inv.status === 'partially_paid') && new Date(inv.dueDate) < new Date();
     }
     const matchesStatus = !statusFilter || inv.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -459,7 +459,7 @@ export default function Invoices() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild><Link to={`/invoices/${inv.id}`}><Eye className="mr-2 h-4 w-4" /> View</Link></DropdownMenuItem>
-                                  {(inv.status === 'approved' || inv.status === 'sent') && (
+                  {(inv.status === 'approved' || inv.status === 'sent' || inv.status === 'partially_paid') && (
                                     <>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
