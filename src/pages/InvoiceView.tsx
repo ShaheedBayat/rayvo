@@ -6,7 +6,7 @@ import { useVatLedger } from '@/hooks/useVatLedger';
 import { usePayments } from '@/hooks/usePayments';
 import { useActivityLog, type ActivityEntry } from '@/hooks/useActivityLog';
 import { useAttachments } from '@/hooks/useAttachments';
-import { formatCurrency, calculateTotal, calculateSmartTotals } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import InvoiceDocument from '@/components/invoice/InvoiceDocument';
 import FileUpload from '@/components/FileUpload';
@@ -101,7 +101,7 @@ export default function InvoiceView() {
   const canEdit = invoice.status === 'draft' || invoice.status === 'approved';
   const isVoided = invoice.status === 'voided';
   const isDraft = invoice.status === 'draft';
-  const canVoid = invoice.status === 'approved' || invoice.status === 'sent';
+  const canVoid = invoice.status === 'approved' || invoice.status === 'sent' || invoice.status === 'partially_paid';
   const canRecordPayment = invoice.status === 'sent' || invoice.status === 'partially_paid';
   const amountDue = total - totalPaid;
 
@@ -215,6 +215,7 @@ export default function InvoiceView() {
     e.preventDefault();
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0) { toast.error('Enter a valid amount'); return; }
+    if (amount > amountDue + 0.01) { toast.error(`Amount exceeds balance due of ${formatCurrency(amountDue, invoice.currency)}`); return; }
     const result = await addPayment({
       invoiceId: invoice.id,
       amount,
