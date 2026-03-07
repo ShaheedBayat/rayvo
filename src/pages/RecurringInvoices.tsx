@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
-import { formatCurrency, calculateTotal } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { v4 as uuidv4 } from 'uuid';
 import { RefreshCw, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
@@ -240,7 +240,11 @@ export default function RecurringInvoices() {
                   <td className="px-4 py-3.5 mono text-muted-foreground">{r.dayOfMonth}</td>
                   <td className="px-4 py-3.5 text-muted-foreground">{new Date(r.nextRunDate).toLocaleDateString()}</td>
                   <td className="px-4 py-3.5 text-right mono font-medium">
-                    {formatCurrency(calculateTotal(r.items, r.taxRate), r.currency)}
+                    {(() => {
+                      const company = companies.find(c => c.id === r.companyId);
+                      const total = calculateSmartTotals(r.items, r.taxRate, company?.pricingMode || 'exclusive', company?.isVatRegistered ?? false).total;
+                      return formatCurrency(total, r.currency);
+                    })()}
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     <Badge variant="outline" className={r.isActive ? 'bg-success/10 text-success border-success/20' : 'bg-muted text-muted-foreground'}>
