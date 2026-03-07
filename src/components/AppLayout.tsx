@@ -185,8 +185,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     localStorage.setItem('activeCompanyLogo', activeCompany.logo || '');
   }
 
-  const displayName = activeCompany?.name || cachedName;
-  const displayLogo = activeCompany?.logo || cachedLogo || '';
+  // Only use cache when activeCompany hasn't loaded yet; once loaded, use its actual values
+  const displayName = activeCompany ? activeCompany.name : cachedName;
+  const displayLogo = activeCompany ? (activeCompany.logo || '') : (cachedLogo || '');
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
