@@ -242,7 +242,8 @@ export default function CreditNotes() {
             </thead>
             <tbody>
               {filtered.map(cn => {
-                const total = calculateSmartTotals(cn.items, cn.taxRate).total;
+                const co = activeCompany;
+                const total = calculateSmartTotals(cn.items, cn.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
                 const cfg = statusConfig[cn.status] || statusConfig.draft;
                 const linkedInvoice = cn.invoiceId ? invoices.find(i => i.id === cn.invoiceId) : null;
                 return (

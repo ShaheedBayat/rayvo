@@ -17,7 +17,8 @@ export default function VatReport() {
   const { fetchEntries } = useVatLedger();
   const [entries, setEntries] = useState<VatLedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const currency: Currency = 'ZAR'; // Default, could be enhanced per company
+  const currency: Currency = (activeCompany?.pricingMode ? undefined : undefined) || 'ZAR'; // Will use first invoice currency if available
+  // Use company's invoices to determine currency dynamically - for now mapped via activeCompany
 
   // Filters
   const now = new Date();

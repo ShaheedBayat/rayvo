@@ -236,7 +236,8 @@ export default function Quotes() {
             </thead>
             <tbody>
               {filtered.map(q => {
-                const total = calculateSmartTotals(q.items, q.taxRate).total;
+                const co = activeCompany;
+                const total = calculateSmartTotals(q.items, q.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
                 const cfg = statusConfig[q.status] || statusConfig.draft;
                 return (
                   <tr key={q.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">

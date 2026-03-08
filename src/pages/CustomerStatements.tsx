@@ -24,7 +24,10 @@ export default function CustomerStatements() {
         const co = getCompany(i.companyId);
         return sum + calculateSmartTotals(i.items, i.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
       }, 0);
-      const creditTotal = custCreditNotes.reduce((sum, cn) => sum + calculateSmartTotals(cn.items, cn.taxRate).total, 0);
+      const creditTotal = custCreditNotes.reduce((sum, cn) => {
+        const cnCompany = cn.companyId ? getCompany(cn.companyId) : undefined;
+        return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCompany?.pricingMode || 'exclusive', cnCompany?.isVatRegistered ?? false).total;
+      }, 0);
       const balance = invoiceTotal - creditTotal;
       const currency = (custInvoices[0]?.currency || 'ZAR') as Currency;
       const invoiceCount = custInvoices.length;
