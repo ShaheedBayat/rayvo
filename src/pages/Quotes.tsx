@@ -30,6 +30,7 @@ export default function Quotes() {
   const navigate = useNavigate();
   const { quotes, addQuote, updateQuote, deleteQuote } = useQuotes();
   const { activeCompanyId } = useActiveCompany();
+  const { getCompany } = useCompanies();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
