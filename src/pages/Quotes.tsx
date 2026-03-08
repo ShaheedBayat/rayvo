@@ -238,7 +238,7 @@ export default function Quotes() {
             </thead>
             <tbody>
               {filtered.map(q => {
-                const co = activeCompany;
+                const co = q.companyId ? getCompany(q.companyId) : undefined;
                 const total = calculateSmartTotals(q.items, q.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
                 const cfg = statusConfig[q.status] || statusConfig.draft;
                 return (
