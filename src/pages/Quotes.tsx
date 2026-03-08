@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import AppLayout from '@/components/AppLayout';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useCompanies } from '@/hooks/useInvoiceStore';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { toast } from 'sonner';
