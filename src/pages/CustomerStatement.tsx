@@ -96,11 +96,12 @@ export default function CustomerStatement() {
       });
     });
     customerCreditNotes.forEach(cn => {
+      const cnCompany = cn.companyId ? getCompany(cn.companyId) : undefined;
       items.push({
         date: cn.createdAt,
         ref: cn.creditNoteNumber,
         type: 'Credit Note',
-        amount: -calculateSmartTotals(cn.items, cn.taxRate).total,
+        amount: -calculateSmartTotals(cn.items, cn.taxRate, cnCompany?.pricingMode || 'exclusive', cnCompany?.isVatRegistered ?? false).total,
         currency: cn.currency,
       });
     });

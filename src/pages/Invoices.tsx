@@ -209,7 +209,10 @@ function RecurringTab() {
                   <td className="px-4 py-3.5 font-medium">{r.clientName}</td>
                   <td className="px-4 py-3.5 capitalize text-muted-foreground">{r.frequency} · Day {r.dayOfMonth}</td>
                   <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{formatDate(r.nextRunDate)}</td>
-                  <td className="px-4 py-3.5 text-right mono font-medium">{formatCurrency(calculateSmartTotals(r.items, r.taxRate).total, r.currency)}</td>
+                  <td className="px-4 py-3.5 text-right mono font-medium">{(() => {
+                    const co = companies.find(c => c.id === r.companyId);
+                    return formatCurrency(calculateSmartTotals(r.items, r.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total, r.currency);
+                  })()}</td>
                   <td className="px-4 py-3.5 text-center">
                     <Badge variant="outline" className={r.isActive ? 'bg-success/10 text-success border-success/20' : 'bg-muted text-muted-foreground'}>
                       {r.isActive ? 'Active' : 'Paused'}

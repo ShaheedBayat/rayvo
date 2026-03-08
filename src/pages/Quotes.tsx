@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import AppLayout from '@/components/AppLayout';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useCompanies } from '@/hooks/useInvoiceStore';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { toast } from 'sonner';
@@ -29,6 +30,7 @@ export default function Quotes() {
   const navigate = useNavigate();
   const { quotes, addQuote, updateQuote, deleteQuote } = useQuotes();
   const { activeCompanyId } = useActiveCompany();
+  const { getCompany } = useCompanies();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -236,7 +238,8 @@ export default function Quotes() {
             </thead>
             <tbody>
               {filtered.map(q => {
-                const total = calculateSmartTotals(q.items, q.taxRate).total;
+                const co = q.companyId ? getCompany(q.companyId) : undefined;
+                const total = calculateSmartTotals(q.items, q.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
                 const cfg = statusConfig[q.status] || statusConfig.draft;
                 return (
                   <tr key={q.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">

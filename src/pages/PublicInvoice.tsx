@@ -63,7 +63,7 @@ export default function PublicInvoice() {
     );
   }
 
-  const canPay = invoice.status === 'sent' || invoice.status === 'approved';
+  const canPay = invoice.status === 'sent' || invoice.status === 'approved' || invoice.status === 'partially_paid';
 
   return (
     <div className="min-h-screen bg-secondary/30 py-12 px-4">
