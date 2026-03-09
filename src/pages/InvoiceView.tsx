@@ -163,9 +163,10 @@ export default function InvoiceView() {
   };
 
   const markApproveAndSend = async () => {
-    await updateInvoice({ ...invoice, status: 'sent' });
-    // Create VAT ledger entries when invoice is sent
-    await createVatEntries(invoice);
+    const updatedInvoice = { ...invoice, status: 'sent' as const };
+    await updateInvoice(updatedInvoice);
+    // Create VAT ledger entries with the updated invoice
+    await createVatEntries(updatedInvoice);
     await logActivity('invoice', invoice.id, 'approved_and_sent', `Invoice ${invoice.invoiceNumber} approved & sent`);
     toast.success('Invoice approved & sent');
     fetchLogs('invoice', invoice.id).then(setActivityLogs);

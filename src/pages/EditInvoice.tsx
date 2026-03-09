@@ -63,6 +63,13 @@ export default function EditInvoice() {
     }
   }, [invoice, loaded]);
 
+  // Redirect non-editable invoices via effect (not during render)
+  useEffect(() => {
+    if (invoice && invoice.status !== 'draft' && invoice.status !== 'approved') {
+      navigate(`/invoices/${invoice.id}`, { replace: true });
+    }
+  }, [invoice, navigate]);
+
   if (!invoice) {
     return (
       <AppLayout>
@@ -74,8 +81,13 @@ export default function EditInvoice() {
   }
 
   if (invoice.status !== 'draft' && invoice.status !== 'approved') {
-    navigate(`/invoices/${invoice.id}`);
-    return null;
+    return (
+      <AppLayout>
+        <div className="text-center py-20">
+          <p className="text-muted-foreground">Redirecting...</p>
+        </div>
+      </AppLayout>
+    );
   }
 
   const addItem = () => {
