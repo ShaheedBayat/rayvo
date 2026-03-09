@@ -63,6 +63,13 @@ export default function EditInvoice() {
     }
   }, [invoice, loaded]);
 
+  // Redirect non-editable invoices via effect (not during render)
+  useEffect(() => {
+    if (invoice && invoice.status !== 'draft' && invoice.status !== 'approved') {
+      navigate(`/invoices/${invoice.id}`, { replace: true });
+    }
+  }, [invoice, navigate]);
+
   if (!invoice) {
     return (
       <AppLayout>
@@ -73,14 +80,7 @@ export default function EditInvoice() {
     );
   }
 
-  // Redirect non-editable invoices via effect (not during render)
-  useEffect(() => {
-    if (invoice && invoice.status !== 'draft' && invoice.status !== 'approved') {
-      navigate(`/invoices/${invoice.id}`, { replace: true });
-    }
-  }, [invoice, navigate]);
-
-  if (!invoice || (invoice.status !== 'draft' && invoice.status !== 'approved')) {
+  if (invoice.status !== 'draft' && invoice.status !== 'approved') {
     return (
       <AppLayout>
         <div className="text-center py-20">
