@@ -47,10 +47,15 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
     ? calculateSubtotal(items) // subtotal already includes VAT
     : totalTaxable + totalVat;
 
+  // Not VAT registered: show only subtotal as total, no tax lines at all
   if (!isVatRegistered) {
     return (
       <div className="flex justify-end">
         <div className="w-72 space-y-2.5">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span className="mono font-medium">{formatCurrency(calculateSubtotal(items), currency)}</span>
+          </div>
           <div className="flex justify-between text-base font-semibold border-t pt-3">
             <span>Total</span>
             <span className="mono text-primary">
@@ -66,24 +71,28 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
     <div className="flex justify-end">
       <div className="w-72 space-y-2.5">
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal {pricingMode === 'inclusive' ? '(incl. VAT)' : '(excl. VAT)'}</span>
-          <span className="mono font-medium">{formatCurrency(pricingMode === 'inclusive' ? calculateSubtotal(items) : totalTaxable, currency)}</span>
+          <span className="text-muted-foreground">
+            Subtotal {pricingMode === 'inclusive' ? '(incl. VAT)' : '(excl. VAT)'}
+          </span>
+          <span className="mono font-medium">
+            {formatCurrency(pricingMode === 'inclusive' ? calculateSubtotal(items) : totalTaxable, currency)}
+          </span>
         </div>
         
-        {/* VAT breakdown by rate */}
-        {Object.entries(vatBreakdown).map(([key, group]) => (
-          group.vat !== 0 && (
-            <div key={key} className="flex justify-between text-sm">
-              <span className="text-muted-foreground">VAT — {group.rateName}</span>
-              <span className="mono">{formatCurrency(group.vat, currency)}</span>
-            </div>
-          )
-        ))}
-        
-        {!hasPerLineTax && (
+        {/* VAT breakdown by rate — only show lines with non-zero VAT */}
+        {hasPerLineTax ? (
+          Object.entries(vatBreakdown).map(([key, group]) => (
+            group.vat !== 0 && (
+              <div key={key} className="flex justify-between text-sm">
+                <span className="text-muted-foreground">VAT — {group.rateName}</span>
+                <span className="mono">{formatCurrency(group.vat, currency)}</span>
+              </div>
+            )
+          ))
+        ) : (
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground">Tax</span>
+              <span className="text-muted-foreground">VAT</span>
               <Input
                 type="number"
                 min={0}
@@ -99,7 +108,7 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
         )}
         
         <div className="flex justify-between text-base font-semibold border-t pt-3">
-          <span>Total</span>
+          <span>Total {pricingMode === 'inclusive' ? '' : 'incl. VAT'}</span>
           <span className="mono text-primary">
             {formatCurrency(grandTotal, currency)}
           </span>
