@@ -126,10 +126,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Tax rate</Label>
-                    <Select value={`${purchaseTaxRate}%`} onValueChange={v => setPurchaseTaxRate(v.replace('%', ''))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{TAX_RATES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <div className="flex items-center h-10 px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground">15%</div>
                   </div>
                 </div>
                 <div className="space-y-1.5">
