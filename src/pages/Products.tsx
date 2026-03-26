@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Package, Plus, Upload, Download, Trash2, Edit, MoreHorizontal, Archive, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,17 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
   const [sellDescription, setSellDescription] = useState(editing?.sellDescription || '');
   const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() ?? (isVatRegistered ? '15' : '0'));
   const [saving, setSaving] = useState(false);
+
+  // Hard-reset tax rates when VAT registration changes
+  useEffect(() => {
+    if (!isVatRegistered) {
+      setPurchaseTaxRate('0');
+      setSellTaxRate('0');
+    } else {
+      setPurchaseTaxRate(editing?.purchaseTaxRate?.toString() ?? '15');
+      setSellTaxRate(editing?.sellTaxRate?.toString() ?? '15');
+    }
+  }, [isVatRegistered]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
