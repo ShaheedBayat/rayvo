@@ -167,35 +167,35 @@ export default function Overview() {
 
       {/* Money summary */}
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
-        <div className="rounded-xl border border-border/50 bg-card p-6 invoice-shadow">
-          <div className="flex items-center gap-2 mb-2">
-            <Send className="h-4 w-4 text-warning" />
-            <p className="text-sm font-medium text-muted-foreground">Outstanding</p>
+        <div className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow">
+          <div className="flex items-center gap-2 mb-1">
+            <Send className="h-3.5 w-3.5 text-warning" />
+            <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
           </div>
-          <p className="text-xl font-semibold mono text-warning">
+          <p className="text-lg font-semibold mono text-warning">
             {formatMultiCurrency(outstandingByCurrency)}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card p-6 invoice-shadow">
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 className="h-4 w-4 text-success" />
-            <p className="text-sm font-medium text-muted-foreground">Received</p>
+        <div className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow">
+          <div className="flex items-center gap-2 mb-1">
+            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+            <p className="text-xs font-medium text-muted-foreground">Received</p>
           </div>
-          <p className="text-xl font-semibold mono text-success">
+          <p className="text-lg font-semibold mono text-success">
             {formatMultiCurrency(paidByCurrency)}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card p-6 invoice-shadow">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="h-4 w-4 text-overdue" />
-            <p className="text-sm font-medium text-muted-foreground">Overdue</p>
+        <div className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow">
+          <div className="flex items-center gap-2 mb-1">
+            <AlertCircle className="h-3.5 w-3.5 text-overdue" />
+            <p className="text-xs font-medium text-muted-foreground">Overdue</p>
           </div>
-          <p className="text-xl font-semibold mono text-overdue">
+          <p className="text-lg font-semibold mono text-overdue">
             {formatMultiCurrency(overdueByCurrency)}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
         </div>
       </div>
 
