@@ -1,6 +1,5 @@
 import type { InvoiceItem, Currency } from '@/types/invoice';
 import { formatCurrency, calculateSubtotal } from '@/types/invoice';
-import { Input } from '@/components/ui/input';
 
 interface Props {
   items: InvoiceItem[];
