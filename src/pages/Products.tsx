@@ -67,11 +67,11 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
         purchaseEnabled,
         purchasePrice: parseFloat(purchasePrice) || 0,
         purchaseDescription,
-        purchaseTaxRate: isVatRegistered ? parseFloat(purchaseTaxRate) : 0,
+        purchaseTaxRate: isVatRegistered ? 15 : 0,
         sellEnabled,
         sellPrice: parseFloat(sellPrice) || 0,
         sellDescription,
-        sellTaxRate: isVatRegistered ? parseFloat(sellTaxRate) : 0,
+        sellTaxRate: isVatRegistered ? 15 : 0,
         status: 'active',
       });
       if (result) {
@@ -126,10 +126,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Tax rate</Label>
-                    <Select value={`${purchaseTaxRate}%`} onValueChange={v => setPurchaseTaxRate(v.replace('%', ''))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{TAX_RATES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <div className="flex items-center h-10 px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground">15%</div>
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -171,10 +168,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Tax rate</Label>
-                    <Select value={`${sellTaxRate}%`} onValueChange={v => setSellTaxRate(v.replace('%', ''))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{TAX_RATES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <div className="flex items-center h-10 px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground">15%</div>
                   </div>
                 </div>
                 <div className="space-y-1.5">
