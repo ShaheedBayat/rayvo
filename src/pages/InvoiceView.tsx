@@ -312,7 +312,7 @@ export default function InvoiceView() {
                     </DropdownMenuItem>
                   </>
                 )}
-                {isDraft && (
+                {canDelete && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setDeleteOpen(true)} className="text-destructive focus:text-destructive">
