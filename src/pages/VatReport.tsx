@@ -91,6 +91,16 @@ export default function VatReport() {
 
   return (
     <AppLayout>
+      {!(activeCompany?.isVatRegistered) ? (
+        <div className="text-center py-20">
+          <Receipt className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+          <h2 className="text-lg font-semibold mb-2">VAT Report Not Available</h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Your company is not registered for VAT. Enable VAT registration in your company settings to access the VAT report.
+          </p>
+        </div>
+      ) : (
+      <>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">VAT Report</h1>
@@ -231,6 +241,8 @@ export default function VatReport() {
           </div>
         )}
       </div>
+      </>
+      )}
     </AppLayout>
   );
 }
