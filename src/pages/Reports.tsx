@@ -42,7 +42,7 @@ export default function Reports() {
   const currencies = [...new Set(activeInvoices.map(i => i.currency))] as Currency[];
   const primaryCurrency: Currency = currencies[0] || 'ZAR';
 
-  // Revenue by month (last 6 months)
+  // Revenue by month = sum of actual payments received (last 6 months)
   const revenueByMonth = useMemo(() => {
     const months: Record<string, number> = {};
     const now = new Date();
@@ -51,15 +51,17 @@ export default function Reports() {
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       months[key] = 0;
     }
-    activeInvoices.forEach(inv => {
-      const d = new Date(inv.createdAt);
+    // Filter payments to only those belonging to company-filtered invoices
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
+    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+      const d = new Date(p.paymentDate);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       if (key in months) {
-      months[key] += getInvoiceTotal(inv);
+        months[key] += p.amount;
       }
     });
     return Object.entries(months).map(([month, revenue]) => ({ month, revenue }));
-  }, [activeInvoices, getInvoiceTotal]);
+  }, [activeInvoices, allPayments]);
 
   // Status breakdown
   const statusBreakdown = useMemo(() => {
