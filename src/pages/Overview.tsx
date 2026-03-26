@@ -151,15 +151,15 @@ export default function Overview() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
           {stats.map((s) => (
-            <div key={s.label} className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow hover:invoice-shadow-lg transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.bg}`}>
-                  <s.icon className={`h-4 w-4 ${s.color}`} />
+            <div key={s.label} className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow hover:invoice-shadow-lg transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <div className={`flex h-7 w-7 items-center justify-center rounded-md ${s.bg}`}>
+                  <s.icon className={`h-3.5 w-3.5 ${s.color}`} />
                 </div>
-                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+                <ArrowUpRight className="h-3 w-3 text-muted-foreground/40" />
               </div>
-              <p className="text-2xl font-semibold">{s.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+              <p className="text-xl font-semibold">{s.value}</p>
+              <p className="text-[11px] text-muted-foreground">{s.label}</p>
             </div>
           ))}
         </div>
