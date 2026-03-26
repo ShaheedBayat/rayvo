@@ -19,8 +19,9 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--success
 export default function Reports() {
   const { invoices: allInvoices } = useInvoices();
   const { getCompany } = useCompanies();
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
   const { expenses } = useExpenses();
+  const { payments: allPayments, paidForInvoice } = useAllPayments();
 
   const getInvoiceTotal = (inv: typeof allInvoices[0]) => {
     const company = getCompany(inv.companyId);
