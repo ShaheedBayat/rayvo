@@ -98,11 +98,18 @@ export default function InvoiceView() {
   const isVatRegistered = company?.isVatRegistered ?? false;
   const smartTotals = calculateSmartTotals(invoice.items, invoice.taxRate, pricingMode, isVatRegistered);
   const total = smartTotals.total;
-  const canEdit = invoice.status === 'draft' || invoice.status === 'approved';
+  const isPaid = invoice.status === 'paid';
+  const isPartiallyPaid = invoice.status === 'partially_paid';
+  const isSent = invoice.status === 'sent';
   const isVoided = invoice.status === 'voided';
   const isDraft = invoice.status === 'draft';
-  const canVoid = invoice.status === 'approved' || invoice.status === 'sent' || invoice.status === 'partially_paid';
-  const canRecordPayment = invoice.status === 'sent' || invoice.status === 'partially_paid';
+  // Paid & partially paid: no editing. Sent: allow edit only if no payments recorded.
+  const canEdit = (invoice.status === 'draft' || invoice.status === 'approved') || (isSent && totalPaid === 0);
+  const canVoid = invoice.status === 'approved' || isSent || isPartiallyPaid;
+  const canRecordPayment = isSent || isPartiallyPaid;
+  // Paid and sent invoices cannot be deleted; only drafts can
+  const canDelete = isDraft;
+  const isLocked = isPaid;
   const amountDue = total - totalPaid;
 
   const handleExportPdf = async () => {
