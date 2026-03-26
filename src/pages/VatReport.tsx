@@ -89,6 +89,29 @@ export default function VatReport() {
     }).from(element).save();
   };
 
+  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
+
+  if (!isVatRegistered) {
+    return (
+      <AppLayout>
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold">VAT Report</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Output VAT summary for {activeCompany?.name || 'your company'}
+          </p>
+        </div>
+        <div className="rounded-lg border bg-card p-12 text-center invoice-shadow">
+          <Receipt className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+          <h2 className="text-lg font-semibold mb-2">VAT Reporting Disabled</h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Your company <span className="font-medium">{activeCompany?.name}</span> is not registered for VAT.
+            Enable VAT registration in your company settings to start tracking VAT.
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">

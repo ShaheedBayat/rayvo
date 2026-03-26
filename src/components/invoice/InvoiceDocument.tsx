@@ -101,53 +101,63 @@ export default function InvoiceDocument({ invoice, company, bankingDetails, term
           const pricingMode = company?.pricingMode || 'exclusive';
           const totals = calculateSmartTotals(invoice.items, invoice.taxRate, pricingMode, isVatRegistered);
           
-          // VAT breakdown by rate
-          const vatGroups: Record<string, { rateName: string; vat: number }> = {};
-          if (isVatRegistered) {
-            invoice.items.forEach(item => {
-              const rate = item.taxRate ?? invoice.taxRate;
-              const rateName = item.taxRateName || (rate === 0 ? 'Zero-rated' : `Tax ${rate}%`);
-              const discount = item.discount || 0;
-              const lineTotal = item.quantity * item.unitPrice * (1 - discount / 100);
-              const key = `${rate}-${rateName}`;
-              if (!vatGroups[key]) vatGroups[key] = { rateName, vat: 0 };
-              if (pricingMode === 'inclusive' && rate > 0) {
-                vatGroups[key].vat += lineTotal - lineTotal / (1 + rate / 100);
-              } else {
-                vatGroups[key].vat += lineTotal * (rate / 100);
-              }
-            });
+          // Not VAT registered: subtotal = total, no tax lines
+          if (!isVatRegistered) {
+            return (
+              <div className="flex justify-end">
+                <div className="w-72 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="mono">{formatCurrency(totals.subtotal, invoice.currency)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-semibold border-t-2 border-border pt-3 mt-1">
+                    <span>Total</span>
+                    <span className="mono text-primary">{formatCurrency(totals.total, invoice.currency)}</span>
+                  </div>
+                </div>
+              </div>
+            );
           }
+
+          // VAT registered: show breakdown by rate
+          const vatGroups: Record<string, { rateName: string; vat: number }> = {};
+          invoice.items.forEach(item => {
+            const rate = item.taxRate ?? invoice.taxRate;
+            const rateName = item.taxRateName || (rate === 0 ? 'Zero-rated' : `VAT ${rate}%`);
+            const discount = item.discount || 0;
+            const lineTotal = item.quantity * item.unitPrice * (1 - discount / 100);
+            const key = `${rate}-${rateName}`;
+            if (!vatGroups[key]) vatGroups[key] = { rateName, vat: 0 };
+            if (pricingMode === 'inclusive' && rate > 0) {
+              vatGroups[key].vat += lineTotal - lineTotal / (1 + rate / 100);
+            } else {
+              vatGroups[key].vat += lineTotal * (rate / 100);
+            }
+          });
           
           return (
             <div className="flex justify-end">
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Subtotal {isVatRegistered && pricingMode === 'inclusive' ? '(incl. VAT)' : ''}
+                    Subtotal {pricingMode === 'inclusive' ? '(incl. VAT)' : '(excl. VAT)'}
                   </span>
                   <span className="mono">
-                    {formatCurrency(pricingMode === 'inclusive' && isVatRegistered 
+                    {formatCurrency(pricingMode === 'inclusive'
                       ? totals.subtotal + totals.tax 
                       : totals.subtotal, invoice.currency)}
                   </span>
                 </div>
-                {isVatRegistered && Object.entries(vatGroups).map(([key, group]) => (
+                {Object.entries(vatGroups).map(([key, group]) => (
                   group.vat !== 0 && (
                     <div key={key} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">VAT — {group.rateName}</span>
-                      <span className="mono">{pricingMode === 'inclusive' ? '(incl.)' : ''} {formatCurrency(group.vat, invoice.currency)}</span>
+                      <span className="mono">{formatCurrency(group.vat, invoice.currency)}</span>
                     </div>
                   )
                 ))}
-                {!isVatRegistered && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span className="mono">{formatCurrency(0, invoice.currency)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-lg font-semibold border-t-2 border-border pt-3 mt-1">
-                  <span>Total</span>
+                  <span>Total {pricingMode === 'inclusive' ? '' : 'incl. VAT'}</span>
                   <span className="mono text-primary">{formatCurrency(totals.total, invoice.currency)}</span>
                 </div>
               </div>
