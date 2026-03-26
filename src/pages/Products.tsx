@@ -67,11 +67,11 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
         purchaseEnabled,
         purchasePrice: parseFloat(purchasePrice) || 0,
         purchaseDescription,
-        purchaseTaxRate: isVatRegistered ? parseFloat(purchaseTaxRate) : 0,
+        purchaseTaxRate: isVatRegistered ? 15 : 0,
         sellEnabled,
         sellPrice: parseFloat(sellPrice) || 0,
         sellDescription,
-        sellTaxRate: isVatRegistered ? parseFloat(sellTaxRate) : 0,
+        sellTaxRate: isVatRegistered ? 15 : 0,
         status: 'active',
       });
       if (result) {
