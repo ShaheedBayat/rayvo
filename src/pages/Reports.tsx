@@ -84,18 +84,22 @@ export default function Reports() {
     ].filter(s => s.value > 0);
   }, [activeInvoices]);
 
-  // Top customers by revenue
+  // Top customers by actual payments received
   const topCustomers = useMemo(() => {
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
+    const invoiceMap = new Map(activeInvoices.map(i => [i.id, i]));
     const map: Record<string, { total: number; currency: Currency }> = {};
-    activeInvoices.forEach(inv => {
+    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+      const inv = invoiceMap.get(p.invoiceId);
+      if (!inv) return;
       if (!map[inv.clientName]) map[inv.clientName] = { total: 0, currency: inv.currency };
-      map[inv.clientName].total += getInvoiceTotal(inv);
+      map[inv.clientName].total += p.amount;
     });
     return Object.entries(map)
       .map(([name, { total, currency }]) => ({ name, total, currency }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
-  }, [activeInvoices]);
+  }, [activeInvoices, allPayments]);
 
   // AR Aging
   const aging = useMemo(() => {
