@@ -86,11 +86,12 @@ export default function Overview() {
 
   const customerOwing: Record<string, { name: string; amount: number; currency: Currency }> = {};
   sent.forEach(inv => {
-    const total = getInvoiceTotal(inv);
+    const balance = Math.max(0, getInvoiceTotal(inv) - paidForInvoice(inv.id));
+    if (balance <= 0) return;
     if (!customerOwing[inv.clientName]) {
       customerOwing[inv.clientName] = { name: inv.clientName, amount: 0, currency: inv.currency };
     }
-    customerOwing[inv.clientName].amount += total;
+    customerOwing[inv.clientName].amount += balance;
   });
   const topOwing = Object.values(customerOwing)
     .sort((a, b) => b.amount - a.amount)
