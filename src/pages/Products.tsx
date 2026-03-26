@@ -34,11 +34,11 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
   const [purchaseEnabled, setPurchaseEnabled] = useState(editing?.purchaseEnabled ?? true);
   const [purchasePrice, setPurchasePrice] = useState(editing?.purchasePrice?.toString() || '');
   const [purchaseDescription, setPurchaseDescription] = useState(editing?.purchaseDescription || '');
-  const [purchaseTaxRate, setPurchaseTaxRate] = useState(editing?.purchaseTaxRate?.toString() ?? '0');
+  const [purchaseTaxRate, setPurchaseTaxRate] = useState(editing?.purchaseTaxRate?.toString() ?? (isVatRegistered ? '15' : '0'));
   const [sellEnabled, setSellEnabled] = useState(editing?.sellEnabled ?? true);
   const [sellPrice, setSellPrice] = useState(editing?.sellPrice?.toString() || '');
   const [sellDescription, setSellDescription] = useState(editing?.sellDescription || '');
-  const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() ?? '0');
+  const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() ?? (isVatRegistered ? '15' : '0'));
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,11 +56,11 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
         purchaseEnabled,
         purchasePrice: parseFloat(purchasePrice) || 0,
         purchaseDescription,
-        purchaseTaxRate: parseFloat(purchaseTaxRate),
+        purchaseTaxRate: isVatRegistered ? parseFloat(purchaseTaxRate) : 0,
         sellEnabled,
         sellPrice: parseFloat(sellPrice) || 0,
         sellDescription,
-        sellTaxRate: parseFloat(sellTaxRate),
+        sellTaxRate: isVatRegistered ? parseFloat(sellTaxRate) : 0,
         status: 'active',
       });
       if (result) {

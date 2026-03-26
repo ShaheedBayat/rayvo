@@ -80,6 +80,15 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
   const handleProductSelect = (itemId: string, product: Product) => {
     onUpdate(itemId, 'description', product.sellDescription || product.name);
     onUpdate(itemId, 'unitPrice', product.sellPrice);
+    // Flow the product's sell tax rate into the line item when VAT registered
+    if (isVatRegistered && product.sellTaxRate !== undefined) {
+      onUpdate(itemId, 'taxRate', product.sellTaxRate);
+      // Try to find matching tax rate name from available rates
+      const matchingRate = (taxRates || []).find(t => t.rate === product.sellTaxRate && t.active);
+      if (matchingRate) {
+        onUpdate(itemId, 'taxRateName' as any, matchingRate.name);
+      }
+    }
     onProductSelect?.(itemId, product);
   };
 
