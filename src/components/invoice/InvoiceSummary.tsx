@@ -99,7 +99,7 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
         )}
         
         <div className="flex justify-between text-base font-semibold border-t pt-3">
-          <span>{pricingMode === 'inclusive' ? 'Total incl. VAT' : 'Total'}</span>
+          <span>Total</span>
           <span className="mono text-primary">
             {formatCurrency(grandTotal, currency)}
           </span>

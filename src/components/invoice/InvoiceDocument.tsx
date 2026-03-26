@@ -140,8 +140,14 @@ export default function InvoiceDocument({ invoice, company, bankingDetails, term
                     </div>
                   )
                 ))}
+                {!isVatRegistered && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span className="mono">{formatCurrency(0, invoice.currency)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-semibold border-t-2 border-border pt-3 mt-1">
-                  <span>{isVatRegistered && pricingMode === 'inclusive' ? 'Total incl. VAT' : 'Total'}</span>
+                  <span>Total</span>
                   <span className="mono text-primary">{formatCurrency(totals.total, invoice.currency)}</span>
                 </div>
               </div>
