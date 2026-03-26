@@ -38,7 +38,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
   const [sellEnabled, setSellEnabled] = useState(editing?.sellEnabled ?? true);
   const [sellPrice, setSellPrice] = useState(editing?.sellPrice?.toString() || '');
   const [sellDescription, setSellDescription] = useState(editing?.sellDescription || '');
-  const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() ?? '0');
+  const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() ?? (isVatRegistered ? '15' : '0'));
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
