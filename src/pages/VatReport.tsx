@@ -89,6 +89,8 @@ export default function VatReport() {
     }).from(element).save();
   };
 
+  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
+
   return (
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
