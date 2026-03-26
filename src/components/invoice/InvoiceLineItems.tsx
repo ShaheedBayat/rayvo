@@ -84,7 +84,7 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
     if (isVatRegistered && product.sellTaxRate !== undefined) {
       onUpdate(itemId, 'taxRate', product.sellTaxRate);
       // Try to find matching tax rate name from available rates
-      const matchingRate = (taxRates || []).find(t => t.rate === product.sellTaxRate && t.active);
+      const matchingRate = uniqueTaxRates.find(t => t.rate === product.sellTaxRate && t.active);
       if (matchingRate) {
         onUpdate(itemId, 'taxRateName' as any, matchingRate.name);
       }
