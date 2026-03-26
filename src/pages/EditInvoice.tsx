@@ -73,7 +73,9 @@ export default function EditInvoice() {
     );
   }
 
-  if (invoice.status !== 'draft' && invoice.status !== 'approved') {
+  // Block editing for paid, partially_paid, voided, or sent invoices
+  const isLocked = invoice.status === 'paid' || invoice.status === 'partially_paid' || invoice.status === 'voided' || invoice.status === 'sent';
+  if (isLocked || (invoice.status !== 'draft' && invoice.status !== 'approved')) {
     navigate(`/invoices/${invoice.id}`);
     return null;
   }
