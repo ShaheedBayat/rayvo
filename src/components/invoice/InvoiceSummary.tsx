@@ -1,6 +1,5 @@
 import type { InvoiceItem, Currency } from '@/types/invoice';
 import { formatCurrency, calculateSubtotal } from '@/types/invoice';
-import { Input } from '@/components/ui/input';
 
 interface Props {
   items: InvoiceItem[];
@@ -80,26 +79,15 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
           )
         ))}
         
-        {!hasPerLineTax && (
+        {!hasPerLineTax && totalVat > 0 && (
           <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground">Tax</span>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={taxRate}
-                onChange={(e) => onTaxRateChange(parseFloat(e.target.value) || 0)}
-                className="w-14 h-7 text-xs text-center"
-              />
-              <span className="text-muted-foreground text-xs">%</span>
-            </div>
+            <span className="text-muted-foreground">VAT ({taxRate}%)</span>
             <span className="mono">{formatCurrency(totalVat, currency)}</span>
           </div>
         )}
         
         <div className="flex justify-between text-base font-semibold border-t pt-3">
-          <span>Total</span>
+          <span>Total incl. VAT</span>
           <span className="mono text-primary">
             {formatCurrency(grandTotal, currency)}
           </span>
