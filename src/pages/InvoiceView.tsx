@@ -425,26 +425,105 @@ export default function InvoiceView() {
         </DialogContent>
       </Dialog>
 
-      <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-lg border bg-card p-4 invoice-shadow">
-          <p className="text-xs text-muted-foreground mb-1">Customer</p>
-          <p className="text-sm font-medium truncate">{invoice.clientName}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 invoice-shadow">
-          <p className="text-xs text-muted-foreground mb-1">Issue Date</p>
-          <p className="text-sm font-medium">{formatDate(invoice.createdAt)}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 invoice-shadow">
-          <p className="text-xs text-muted-foreground mb-1">Due Date</p>
-          <p className="text-sm font-medium">{formatDate(invoice.dueDate)}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4 invoice-shadow">
-          <p className="text-xs text-muted-foreground mb-1">{isVoided ? 'Amount (Voided)' : 'Amount Due'}</p>
-          <p className={`text-sm font-semibold mono ${isVoided ? 'text-destructive line-through' : 'text-primary'}`}>
-            {formatCurrency(isVoided ? total : amountDue, invoice.currency)}
-          </p>
-        </div>
-      </div>
+      {/* Financial Summary Banner */}
+      {(() => {
+        const isOverdue = !isVoided && invoice.status !== 'paid' && new Date(invoice.dueDate) < new Date();
+        const isPaid = invoice.status === 'paid';
+        const isPartial = invoice.status === 'partially_paid';
+
+        let statusBannerClass = 'border-border';
+        let statusLabel = '';
+        let statusIcon = null as React.ReactNode;
+        if (isVoided) {
+          statusBannerClass = 'border-destructive/30 bg-destructive/5';
+          statusLabel = 'Voided';
+        } else if (isPaid) {
+          statusBannerClass = 'border-success/30 bg-success/5';
+          statusLabel = 'Paid in Full';
+          statusIcon = <CheckCircle className="h-5 w-5 text-success" />;
+        } else if (isOverdue) {
+          statusBannerClass = 'border-destructive/30 bg-destructive/5';
+          statusLabel = 'Overdue';
+          statusIcon = <Clock className="h-5 w-5 text-destructive" />;
+        } else if (isPartial) {
+          statusBannerClass = 'border-warning/30 bg-warning/5';
+          statusLabel = 'Partially Paid';
+          statusIcon = <CreditCard className="h-5 w-5 text-warning" />;
+        }
+
+        return (
+          <>
+            {/* Status banner for paid/overdue/partial */}
+            {statusLabel && !isDraft && invoice.status !== 'sent' && (
+              <div className={`mb-4 rounded-lg border-2 ${statusBannerClass} p-3 flex items-center gap-3`}>
+                {statusIcon}
+                <span className={`font-semibold text-sm ${
+                  isPaid ? 'text-success' : isOverdue ? 'text-destructive' : 'text-warning'
+                }`}>
+                  {statusLabel}
+                  {isOverdue && ` — ${Math.ceil((Date.now() - new Date(invoice.dueDate).getTime()) / 86400000)} days past due`}
+                </span>
+              </div>
+            )}
+
+            <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="rounded-lg border bg-card p-4 invoice-shadow">
+                <p className="text-xs text-muted-foreground mb-1">Customer</p>
+                <p className="text-sm font-medium truncate">{invoice.clientName}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-4 invoice-shadow">
+                <p className="text-xs text-muted-foreground mb-1">Issue Date</p>
+                <p className="text-sm font-medium">{formatDate(invoice.createdAt)}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-4 invoice-shadow">
+                <p className="text-xs text-muted-foreground mb-1">Due Date</p>
+                <p className={`text-sm font-medium ${isOverdue ? 'text-destructive font-semibold' : ''}`}>{formatDate(invoice.dueDate)}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-4 invoice-shadow">
+                <p className="text-xs text-muted-foreground mb-1">{isVoided ? 'Amount (Voided)' : 'Amount Due'}</p>
+                <p className={`text-sm font-semibold mono ${
+                  isVoided ? 'text-destructive line-through' : isPaid ? 'text-success' : isOverdue ? 'text-destructive' : 'text-primary'
+                }`}>
+                  {formatCurrency(isVoided ? total : amountDue, invoice.currency)}
+                </p>
+              </div>
+            </div>
+
+            {/* Detailed financial breakdown */}
+            <div className="mb-6 max-w-[800px] mx-auto rounded-lg border bg-card p-5 invoice-shadow">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Financial Summary</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="mono font-medium">{formatCurrency(smartTotals.subtotal, invoice.currency)}</span>
+                </div>
+                {isVatRegistered && smartTotals.tax > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">VAT ({invoice.taxRate}%)</span>
+                    <span className="mono font-medium">{formatCurrency(smartTotals.tax, invoice.currency)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-medium">{isVatRegistered ? 'Total incl. VAT' : 'Total'}</span>
+                  <span className="mono font-semibold">{formatCurrency(total, invoice.currency)}</span>
+                </div>
+                {totalPaid > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-success font-medium">Total Paid</span>
+                    <span className="mono font-medium text-success">− {formatCurrency(totalPaid, invoice.currency)}</span>
+                  </div>
+                )}
+                <div className={`flex justify-between border-t pt-2 ${
+                  isPaid ? 'text-success' : isOverdue ? 'text-destructive' : isPartial ? 'text-warning' : ''
+                }`}>
+                  <span className="font-semibold">Remaining Balance</span>
+                  <span className="mono font-bold text-lg">{formatCurrency(Math.max(0, amountDue), invoice.currency)}</span>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       <div ref={docRef}>
         <InvoiceDocument invoice={invoice} company={company} bankingDetails={settings?.bankingDetails} termsConditions={settings?.termsConditions} />
