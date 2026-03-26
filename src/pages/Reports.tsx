@@ -142,22 +142,25 @@ export default function Reports() {
     return Object.entries(months).map(([month, { taxCollected }]) => ({ month, tax: taxCollected }));
   }, [activeInvoices, primaryCurrency, isVatRegistered]);
 
-  // Summary cards grouped by currency
+  // Summary cards — revenue = payments, outstanding = balance, overdue = past-due balance
   const summaryByCurrency = useMemo(() => {
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
     const groups: Record<string, { total: number; paid: number; outstanding: number; overdue: number }> = {};
     activeInvoices.forEach(inv => {
       const c = inv.currency;
       if (!groups[c]) groups[c] = { total: 0, paid: 0, outstanding: 0, overdue: 0 };
-      const amt = getInvoiceTotal(inv);
-      groups[c].total += amt;
-      if (inv.status === 'paid') groups[c].paid += amt;
+      const invoiceTotal = getInvoiceTotal(inv);
+      const paid = paidForInvoice(inv.id);
+      const balance = Math.max(0, invoiceTotal - paid);
+      groups[c].total += paid; // "Total Revenue" = actual payments received
+      groups[c].paid += paid;
       if (inv.status === 'sent' || inv.status === 'partially_paid') {
-        groups[c].outstanding += amt;
-        if (new Date(inv.dueDate) < new Date()) groups[c].overdue += amt;
+        groups[c].outstanding += balance;
+        if (new Date(inv.dueDate) < new Date()) groups[c].overdue += balance;
       }
     });
     return groups;
-  }, [activeInvoices]);
+  }, [activeInvoices, paidForInvoice]);
 
   // P&L data
   const pnlData = useMemo(() => {
