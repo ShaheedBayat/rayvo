@@ -118,7 +118,8 @@ export default function Reports() {
     return Object.entries(buckets).map(([range, amount]) => ({ range, amount }));
   }, [activeInvoices, paidForInvoice]);
 
-  // Tax summary
+  // Tax summary — only show when active company is VAT registered
+  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const taxSummary = useMemo(() => {
     const months: Record<string, { taxCollected: number; currency: Currency }> = {};
     const now = new Date();
@@ -127,15 +128,19 @@ export default function Reports() {
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       months[key] = { taxCollected: 0, currency: primaryCurrency };
     }
-    activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
-      const d = new Date(inv.createdAt);
-      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
-      if (key in months) {
-        months[key].taxCollected += getInvoiceTax(inv);
-      }
-    });
+    if (isVatRegistered) {
+      activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
+        const company = getCompany(inv.companyId);
+        if (!company?.isVatRegistered) return;
+        const d = new Date(inv.createdAt);
+        const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+        if (key in months) {
+          months[key].taxCollected += getInvoiceTax(inv);
+        }
+      });
+    }
     return Object.entries(months).map(([month, { taxCollected }]) => ({ month, tax: taxCollected }));
-  }, [activeInvoices, primaryCurrency]);
+  }, [activeInvoices, primaryCurrency, isVatRegistered]);
 
   // Summary cards grouped by currency
   const summaryByCurrency = useMemo(() => {
