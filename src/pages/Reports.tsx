@@ -162,7 +162,7 @@ export default function Reports() {
     return groups;
   }, [activeInvoices, paidForInvoice]);
 
-  // P&L data
+  // P&L data — income = actual payments received, not invoice totals
   const pnlData = useMemo(() => {
     const months: Record<string, { income: number; expenses: number }> = {};
     const now = new Date();
@@ -171,10 +171,11 @@ export default function Reports() {
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       months[key] = { income: 0, expenses: 0 };
     }
-    activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
-      const d = new Date(inv.createdAt);
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
+    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+      const d = new Date(p.paymentDate);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
-      if (key in months) months[key].income += getInvoiceTotal(inv);
+      if (key in months) months[key].income += p.amount;
     });
     expenses.forEach(exp => {
       const d = new Date(exp.date);
@@ -187,7 +188,7 @@ export default function Reports() {
       expenses: data.expenses,
       profit: data.income - data.expenses,
     }));
-  }, [activeInvoices, expenses]);
+  }, [activeInvoices, allPayments, expenses]);
 
   const totalIncome = pnlData.reduce((s, d) => s + d.income, 0);
   const totalExpensesAmt = pnlData.reduce((s, d) => s + d.expenses, 0);
