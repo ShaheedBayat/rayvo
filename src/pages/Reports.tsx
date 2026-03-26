@@ -101,21 +101,22 @@ export default function Reports() {
       .slice(0, 5);
   }, [activeInvoices, allPayments]);
 
-  // AR Aging
+  // AR Aging — use actual outstanding balance (total - payments)
   const aging = useMemo(() => {
     const buckets = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 };
     const now = new Date();
     activeInvoices.filter(i => i.status === 'sent' || i.status === 'partially_paid').forEach(inv => {
       const days = Math.floor((now.getTime() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24));
-      const amt = getInvoiceTotal(inv);
-      if (days <= 0) buckets['0-30'] += amt;
-      else if (days <= 30) buckets['0-30'] += amt;
-      else if (days <= 60) buckets['31-60'] += amt;
-      else if (days <= 90) buckets['61-90'] += amt;
-      else buckets['90+'] += amt;
+      const balance = getInvoiceTotal(inv) - paidForInvoice(inv.id);
+      if (balance <= 0) return;
+      if (days <= 0) buckets['0-30'] += balance;
+      else if (days <= 30) buckets['0-30'] += balance;
+      else if (days <= 60) buckets['31-60'] += balance;
+      else if (days <= 90) buckets['61-90'] += balance;
+      else buckets['90+'] += balance;
     });
     return Object.entries(buckets).map(([range, amount]) => ({ range, amount }));
-  }, [activeInvoices]);
+  }, [activeInvoices, paidForInvoice]);
 
   // Tax summary
   const taxSummary = useMemo(() => {
