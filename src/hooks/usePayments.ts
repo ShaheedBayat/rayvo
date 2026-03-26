@@ -72,3 +72,34 @@ export function usePayments(invoiceId?: string) {
 
   return { payments, loading, addPayment, deletePayment, totalPaid, refetch: fetchPayments };
 }
+
+/**
+ * Fetch ALL payments for the current user (for reports/overview).
+ * Returns payments grouped by invoiceId for easy lookup.
+ */
+export function useAllPayments() {
+  const { user } = useAuth();
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAll = useCallback(async () => {
+    if (!user) { setPayments([]); setLoading(false); return; }
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .order('payment_date', { ascending: false });
+    if (!error && data) setPayments(data.map(mapPayment));
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  /** Total paid for a specific invoice */
+  const paidForInvoice = useCallback((invoiceId: string) => {
+    return payments.filter(p => p.invoiceId === invoiceId).reduce((s, p) => s + p.amount, 0);
+  }, [payments]);
+
+  const totalRevenue = payments.reduce((s, p) => s + p.amount, 0);
+
+  return { payments, loading, paidForInvoice, totalRevenue };
+}

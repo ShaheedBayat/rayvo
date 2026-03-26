@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useAllPayments } from '@/hooks/usePayments';
 import { formatCurrency, calculateSmartTotals, currencySymbols } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
@@ -15,6 +16,7 @@ export default function Overview() {
   const { invoices: allInvoices, loading } = useInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
+  const { paidForInvoice, payments: allPayments } = useAllPayments();
 
   const invoices = activeCompanyId
     ? allInvoices.filter(i => i.companyId === activeCompanyId)
@@ -42,18 +44,38 @@ export default function Overview() {
     return calculateSmartTotals(inv.items, inv.taxRate, pricingMode, isVat).total;
   };
 
-  const byCurrency = (invs: typeof activeInvoices) => {
+  // Use actual payments for "Received" and actual balance for "Outstanding"/"Overdue"
+  const outstandingByCurrency = (() => {
     const groups: Record<string, number> = {};
-    invs.forEach(inv => {
+    sent.forEach(inv => {
       const c = inv.currency;
-      groups[c] = (groups[c] || 0) + getInvoiceTotal(inv);
+      const balance = Math.max(0, getInvoiceTotal(inv) - paidForInvoice(inv.id));
+      groups[c] = (groups[c] || 0) + balance;
     });
     return groups;
-  };
+  })();
 
-  const outstandingByCurrency = byCurrency(sent);
-  const paidByCurrency = byCurrency(paid);
-  const overdueByCurrency = byCurrency(overdue);
+  const paidByCurrency = (() => {
+    const groups: Record<string, number> = {};
+    const invoiceMap = new Map(activeInvoices.map(i => [i.id, i]));
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
+    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+      const inv = invoiceMap.get(p.invoiceId);
+      const c = inv?.currency || 'ZAR';
+      groups[c] = (groups[c] || 0) + p.amount;
+    });
+    return groups;
+  })();
+
+  const overdueByCurrency = (() => {
+    const groups: Record<string, number> = {};
+    overdue.forEach(inv => {
+      const c = inv.currency;
+      const balance = Math.max(0, getInvoiceTotal(inv) - paidForInvoice(inv.id));
+      groups[c] = (groups[c] || 0) + balance;
+    });
+    return groups;
+  })();
 
   const formatMultiCurrency = (groups: Record<string, number>) => {
     const entries = Object.entries(groups).filter(([, v]) => v > 0);
@@ -64,11 +86,12 @@ export default function Overview() {
 
   const customerOwing: Record<string, { name: string; amount: number; currency: Currency }> = {};
   sent.forEach(inv => {
-    const total = getInvoiceTotal(inv);
+    const balance = Math.max(0, getInvoiceTotal(inv) - paidForInvoice(inv.id));
+    if (balance <= 0) return;
     if (!customerOwing[inv.clientName]) {
       customerOwing[inv.clientName] = { name: inv.clientName, amount: 0, currency: inv.currency };
     }
-    customerOwing[inv.clientName].amount += total;
+    customerOwing[inv.clientName].amount += balance;
   });
   const topOwing = Object.values(customerOwing)
     .sort((a, b) => b.amount - a.amount)

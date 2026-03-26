@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useExpenses } from '@/hooks/useExpenses';
-import { usePayments } from '@/hooks/usePayments';
+import { useAllPayments } from '@/hooks/usePayments';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import type { Currency } from '@/types/invoice';
@@ -19,8 +19,9 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--success
 export default function Reports() {
   const { invoices: allInvoices } = useInvoices();
   const { getCompany } = useCompanies();
-  const { activeCompanyId } = useActiveCompany();
+  const { activeCompanyId, activeCompany } = useActiveCompany();
   const { expenses } = useExpenses();
+  const { payments: allPayments, paidForInvoice } = useAllPayments();
 
   const getInvoiceTotal = (inv: typeof allInvoices[0]) => {
     const company = getCompany(inv.companyId);
@@ -41,7 +42,7 @@ export default function Reports() {
   const currencies = [...new Set(activeInvoices.map(i => i.currency))] as Currency[];
   const primaryCurrency: Currency = currencies[0] || 'ZAR';
 
-  // Revenue by month (last 6 months)
+  // Revenue by month = sum of actual payments received (last 6 months)
   const revenueByMonth = useMemo(() => {
     const months: Record<string, number> = {};
     const now = new Date();
@@ -50,15 +51,17 @@ export default function Reports() {
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       months[key] = 0;
     }
-    activeInvoices.forEach(inv => {
-      const d = new Date(inv.createdAt);
+    // Filter payments to only those belonging to company-filtered invoices
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
+    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+      const d = new Date(p.paymentDate);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       if (key in months) {
-      months[key] += getInvoiceTotal(inv);
+        months[key] += p.amount;
       }
     });
     return Object.entries(months).map(([month, revenue]) => ({ month, revenue }));
-  }, [activeInvoices, getInvoiceTotal]);
+  }, [activeInvoices, allPayments]);
 
   // Status breakdown
   const statusBreakdown = useMemo(() => {
@@ -81,36 +84,42 @@ export default function Reports() {
     ].filter(s => s.value > 0);
   }, [activeInvoices]);
 
-  // Top customers by revenue
+  // Top customers by actual payments received
   const topCustomers = useMemo(() => {
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
+    const invoiceMap = new Map(activeInvoices.map(i => [i.id, i]));
     const map: Record<string, { total: number; currency: Currency }> = {};
-    activeInvoices.forEach(inv => {
+    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+      const inv = invoiceMap.get(p.invoiceId);
+      if (!inv) return;
       if (!map[inv.clientName]) map[inv.clientName] = { total: 0, currency: inv.currency };
-      map[inv.clientName].total += getInvoiceTotal(inv);
+      map[inv.clientName].total += p.amount;
     });
     return Object.entries(map)
       .map(([name, { total, currency }]) => ({ name, total, currency }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
-  }, [activeInvoices]);
+  }, [activeInvoices, allPayments]);
 
-  // AR Aging
+  // AR Aging — use actual outstanding balance (total - payments)
   const aging = useMemo(() => {
     const buckets = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 };
     const now = new Date();
     activeInvoices.filter(i => i.status === 'sent' || i.status === 'partially_paid').forEach(inv => {
       const days = Math.floor((now.getTime() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24));
-      const amt = getInvoiceTotal(inv);
-      if (days <= 0) buckets['0-30'] += amt;
-      else if (days <= 30) buckets['0-30'] += amt;
-      else if (days <= 60) buckets['31-60'] += amt;
-      else if (days <= 90) buckets['61-90'] += amt;
-      else buckets['90+'] += amt;
+      const balance = getInvoiceTotal(inv) - paidForInvoice(inv.id);
+      if (balance <= 0) return;
+      if (days <= 0) buckets['0-30'] += balance;
+      else if (days <= 30) buckets['0-30'] += balance;
+      else if (days <= 60) buckets['31-60'] += balance;
+      else if (days <= 90) buckets['61-90'] += balance;
+      else buckets['90+'] += balance;
     });
     return Object.entries(buckets).map(([range, amount]) => ({ range, amount }));
-  }, [activeInvoices]);
+  }, [activeInvoices, paidForInvoice]);
 
-  // Tax summary
+  // Tax summary — only show when active company is VAT registered
+  const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const taxSummary = useMemo(() => {
     const months: Record<string, { taxCollected: number; currency: Currency }> = {};
     const now = new Date();
@@ -119,34 +128,41 @@ export default function Reports() {
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       months[key] = { taxCollected: 0, currency: primaryCurrency };
     }
-    activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
-      const d = new Date(inv.createdAt);
-      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
-      if (key in months) {
-        months[key].taxCollected += getInvoiceTax(inv);
-      }
-    });
+    if (isVatRegistered) {
+      activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
+        const company = getCompany(inv.companyId);
+        if (!company?.isVatRegistered) return;
+        const d = new Date(inv.createdAt);
+        const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+        if (key in months) {
+          months[key].taxCollected += getInvoiceTax(inv);
+        }
+      });
+    }
     return Object.entries(months).map(([month, { taxCollected }]) => ({ month, tax: taxCollected }));
-  }, [activeInvoices, primaryCurrency]);
+  }, [activeInvoices, primaryCurrency, isVatRegistered]);
 
-  // Summary cards grouped by currency
+  // Summary cards — revenue = payments, outstanding = balance, overdue = past-due balance
   const summaryByCurrency = useMemo(() => {
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
     const groups: Record<string, { total: number; paid: number; outstanding: number; overdue: number }> = {};
     activeInvoices.forEach(inv => {
       const c = inv.currency;
       if (!groups[c]) groups[c] = { total: 0, paid: 0, outstanding: 0, overdue: 0 };
-      const amt = getInvoiceTotal(inv);
-      groups[c].total += amt;
-      if (inv.status === 'paid') groups[c].paid += amt;
+      const invoiceTotal = getInvoiceTotal(inv);
+      const paid = paidForInvoice(inv.id);
+      const balance = Math.max(0, invoiceTotal - paid);
+      groups[c].total += paid; // "Total Revenue" = actual payments received
+      groups[c].paid += paid;
       if (inv.status === 'sent' || inv.status === 'partially_paid') {
-        groups[c].outstanding += amt;
-        if (new Date(inv.dueDate) < new Date()) groups[c].overdue += amt;
+        groups[c].outstanding += balance;
+        if (new Date(inv.dueDate) < new Date()) groups[c].overdue += balance;
       }
     });
     return groups;
-  }, [activeInvoices]);
+  }, [activeInvoices, paidForInvoice]);
 
-  // P&L data
+  // P&L data — income = actual payments received, not invoice totals
   const pnlData = useMemo(() => {
     const months: Record<string, { income: number; expenses: number }> = {};
     const now = new Date();
@@ -155,10 +171,11 @@ export default function Reports() {
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       months[key] = { income: 0, expenses: 0 };
     }
-    activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
-      const d = new Date(inv.createdAt);
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
+    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+      const d = new Date(p.paymentDate);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
-      if (key in months) months[key].income += getInvoiceTotal(inv);
+      if (key in months) months[key].income += p.amount;
     });
     expenses.forEach(exp => {
       const d = new Date(exp.date);
@@ -171,7 +188,7 @@ export default function Reports() {
       expenses: data.expenses,
       profit: data.income - data.expenses,
     }));
-  }, [activeInvoices, expenses]);
+  }, [activeInvoices, allPayments, expenses]);
 
   const totalIncome = pnlData.reduce((s, d) => s + d.income, 0);
   const totalExpensesAmt = pnlData.reduce((s, d) => s + d.expenses, 0);
