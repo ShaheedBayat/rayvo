@@ -41,6 +41,17 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
   const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() ?? (isVatRegistered ? '15' : '0'));
   const [saving, setSaving] = useState(false);
 
+  // Hard-reset tax rates when VAT registration changes
+  useEffect(() => {
+    if (!isVatRegistered) {
+      setPurchaseTaxRate('0');
+      setSellTaxRate('0');
+    } else {
+      setPurchaseTaxRate(editing?.purchaseTaxRate?.toString() ?? '15');
+      setSellTaxRate(editing?.sellTaxRate?.toString() ?? '15');
+    }
+  }, [isVatRegistered]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
