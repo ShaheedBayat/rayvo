@@ -100,15 +100,28 @@ export default function VatReport() {
             Output VAT summary for {activeCompany?.name || 'your company'}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportCsv}>
-            <Download className="mr-1.5 h-4 w-4" /> CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPdf}>
-            <Download className="mr-1.5 h-4 w-4" /> PDF
-          </Button>
-        </div>
+        {isVatRegistered && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCsv}>
+              <Download className="mr-1.5 h-4 w-4" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPdf}>
+              <Download className="mr-1.5 h-4 w-4" /> PDF
+            </Button>
+          </div>
+        )}
       </div>
+
+      {!isVatRegistered ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
+          <Receipt className="h-10 w-10 text-muted-foreground/30" />
+          <h3 className="mt-4 text-lg font-medium">VAT not enabled</h3>
+          <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">
+            This company is not registered for VAT. Enable VAT in company settings to start tracking tax.
+          </p>
+        </div>
+      ) : (
+      <>
 
       {/* Filters */}
       <div className="rounded-lg border bg-card p-4 mb-6 invoice-shadow">
