@@ -77,25 +77,23 @@ interface Props {
 }
 
 export default function InvoiceLineItems({ items, currency, products, taxRates, isVatRegistered, onAdd, onRemove, onUpdate, onProductSelect }: Props) {
+  // Deduplicate tax rates by name to prevent repeated options
+  const activeTaxRates = (taxRates || []).filter(t => t.active);
+  const uniqueTaxRates = activeTaxRates.filter((t, i, arr) => arr.findIndex(r => r.name === t.name) === i);
+  const showTaxColumn = isVatRegistered && uniqueTaxRates.length > 0;
+
   const handleProductSelect = (itemId: string, product: Product) => {
     onUpdate(itemId, 'description', product.sellDescription || product.name);
     onUpdate(itemId, 'unitPrice', product.sellPrice);
-    // Flow the product's sell tax rate into the line item when VAT registered
     if (isVatRegistered && product.sellTaxRate !== undefined) {
       onUpdate(itemId, 'taxRate', product.sellTaxRate);
-      // Try to find matching tax rate name from available rates
-      const matchingRate = uniqueTaxRates.find(t => t.rate === product.sellTaxRate && t.active);
+      const matchingRate = uniqueTaxRates.find(t => t.rate === product.sellTaxRate);
       if (matchingRate) {
         onUpdate(itemId, 'taxRateName' as any, matchingRate.name);
       }
     }
     onProductSelect?.(itemId, product);
   };
-
-  // Deduplicate tax rates by name to prevent repeated options
-  const activeTaxRates = (taxRates || []).filter(t => t.active);
-  const uniqueTaxRates = activeTaxRates.filter((t, i, arr) => arr.findIndex(r => r.name === t.name) === i);
-  const showTaxColumn = isVatRegistered && uniqueTaxRates.length > 0;
 
   return (
     <div>
