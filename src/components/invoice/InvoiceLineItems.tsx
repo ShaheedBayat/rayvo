@@ -92,8 +92,10 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
     onProductSelect?.(itemId, product);
   };
 
+  // Deduplicate tax rates by name to prevent repeated options
   const activeTaxRates = (taxRates || []).filter(t => t.active);
-  const showTaxColumn = isVatRegistered && activeTaxRates.length > 0;
+  const uniqueTaxRates = activeTaxRates.filter((t, i, arr) => arr.findIndex(r => r.name === t.name) === i);
+  const showTaxColumn = isVatRegistered && uniqueTaxRates.length > 0;
 
   return (
     <div>
