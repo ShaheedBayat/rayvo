@@ -241,6 +241,8 @@ export default function VatReport() {
           </div>
         )}
       </div>
+      </>
+      )}
     </AppLayout>
   );
 }
