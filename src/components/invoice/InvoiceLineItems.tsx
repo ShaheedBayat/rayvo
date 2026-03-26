@@ -143,9 +143,9 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
                   {showTaxColumn && (
                     <td className="py-2">
                       <Select
-                        value={item.taxRateName || activeTaxRates[0]?.name || ''}
+                        value={item.taxRateName || uniqueTaxRates[0]?.name || ''}
                         onValueChange={(v) => {
-                          const selected = activeTaxRates.find(t => t.name === v);
+                          const selected = uniqueTaxRates.find(t => t.name === v);
                           if (selected) {
                             onUpdate(item.id, 'taxRate', selected.rate);
                             onUpdate(item.id, 'taxRateName' as any, selected.name);
@@ -156,8 +156,8 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {activeTaxRates.map(t => (
-                            <SelectItem key={t.id} value={t.name}>
+                          {uniqueTaxRates.map(t => (
+                            <SelectItem key={t.name} value={t.name}>
                               {t.name} ({t.rate}%)
                             </SelectItem>
                           ))}
