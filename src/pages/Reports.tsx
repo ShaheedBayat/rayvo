@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useExpenses } from '@/hooks/useExpenses';
-import { usePayments } from '@/hooks/usePayments';
+import { useAllPayments } from '@/hooks/usePayments';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import type { Currency } from '@/types/invoice';
