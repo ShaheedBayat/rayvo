@@ -60,7 +60,7 @@ export default function Expenses() {
     ev.preventDefault();
     const data = {
       date, category, description, amount: parseFloat(amount) || 0,
-      currency: editing?.currency || 'ZAR', vendor, reference, notes, companyId: activeCompanyId || null,
+      currency: 'ZAR', vendor, reference, notes, companyId: activeCompanyId || null,
     };
     if (editing) {
       const ok = await updateExpense({ ...editing, ...data });

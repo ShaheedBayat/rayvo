@@ -64,8 +64,7 @@ export default function Reports() {
   const statusBreakdown = useMemo(() => {
     const counts = { draft: 0, sent: 0, paid: 0, overdue: 0, partially_paid: 0 };
     activeInvoices.forEach(inv => {
-      const isOverdue = (inv.status === 'sent' || inv.status === 'partially_paid') && new Date(inv.dueDate) < new Date();
-      if (isOverdue) {
+      if (inv.status === 'sent' && new Date(inv.dueDate) < new Date()) {
         counts.overdue++;
       } else if (inv.status === 'partially_paid') {
         counts.partially_paid++;
