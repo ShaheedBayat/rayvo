@@ -34,7 +34,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
   const [purchaseEnabled, setPurchaseEnabled] = useState(editing?.purchaseEnabled ?? true);
   const [purchasePrice, setPurchasePrice] = useState(editing?.purchasePrice?.toString() || '');
   const [purchaseDescription, setPurchaseDescription] = useState(editing?.purchaseDescription || '');
-  const [purchaseTaxRate, setPurchaseTaxRate] = useState(editing?.purchaseTaxRate?.toString() ?? '0');
+  const [purchaseTaxRate, setPurchaseTaxRate] = useState(editing?.purchaseTaxRate?.toString() ?? (isVatRegistered ? '15' : '0'));
   const [sellEnabled, setSellEnabled] = useState(editing?.sellEnabled ?? true);
   const [sellPrice, setSellPrice] = useState(editing?.sellPrice?.toString() || '');
   const [sellDescription, setSellDescription] = useState(editing?.sellDescription || '');
