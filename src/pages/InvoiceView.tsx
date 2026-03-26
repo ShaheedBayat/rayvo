@@ -259,6 +259,11 @@ export default function InvoiceView() {
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold mono">{invoice.invoiceNumber}</h1>
             <Badge variant="outline" className={`${config.className} text-[11px]`}>{config.label}</Badge>
+            {isLocked && (
+              <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[11px] gap-1">
+                🔒 Finalized
+              </Badge>
+            )}
           </div>
         </div>
 
