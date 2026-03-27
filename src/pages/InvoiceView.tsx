@@ -359,6 +359,23 @@ export default function InvoiceView() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Send confirmation */}
+      <AlertDialog open={sendConfirmOpen} onOpenChange={setSendConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send invoice to {invoice.clientName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will approve and mark {invoice.invoiceNumber} as sent ({formatCurrency(total, invoice.currency)}).
+              {invoice.clientEmail ? ` An email notification can be sent to ${invoice.clientEmail}.` : ' No email is configured for this customer.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setSendConfirmOpen(false); markApproveAndSend(); }}>Approve & Send</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Send Email dialog */}
       <Dialog open={sendEmailOpen} onOpenChange={setSendEmailOpen}>
         <DialogContent className="max-w-md">
