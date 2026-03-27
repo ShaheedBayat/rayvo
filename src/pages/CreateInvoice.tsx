@@ -197,12 +197,12 @@ export default function CreateInvoice() {
           <div>
             <h1 className="text-2xl font-semibold">New Invoice</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Fill in the details below to create a new invoice.
+              {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : 'Fill in the details below to create a new invoice.'}
             </p>
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
-            <Button type="submit" disabled={creditLimitExceeded && selectedCustomer?.blockOnCreditLimit}>Save as Draft</Button>
+            <Button type="submit" disabled={!canSave}>Save as Draft</Button>
           </div>
         </div>
 
