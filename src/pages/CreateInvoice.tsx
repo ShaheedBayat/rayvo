@@ -144,6 +144,8 @@ export default function CreateInvoice() {
 
   const totals = calculateSmartTotals(items, taxRate, pricingMode, isVatRegistered);
 
+  const hasLineItems = items.some(i => i.description.trim() && i.unitPrice > 0);
+  const canSave = clientName.trim() !== '' && hasLineItems && !(creditLimitExceeded && selectedCustomer?.blockOnCreditLimit);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId) {
@@ -197,12 +199,12 @@ export default function CreateInvoice() {
           <div>
             <h1 className="text-2xl font-semibold">New Invoice</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Fill in the details below to create a new invoice.
+              {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : 'Fill in the details below to create a new invoice.'}
             </p>
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
-            <Button type="submit" disabled={creditLimitExceeded && selectedCustomer?.blockOnCreditLimit}>Save as Draft</Button>
+            <Button type="submit" disabled={!canSave}>Save as Draft</Button>
           </div>
         </div>
 
@@ -286,6 +288,7 @@ export default function CreateInvoice() {
                 onNameChange={setClientName}
                 onEmailChange={setClientEmail}
                 onAddressChange={setClientAddress}
+                onCreateNew={() => navigate('/customers')}
                />
               {creditLimitExceeded && selectedCustomer && (
                 <Alert variant="destructive" className="mt-3">

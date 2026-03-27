@@ -54,6 +54,7 @@ export default function InvoiceView() {
   const docRef = useRef<HTMLDivElement>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
+  const [sendConfirmOpen, setSendConfirmOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
@@ -275,7 +276,7 @@ export default function InvoiceView() {
               </Button>
             )}
             {(invoice.status === 'draft' || invoice.status === 'approved') && (
-              <Button variant="outline" size="sm" onClick={markApproveAndSend} className="text-info border-info/30 hover:bg-info/10">
+              <Button variant="outline" size="sm" onClick={() => setSendConfirmOpen(true)} className="text-info border-info/30 hover:bg-info/10">
                 <Send className="mr-1.5 h-4 w-4" /> Approve & Send
               </Button>
             )}
@@ -358,6 +359,23 @@ export default function InvoiceView() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Send confirmation */}
+      <AlertDialog open={sendConfirmOpen} onOpenChange={setSendConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send invoice to {invoice.clientName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will approve and mark {invoice.invoiceNumber} as sent ({formatCurrency(total, invoice.currency)}).
+              {invoice.clientEmail ? ` An email notification can be sent to ${invoice.clientEmail}.` : ' No email is configured for this customer.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setSendConfirmOpen(false); markApproveAndSend(); }}>Approve & Send</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Send Email dialog */}
       <Dialog open={sendEmailOpen} onOpenChange={setSendEmailOpen}>
         <DialogContent className="max-w-md">
@@ -395,6 +413,19 @@ export default function InvoiceView() {
               <div className="flex justify-between"><span className="text-muted-foreground">Invoice Total</span><span className="mono font-medium">{formatCurrency(total, invoice.currency)}</span></div>
               <div className="flex justify-between mt-1"><span className="text-muted-foreground">Already Paid</span><span className="mono font-medium text-success">{formatCurrency(totalPaid, invoice.currency)}</span></div>
               <div className="flex justify-between mt-1 border-t pt-1"><span className="font-medium">Amount Due</span><span className="mono font-semibold text-primary">{formatCurrency(amountDue, invoice.currency)}</span></div>
+              {payAmount && parseFloat(payAmount) > 0 && (
+                <div className="flex justify-between mt-1 border-t pt-1">
+                  <span className="text-muted-foreground">Remaining after payment</span>
+                  <span className={`mono font-medium ${amountDue - parseFloat(payAmount) < 0 ? 'text-destructive' : 'text-success'}`}>
+                    {formatCurrency(Math.max(0, amountDue - parseFloat(payAmount)), invoice.currency)}
+                  </span>
+                </div>
+              )}
+              {payAmount && parseFloat(payAmount) > amountDue && (
+                <div className="mt-2 text-xs text-warning font-medium bg-warning/10 rounded px-2 py-1">
+                  ⚠️ Overpayment will create credit of {formatCurrency(parseFloat(payAmount) - amountDue, invoice.currency)}
+                </div>
+              )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">

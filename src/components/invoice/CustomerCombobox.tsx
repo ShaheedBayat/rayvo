@@ -13,9 +13,10 @@ interface Props {
   onNameChange: (name: string) => void;
   onEmailChange: (email: string) => void;
   onAddressChange: (address: string) => void;
+  onCreateNew?: () => void;
 }
 
-export default function CustomerCombobox({ customers, clientName, clientEmail, clientAddress, onSelect, onNameChange, onEmailChange, onAddressChange }: Props) {
+export default function CustomerCombobox({ customers, clientName, clientEmail, clientAddress, onSelect, onNameChange, onEmailChange, onAddressChange, onCreateNew }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -60,7 +61,7 @@ export default function CustomerCombobox({ customers, clientName, clientEmail, c
           className="h-9"
           autoComplete="off"
         />
-        {open && filtered.length > 0 && (
+        {open && (filtered.length > 0 || onCreateNew) && (
           <div className="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover shadow-md max-h-48 overflow-y-auto">
             {filtered.map(c => (
               <button
@@ -69,10 +70,24 @@ export default function CustomerCombobox({ customers, clientName, clientEmail, c
                 className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
                 onClick={() => handleSelect(c)}
               >
-                <span className="font-medium">{c.name}</span>
-                {c.email && <span className="text-muted-foreground ml-2 text-xs">{c.email}</span>}
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{c.name}</span>
+                  {c.email && <span className="text-muted-foreground text-xs truncate ml-2">{c.email}</span>}
+                </div>
               </button>
             ))}
+            {onCreateNew && (
+              <>
+                {filtered.length > 0 && <div className="border-t" />}
+                <button
+                  type="button"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors text-primary font-medium"
+                  onClick={() => { onCreateNew(); setOpen(false); }}
+                >
+                  + Create New Customer
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
