@@ -63,6 +63,50 @@ export default function CreateInvoice() {
     dupState?.items?.map(i => ({ ...i, id: uuidv4() })) || [{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]
   );
 
+  // Credit limit tracking
+  const [selectedCustomer, setSelectedCustomer] = useState<typeof customers[0] | null>(null);
+  const [outstandingBalance, setOutstandingBalance] = useState(0);
+
+  const creditLimitExceeded = useMemo(() => {
+    if (!selectedCustomer || !selectedCustomer.creditLimit || selectedCustomer.creditLimit <= 0) return false;
+    return outstandingBalance >= selectedCustomer.creditLimit;
+  }, [selectedCustomer, outstandingBalance]);
+
+  const creditLimitWarning = useMemo(() => {
+    if (!selectedCustomer || !selectedCustomer.creditLimit || selectedCustomer.creditLimit <= 0) return false;
+    return !creditLimitExceeded && outstandingBalance >= selectedCustomer.creditLimit * 0.8;
+  }, [selectedCustomer, outstandingBalance, creditLimitExceeded]);
+
+  useEffect(() => {
+    if (!selectedCustomer || !companyId) { setOutstandingBalance(0); return; }
+    const fetchBalance = async () => {
+      const { data: invoices } = await supabase
+        .from('invoices')
+        .select('id, items, tax_rate, status')
+        .eq('company_id', companyId)
+        .eq('client_name', selectedCustomer.name)
+        .is('deleted_at', null)
+        .in('status', ['draft', 'approved', 'sent', 'partially_paid']);
+      if (!invoices || invoices.length === 0) { setOutstandingBalance(0); return; }
+      const invoiceIds = invoices.map(inv => inv.id);
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('invoice_id, amount')
+        .in('invoice_id', invoiceIds);
+      const paidMap = new Map<string, number>();
+      payments?.forEach(p => paidMap.set(p.invoice_id, (paidMap.get(p.invoice_id) || 0) + Number(p.amount)));
+      let total = 0;
+      invoices.forEach(inv => {
+        const invItems = (inv.items as any[]) || [];
+        const lineTotal = invItems.reduce((sum: number, item: any) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
+        const paid = paidMap.get(inv.id) || 0;
+        total += Math.max(0, lineTotal - paid);
+      });
+      setOutstandingBalance(total);
+    };
+    fetchBalance();
+  }, [selectedCustomer, companyId]);
+
   const addItem = () => {
     const newItem: InvoiceItem = { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 };
     if (isVatRegistered && taxRates.length > 0) {
