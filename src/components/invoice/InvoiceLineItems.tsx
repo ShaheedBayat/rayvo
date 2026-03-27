@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import type { InvoiceItem, Currency } from '@/types/invoice';
 import type { Product } from '@/hooks/useProducts';
 import type { TaxRate } from '@/hooks/useTaxRates';
@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-function ProductSearch({ products, onSelect, value, onChange, onCreateNew }: {
+function ProductSearch({ products, onSelect, value, onChange, onCreateNew, onEnter, inputRef: externalRef }: {
   products?: Product[];
   onSelect: (p: Product) => void;
   value: string;
   onChange: (v: string) => void;
   onCreateNew?: () => void;
+  onEnter?: () => void;
+  inputRef?: React.RefObject<HTMLInputElement>;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -34,19 +36,29 @@ function ProductSearch({ products, onSelect, value, onChange, onCreateNew }: {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      setOpen(false);
+      onEnter?.();
+    }
+  };
+
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative overflow-visible" ref={ref} style={{ zIndex: open ? 100 : 'auto' }}>
       <Input
+        ref={externalRef}
         required
         value={value}
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
         onFocus={() => products && products.length > 0 && setOpen(true)}
-        placeholder="Search products or type description"
+        onKeyDown={handleKeyDown}
+        placeholder="Search"
         className="border-0 shadow-none bg-transparent px-0 h-9 focus-visible:ring-0"
         autoComplete="off"
       />
       {open && (filtered.length > 0 || onCreateNew) && (
-        <div className="absolute z-50 top-full mt-1 w-72 rounded-md border bg-popover shadow-md max-h-48 overflow-y-auto">
+        <div className="absolute left-0 top-full mt-1 w-72 rounded-md border bg-popover shadow-lg max-h-72 overflow-y-auto" style={{ zIndex: 9999 }}>
           {filtered.length === 0 && (
             <div className="px-3 py-2 text-xs text-muted-foreground">No matching products</div>
           )}
@@ -106,14 +118,16 @@ interface Props {
 }
 
 export default function InvoiceLineItems({ items, currency, products, taxRates, isVatRegistered, onAdd, onRemove, onUpdate, onProductSelect, onCreateNewProduct }: Props) {
-  // Deduplicate tax rates by name to prevent repeated options
   const activeTaxRates = (taxRates || []).filter(t => t.active);
   const uniqueTaxRates = activeTaxRates.filter((t, i, arr) => arr.findIndex(r => r.name === t.name) === i);
   const showTaxColumn = isVatRegistered && uniqueTaxRates.length > 0;
 
+  const quantityRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   const handleProductSelect = (itemId: string, product: Product) => {
     onUpdate(itemId, 'description', product.sellDescription || product.name);
     onUpdate(itemId, 'unitPrice', product.sellPrice);
+    onUpdate(itemId, 'quantity', 1);
     if (isVatRegistered && product.sellTaxRate !== undefined) {
       onUpdate(itemId, 'taxRate', product.sellTaxRate);
       const matchingRate = uniqueTaxRates.find(t => t.rate === product.sellTaxRate);
@@ -122,12 +136,14 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
       }
     }
     onProductSelect?.(itemId, product);
+    // Focus quantity field after selection
+    requestAnimationFrame(() => quantityRefs.current[itemId]?.focus());
   };
 
   return (
     <div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div style={{ overflow: 'visible' }}>
+        <table className="w-full text-sm" style={{ overflow: 'visible' }}>
           <thead>
             <tr className="border-b">
               <th className="py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Description</th>
@@ -141,23 +157,31 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
               <th className="py-2.5 w-10" />
             </tr>
           </thead>
-          <tbody>
+          <tbody style={{ overflow: 'visible' }}>
             {items.map((item) => {
               const discount = item.discount || 0;
               const lineAmount = item.quantity * item.unitPrice * (1 - discount / 100);
               return (
-                <tr key={item.id} className="border-b last:border-0 group">
-                  <td className="py-2">
+                <tr key={item.id} className="border-b last:border-0 group" style={{ overflow: 'visible' }}>
+                  <td className="py-2" style={{ overflow: 'visible', position: 'relative' }}>
                     <ProductSearch
                       products={products}
                       value={item.description}
                       onChange={(v) => onUpdate(item.id, 'description', v)}
                       onSelect={(p) => handleProductSelect(item.id, p)}
                       onCreateNew={onCreateNewProduct}
+                      onEnter={onAdd}
                     />
                   </td>
                   <td className="py-2">
-                    <Input type="number" min={1} value={item.quantity} onChange={(e) => onUpdate(item.id, 'quantity', parseInt(e.target.value) || 0)} className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono" />
+                    <Input
+                      ref={(el) => { quantityRefs.current[item.id] = el; }}
+                      type="number"
+                      min={1}
+                      value={item.quantity}
+                      onChange={(e) => onUpdate(item.id, 'quantity', parseInt(e.target.value) || 0)}
+                      className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono"
+                    />
                   </td>
                   <td className="py-2">
                     <Input type="number" min={0} step="0.01" value={item.unitPrice} onChange={(e) => onUpdate(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono" />
