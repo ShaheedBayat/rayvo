@@ -13,6 +13,7 @@ interface Props {
   onNameChange: (name: string) => void;
   onEmailChange: (email: string) => void;
   onAddressChange: (address: string) => void;
+  onCreateNew?: () => void;
 }
 
 export default function CustomerCombobox({ customers, clientName, clientEmail, clientAddress, onSelect, onNameChange, onEmailChange, onAddressChange }: Props) {
