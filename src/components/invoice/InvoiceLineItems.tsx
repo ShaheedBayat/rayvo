@@ -102,6 +102,7 @@ interface Props {
   onRemove: (id: string) => void;
   onUpdate: (id: string, field: keyof InvoiceItem, value: string | number) => void;
   onProductSelect?: (itemId: string, product: Product) => void;
+  onCreateNewProduct?: () => void;
 }
 
 export default function InvoiceLineItems({ items, currency, products, taxRates, isVatRegistered, onAdd, onRemove, onUpdate, onProductSelect }: Props) {
