@@ -413,6 +413,19 @@ export default function InvoiceView() {
               <div className="flex justify-between"><span className="text-muted-foreground">Invoice Total</span><span className="mono font-medium">{formatCurrency(total, invoice.currency)}</span></div>
               <div className="flex justify-between mt-1"><span className="text-muted-foreground">Already Paid</span><span className="mono font-medium text-success">{formatCurrency(totalPaid, invoice.currency)}</span></div>
               <div className="flex justify-between mt-1 border-t pt-1"><span className="font-medium">Amount Due</span><span className="mono font-semibold text-primary">{formatCurrency(amountDue, invoice.currency)}</span></div>
+              {payAmount && parseFloat(payAmount) > 0 && (
+                <div className="flex justify-between mt-1 border-t pt-1">
+                  <span className="text-muted-foreground">Remaining after payment</span>
+                  <span className={`mono font-medium ${amountDue - parseFloat(payAmount) < 0 ? 'text-destructive' : 'text-success'}`}>
+                    {formatCurrency(Math.max(0, amountDue - parseFloat(payAmount)), invoice.currency)}
+                  </span>
+                </div>
+              )}
+              {payAmount && parseFloat(payAmount) > amountDue && (
+                <div className="mt-2 text-xs text-warning font-medium bg-warning/10 rounded px-2 py-1">
+                  ⚠️ Overpayment will create credit of {formatCurrency(parseFloat(payAmount) - amountDue, invoice.currency)}
+                </div>
+              )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
