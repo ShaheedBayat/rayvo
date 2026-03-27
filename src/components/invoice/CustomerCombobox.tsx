@@ -16,7 +16,7 @@ interface Props {
   onCreateNew?: () => void;
 }
 
-export default function CustomerCombobox({ customers, clientName, clientEmail, clientAddress, onSelect, onNameChange, onEmailChange, onAddressChange }: Props) {
+export default function CustomerCombobox({ customers, clientName, clientEmail, clientAddress, onSelect, onNameChange, onEmailChange, onAddressChange, onCreateNew }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
