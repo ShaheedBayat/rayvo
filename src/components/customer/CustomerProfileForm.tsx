@@ -142,7 +142,6 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
 
   const isValid = () => {
     if (!data.name.trim()) return false;
-    if (data.type === 'individual' && !data.idNumber.trim()) return false;
     if (data.type === 'company' && (!data.registrationNumber.trim() || !data.vatNumber.trim())) return false;
     return true;
   };
