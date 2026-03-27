@@ -153,6 +153,7 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
                       value={item.description}
                       onChange={(v) => onUpdate(item.id, 'description', v)}
                       onSelect={(p) => handleProductSelect(item.id, p)}
+                      onCreateNew={onCreateNewProduct}
                     />
                   </td>
                   <td className="py-2">
