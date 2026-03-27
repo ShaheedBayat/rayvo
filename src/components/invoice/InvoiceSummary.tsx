@@ -46,11 +46,24 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
     ? calculateSubtotal(items) // subtotal already includes VAT
     : totalTaxable + totalVat;
 
+  // Calculate total discount amount
+  const totalDiscount = items.reduce((sum, item) => {
+    const discount = item.discount || 0;
+    if (discount <= 0) return sum;
+    return sum + item.quantity * item.unitPrice * (discount / 100);
+  }, 0);
+
   if (!isVatRegistered) {
     return (
-      <div className="flex justify-end">
+      <div className="flex justify-end sticky bottom-0 bg-card py-2">
         <div className="w-72 space-y-2.5">
-          <div className="flex justify-between text-base font-semibold border-t pt-3">
+          {totalDiscount > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Discount</span>
+              <span className="mono text-destructive">-{formatCurrency(totalDiscount, currency)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-lg font-bold border-t pt-3">
             <span>Total</span>
             <span className="mono text-primary">
               {formatCurrency(calculateSubtotal(items), currency)}
@@ -62,12 +75,19 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
   }
 
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-end sticky bottom-0 bg-card py-2">
       <div className="w-72 space-y-2.5">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Subtotal {pricingMode === 'inclusive' ? '(incl. VAT)' : '(excl. VAT)'}</span>
           <span className="mono font-medium">{formatCurrency(pricingMode === 'inclusive' ? calculateSubtotal(items) : totalTaxable, currency)}</span>
         </div>
+
+        {totalDiscount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Discount</span>
+            <span className="mono text-destructive">-{formatCurrency(totalDiscount, currency)}</span>
+          </div>
+        )}
         
         {/* VAT breakdown by rate */}
         {Object.entries(vatBreakdown).map(([key, group]) => (
@@ -86,7 +106,7 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
           </div>
         )}
         
-        <div className="flex justify-between text-base font-semibold border-t pt-3">
+        <div className="flex justify-between text-lg font-bold border-t pt-3">
           <span>Total incl. VAT</span>
           <span className="mono text-primary">
             {formatCurrency(grandTotal, currency)}

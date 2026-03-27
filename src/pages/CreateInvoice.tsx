@@ -230,6 +230,16 @@ export default function CreateInvoice() {
                 <div className="space-y-1.5">
                   <Label className="text-xs">Due Date</Label>
                   <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-9" />
+                  {dueDate && (() => {
+                    const days = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000);
+                    return days > 0 ? (
+                      <p className="text-xs text-muted-foreground mt-1">Due in {days} day{days !== 1 ? 's' : ''}</p>
+                    ) : days === 0 ? (
+                      <p className="text-xs text-warning mt-1">Due today</p>
+                    ) : (
+                      <p className="text-xs text-destructive mt-1">Already {Math.abs(days)} day{Math.abs(days) !== 1 ? 's' : ''} past</p>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Currency</Label>
@@ -257,6 +267,7 @@ export default function CreateInvoice() {
                 onAdd={addItem}
                 onRemove={removeItem}
                 onUpdate={updateItem}
+                onCreateNewProduct={() => navigate('/products')}
               />
             <div className="mt-6 border-t pt-4">
                 <InvoiceSummary

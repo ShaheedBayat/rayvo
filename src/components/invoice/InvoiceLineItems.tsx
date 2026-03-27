@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-function ProductSearch({ products, onSelect, value, onChange }: {
+function ProductSearch({ products, onSelect, value, onChange, onCreateNew }: {
   products?: Product[];
   onSelect: (p: Product) => void;
   value: string;
   onChange: (v: string) => void;
+  onCreateNew?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -40,12 +41,15 @@ function ProductSearch({ products, onSelect, value, onChange }: {
         value={value}
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
         onFocus={() => products && products.length > 0 && setOpen(true)}
-        placeholder="Service or product description"
+        placeholder="Search products or type description"
         className="border-0 shadow-none bg-transparent px-0 h-9 focus-visible:ring-0"
         autoComplete="off"
       />
-      {open && filtered.length > 0 && (
-        <div className="absolute z-50 top-full mt-1 w-64 rounded-md border bg-popover shadow-md max-h-40 overflow-y-auto">
+      {open && (filtered.length > 0 || onCreateNew) && (
+        <div className="absolute z-50 top-full mt-1 w-72 rounded-md border bg-popover shadow-md max-h-48 overflow-y-auto">
+          {filtered.length === 0 && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">No matching products</div>
+          )}
           {filtered.map(p => (
             <button
               key={p.id}
@@ -53,11 +57,35 @@ function ProductSearch({ products, onSelect, value, onChange }: {
               className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
               onClick={() => { onSelect(p); setOpen(false); }}
             >
-              <span className="font-medium">{p.code}</span>
-              <span className="text-muted-foreground ml-2 text-xs">{p.name || p.sellDescription}</span>
-              <span className="float-right mono text-xs">{p.sellPrice.toFixed(2)}</span>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-medium">{p.name || p.code}</span>
+                  <span className="text-muted-foreground ml-2 text-xs capitalize">{p.type}</span>
+                </div>
+                <span className="mono text-xs">{p.sellPrice.toFixed(2)}</span>
+              </div>
+              {p.sellDescription && (
+                <p className="text-xs text-muted-foreground truncate mt-0.5">{p.sellDescription}</p>
+              )}
             </button>
           ))}
+          <div className="border-t" />
+          <button
+            type="button"
+            className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors text-muted-foreground italic"
+            onClick={() => setOpen(false)}
+          >
+            Custom item (type manually)
+          </button>
+          {onCreateNew && (
+            <button
+              type="button"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors text-primary font-medium"
+              onClick={() => { onCreateNew(); setOpen(false); }}
+            >
+              + Create new product
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -74,9 +102,10 @@ interface Props {
   onRemove: (id: string) => void;
   onUpdate: (id: string, field: keyof InvoiceItem, value: string | number) => void;
   onProductSelect?: (itemId: string, product: Product) => void;
+  onCreateNewProduct?: () => void;
 }
 
-export default function InvoiceLineItems({ items, currency, products, taxRates, isVatRegistered, onAdd, onRemove, onUpdate, onProductSelect }: Props) {
+export default function InvoiceLineItems({ items, currency, products, taxRates, isVatRegistered, onAdd, onRemove, onUpdate, onProductSelect, onCreateNewProduct }: Props) {
   // Deduplicate tax rates by name to prevent repeated options
   const activeTaxRates = (taxRates || []).filter(t => t.active);
   const uniqueTaxRates = activeTaxRates.filter((t, i, arr) => arr.findIndex(r => r.name === t.name) === i);
@@ -124,6 +153,7 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
                       value={item.description}
                       onChange={(v) => onUpdate(item.id, 'description', v)}
                       onSelect={(p) => handleProductSelect(item.id, p)}
+                      onCreateNew={onCreateNewProduct}
                     />
                   </td>
                   <td className="py-2">
