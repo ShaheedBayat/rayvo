@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/components/AppLayout';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
@@ -244,12 +245,26 @@ export default function Products() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-lg hidden sm:flex">
-            <Upload className="h-3.5 w-3.5" /> Import
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-lg hidden sm:flex">
-            <Download className="h-3.5 w-3.5" /> Export
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="hidden sm:inline-flex">
+                <Button variant="outline" size="sm" className="gap-1.5 rounded-lg opacity-50 cursor-not-allowed" disabled>
+                  <Upload className="h-3.5 w-3.5" /> Import
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Coming soon</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="hidden sm:inline-flex">
+                <Button variant="outline" size="sm" className="gap-1.5 rounded-lg opacity-50 cursor-not-allowed" disabled>
+                  <Download className="h-3.5 w-3.5" /> Export
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Coming soon</TooltipContent>
+          </Tooltip>
           <Button className="gap-1.5 rounded-lg" onClick={openNew}>
             <Plus className="h-4 w-4" /> New Item
           </Button>
