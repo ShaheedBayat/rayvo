@@ -144,6 +144,8 @@ export default function CreateInvoice() {
 
   const totals = calculateSmartTotals(items, taxRate, pricingMode, isVatRegistered);
 
+  const hasLineItems = items.some(i => i.description.trim() && i.unitPrice > 0);
+  const canSave = clientName.trim() !== '' && hasLineItems && !(creditLimitExceeded && selectedCustomer?.blockOnCreditLimit);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId) {
