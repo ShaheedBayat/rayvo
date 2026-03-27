@@ -54,6 +54,7 @@ export default function InvoiceView() {
   const docRef = useRef<HTMLDivElement>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
+  const [sendConfirmOpen, setSendConfirmOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
