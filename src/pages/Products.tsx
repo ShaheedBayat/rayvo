@@ -244,12 +244,26 @@ export default function Products() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-lg hidden sm:flex">
-            <Upload className="h-3.5 w-3.5" /> Import
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-lg hidden sm:flex">
-            <Download className="h-3.5 w-3.5" /> Export
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="hidden sm:inline-flex">
+                <Button variant="outline" size="sm" className="gap-1.5 rounded-lg opacity-50 cursor-not-allowed" disabled>
+                  <Upload className="h-3.5 w-3.5" /> Import
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Coming soon</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="hidden sm:inline-flex">
+                <Button variant="outline" size="sm" className="gap-1.5 rounded-lg opacity-50 cursor-not-allowed" disabled>
+                  <Download className="h-3.5 w-3.5" /> Export
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Coming soon</TooltipContent>
+          </Tooltip>
           <Button className="gap-1.5 rounded-lg" onClick={openNew}>
             <Plus className="h-4 w-4" /> New Item
           </Button>
