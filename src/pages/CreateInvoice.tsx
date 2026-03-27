@@ -267,6 +267,7 @@ export default function CreateInvoice() {
                 onAdd={addItem}
                 onRemove={removeItem}
                 onUpdate={updateItem}
+                onCreateNewProduct={() => navigate('/products')}
               />
             <div className="mt-6 border-t pt-4">
                 <InvoiceSummary
