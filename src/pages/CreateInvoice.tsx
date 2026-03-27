@@ -16,10 +16,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/components/AppLayout';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 import InvoiceLineItems from '@/components/invoice/InvoiceLineItems';
 import InvoiceSummary from '@/components/invoice/InvoiceSummary';
 import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function CreateInvoice() {
   const navigate = useNavigate();
