@@ -137,6 +137,9 @@ export default function CreateInvoice() {
       d.setDate(d.getDate() + customer.dueDays);
       setDueDate(d.toISOString().split('T')[0]);
     }
+    // Track selected customer for credit limit checks
+    const found = customers.find(c => c.name === customer.name);
+    setSelectedCustomer(found || null);
   };
 
   const totals = calculateSmartTotals(items, taxRate, pricingMode, isVatRegistered);
