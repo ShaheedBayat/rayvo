@@ -401,17 +401,8 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Bank Account Name">
-                <Input value={data.bankAccountName} onChange={e => set('bankAccountName', e.target.value)} className="h-9" />
-              </Field>
-              <Field label="Bank Account Number">
-                <Input value={data.bankAccountNumber} onChange={e => set('bankAccountNumber', e.target.value)} className="h-9" />
-              </Field>
-              <Field label="Payment Reference">
-                <Input value={data.paymentReference} onChange={e => set('paymentReference', e.target.value)} className="h-9" />
-              </Field>
-              <Field label="Credit Limit (amount)">
-                <Input type="number" value={data.creditLimit || ''} onChange={e => set('creditLimit', Number(e.target.value))} className="h-9" />
+              <Field label="Credit Limit (optional)">
+                <Input type="number" value={data.creditLimit || ''} onChange={e => set('creditLimit', Number(e.target.value))} placeholder="0 = no limit" className="h-9" />
               </Field>
               <div className="flex items-center gap-3 pt-5">
                 <Checkbox
