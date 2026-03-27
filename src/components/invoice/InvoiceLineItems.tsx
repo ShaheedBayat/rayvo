@@ -105,7 +105,7 @@ interface Props {
   onCreateNewProduct?: () => void;
 }
 
-export default function InvoiceLineItems({ items, currency, products, taxRates, isVatRegistered, onAdd, onRemove, onUpdate, onProductSelect }: Props) {
+export default function InvoiceLineItems({ items, currency, products, taxRates, isVatRegistered, onAdd, onRemove, onUpdate, onProductSelect, onCreateNewProduct }: Props) {
   // Deduplicate tax rates by name to prevent repeated options
   const activeTaxRates = (taxRates || []).filter(t => t.active);
   const uniqueTaxRates = activeTaxRates.filter((t, i, arr) => arr.findIndex(r => r.name === t.name) === i);
