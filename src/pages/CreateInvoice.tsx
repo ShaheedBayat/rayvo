@@ -286,7 +286,25 @@ export default function CreateInvoice() {
                 onNameChange={setClientName}
                 onEmailChange={setClientEmail}
                 onAddressChange={setClientAddress}
-              />
+               />
+              {creditLimitExceeded && selectedCustomer && (
+                <Alert variant="destructive" className="mt-3">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Customer has exceeded credit limit ({formatCurrency(selectedCustomer.creditLimit, currency)}).
+                    Outstanding: {formatCurrency(outstandingBalance, currency)}.
+                    {selectedCustomer.blockOnCreditLimit ? ' Invoice creation is blocked.' : ' Proceed with caution.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+              {creditLimitWarning && selectedCustomer && (
+                <Alert className="mt-3 border-yellow-500/50 bg-yellow-500/10">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-700 dark:text-yellow-400">
+                    Customer is approaching credit limit ({formatCurrency(outstandingBalance, currency)} / {formatCurrency(selectedCustomer.creditLimit, currency)}).
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             <div className="rounded-lg border bg-primary/5 p-6 invoice-shadow">
