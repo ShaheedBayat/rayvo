@@ -150,6 +150,13 @@ export default function CreateInvoice() {
       toast.error('Please add a company first in the Companies section.');
       return;
     }
+    // Credit limit enforcement
+    if (selectedCustomer && selectedCustomer.creditLimit > 0 && creditLimitExceeded) {
+      if (selectedCustomer.blockOnCreditLimit) {
+        toast.error('Customer has exceeded credit limit. Cannot create invoice.');
+        return;
+      }
+    }
     // Force 0% tax if not VAT registered
     const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
     const invoice: Invoice = {
