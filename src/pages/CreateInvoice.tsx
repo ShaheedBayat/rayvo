@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useInvoices } from '@/hooks/useInvoiceStore';
@@ -16,10 +16,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/components/AppLayout';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 import InvoiceLineItems from '@/components/invoice/InvoiceLineItems';
 import InvoiceSummary from '@/components/invoice/InvoiceSummary';
 import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function CreateInvoice() {
   const navigate = useNavigate();
@@ -60,6 +63,50 @@ export default function CreateInvoice() {
     dupState?.items?.map(i => ({ ...i, id: uuidv4() })) || [{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]
   );
 
+  // Credit limit tracking
+  const [selectedCustomer, setSelectedCustomer] = useState<typeof customers[0] | null>(null);
+  const [outstandingBalance, setOutstandingBalance] = useState(0);
+
+  const creditLimitExceeded = useMemo(() => {
+    if (!selectedCustomer || !selectedCustomer.creditLimit || selectedCustomer.creditLimit <= 0) return false;
+    return outstandingBalance >= selectedCustomer.creditLimit;
+  }, [selectedCustomer, outstandingBalance]);
+
+  const creditLimitWarning = useMemo(() => {
+    if (!selectedCustomer || !selectedCustomer.creditLimit || selectedCustomer.creditLimit <= 0) return false;
+    return !creditLimitExceeded && outstandingBalance >= selectedCustomer.creditLimit * 0.8;
+  }, [selectedCustomer, outstandingBalance, creditLimitExceeded]);
+
+  useEffect(() => {
+    if (!selectedCustomer || !companyId) { setOutstandingBalance(0); return; }
+    const fetchBalance = async () => {
+      const { data: invoices } = await supabase
+        .from('invoices')
+        .select('id, items, tax_rate, status')
+        .eq('company_id', companyId)
+        .eq('client_name', selectedCustomer.name)
+        .is('deleted_at', null)
+        .in('status', ['draft', 'approved', 'sent', 'partially_paid']);
+      if (!invoices || invoices.length === 0) { setOutstandingBalance(0); return; }
+      const invoiceIds = invoices.map(inv => inv.id);
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('invoice_id, amount')
+        .in('invoice_id', invoiceIds);
+      const paidMap = new Map<string, number>();
+      payments?.forEach(p => paidMap.set(p.invoice_id, (paidMap.get(p.invoice_id) || 0) + Number(p.amount)));
+      let total = 0;
+      invoices.forEach(inv => {
+        const invItems = (inv.items as any[]) || [];
+        const lineTotal = invItems.reduce((sum: number, item: any) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
+        const paid = paidMap.get(inv.id) || 0;
+        total += Math.max(0, lineTotal - paid);
+      });
+      setOutstandingBalance(total);
+    };
+    fetchBalance();
+  }, [selectedCustomer, companyId]);
+
   const addItem = () => {
     const newItem: InvoiceItem = { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 };
     if (isVatRegistered && taxRates.length > 0) {
@@ -90,6 +137,9 @@ export default function CreateInvoice() {
       d.setDate(d.getDate() + customer.dueDays);
       setDueDate(d.toISOString().split('T')[0]);
     }
+    // Track selected customer for credit limit checks
+    const found = customers.find(c => c.name === customer.name);
+    setSelectedCustomer(found || null);
   };
 
   const totals = calculateSmartTotals(items, taxRate, pricingMode, isVatRegistered);
@@ -99,6 +149,13 @@ export default function CreateInvoice() {
     if (!companyId) {
       toast.error('Please add a company first in the Companies section.');
       return;
+    }
+    // Credit limit enforcement
+    if (selectedCustomer && selectedCustomer.creditLimit > 0 && creditLimitExceeded) {
+      if (selectedCustomer.blockOnCreditLimit) {
+        toast.error('Customer has exceeded credit limit. Cannot create invoice.');
+        return;
+      }
     }
     // Force 0% tax if not VAT registered
     const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
@@ -145,7 +202,7 @@ export default function CreateInvoice() {
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
-            <Button type="submit">Save as Draft</Button>
+            <Button type="submit" disabled={creditLimitExceeded && selectedCustomer?.blockOnCreditLimit}>Save as Draft</Button>
           </div>
         </div>
 
@@ -229,7 +286,25 @@ export default function CreateInvoice() {
                 onNameChange={setClientName}
                 onEmailChange={setClientEmail}
                 onAddressChange={setClientAddress}
-              />
+               />
+              {creditLimitExceeded && selectedCustomer && (
+                <Alert variant="destructive" className="mt-3">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Customer has exceeded credit limit ({formatCurrency(selectedCustomer.creditLimit, currency)}).
+                    Outstanding: {formatCurrency(outstandingBalance, currency)}.
+                    {selectedCustomer.blockOnCreditLimit ? ' Invoice creation is blocked.' : ' Proceed with caution.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+              {creditLimitWarning && selectedCustomer && (
+                <Alert className="mt-3 border-yellow-500/50 bg-yellow-500/10">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-700 dark:text-yellow-400">
+                    Customer is approaching credit limit ({formatCurrency(outstandingBalance, currency)} / {formatCurrency(selectedCustomer.creditLimit, currency)}).
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             <div className="rounded-lg border bg-primary/5 p-6 invoice-shadow">

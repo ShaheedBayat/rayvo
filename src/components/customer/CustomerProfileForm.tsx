@@ -142,7 +142,6 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
 
   const isValid = () => {
     if (!data.name.trim()) return false;
-    if (data.type === 'individual' && !data.idNumber.trim()) return false;
     if (data.type === 'company' && (!data.registrationNumber.trim() || !data.vatNumber.trim())) return false;
     return true;
   };
@@ -204,8 +203,8 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
                 <Input value={data.name} onChange={e => set('name', e.target.value)} placeholder={isCompany ? 'Acme Inc.' : 'John Doe'} className="h-9" />
               </Field>
               {!isCompany && (
-                <Field label="ID Number" required>
-                  <Input value={data.idNumber} onChange={e => set('idNumber', e.target.value)} placeholder="National ID" className="h-9" />
+                <Field label="ID / Registration Number (optional)">
+                  <Input value={data.idNumber} onChange={e => set('idNumber', e.target.value)} placeholder="National ID or Registration Number" className="h-9" />
                 </Field>
               )}
               {isCompany && (
@@ -402,17 +401,8 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Bank Account Name">
-                <Input value={data.bankAccountName} onChange={e => set('bankAccountName', e.target.value)} className="h-9" />
-              </Field>
-              <Field label="Bank Account Number">
-                <Input value={data.bankAccountNumber} onChange={e => set('bankAccountNumber', e.target.value)} className="h-9" />
-              </Field>
-              <Field label="Payment Reference">
-                <Input value={data.paymentReference} onChange={e => set('paymentReference', e.target.value)} className="h-9" />
-              </Field>
-              <Field label="Credit Limit (amount)">
-                <Input type="number" value={data.creditLimit || ''} onChange={e => set('creditLimit', Number(e.target.value))} className="h-9" />
+              <Field label="Credit Limit (optional)">
+                <Input type="number" value={data.creditLimit || ''} onChange={e => set('creditLimit', Number(e.target.value))} placeholder="0 = no limit" className="h-9" />
               </Field>
               <div className="flex items-center gap-3 pt-5">
                 <Checkbox
@@ -445,20 +435,8 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Default Tax Rate (%)">
-                <Input type="number" value={data.defaultTaxRate} onChange={e => set('defaultTaxRate', Number(e.target.value))} className="h-9" />
-              </Field>
               <Field label="Default Discount (%)">
                 <Input type="number" value={data.defaultDiscount || ''} onChange={e => set('defaultDiscount', Number(e.target.value))} className="h-9" />
-              </Field>
-              <Field label="Default Line Amounts">
-                <Select value={data.defaultLineAmounts} onValueChange={v => set('defaultLineAmounts', v as 'tax_inclusive' | 'tax_exclusive')}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tax_inclusive">Tax Inclusive</SelectItem>
-                    <SelectItem value="tax_exclusive">Tax Exclusive</SelectItem>
-                  </SelectContent>
-                </Select>
               </Field>
             </div>
           </AccordionContent>
@@ -470,27 +448,23 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
             <SectionIcon icon={Shield} label="Tax Settings" />
           </AccordionTrigger>
           <AccordionContent className="pb-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Sales Tax">
-                <Select value={data.salesTaxOverride || 'default'} onValueChange={v => set('salesTaxOverride', v === 'default' ? '' : v)}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Use organisation default</SelectItem>
-                    <SelectItem value="15">15% VAT</SelectItem>
-                    <SelectItem value="0">0% (Zero rated)</SelectItem>
-                    <SelectItem value="exempt">Exempt</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Switch checked={data.taxExempt} onCheckedChange={v => set('taxExempt', v)} />
+                <div>
+                  <Label className="text-sm">Tax Exempt</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {data.taxExempt
+                      ? 'This customer will always be charged 0% VAT'
+                      : 'VAT is applied based on company settings'}
+                  </p>
+                </div>
+              </div>
               {isCompany && (
                 <Field label="VAT Number">
                   <Input value={data.vatNumber} onChange={e => set('vatNumber', e.target.value)} className="h-9" disabled />
                 </Field>
               )}
-              <div className="flex items-center gap-3 pt-5">
-                <Switch checked={data.taxExempt} onCheckedChange={v => set('taxExempt', v)} />
-                <Label className="text-xs">Tax Exempt</Label>
-              </div>
             </div>
           </AccordionContent>
         </AccordionItem>
