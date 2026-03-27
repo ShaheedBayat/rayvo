@@ -203,8 +203,8 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
                 <Input value={data.name} onChange={e => set('name', e.target.value)} placeholder={isCompany ? 'Acme Inc.' : 'John Doe'} className="h-9" />
               </Field>
               {!isCompany && (
-                <Field label="ID Number" required>
-                  <Input value={data.idNumber} onChange={e => set('idNumber', e.target.value)} placeholder="National ID" className="h-9" />
+                <Field label="ID / Registration Number (optional)">
+                  <Input value={data.idNumber} onChange={e => set('idNumber', e.target.value)} placeholder="National ID or Registration Number" className="h-9" />
                 </Field>
               )}
               {isCompany && (
