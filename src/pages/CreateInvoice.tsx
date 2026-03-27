@@ -288,6 +288,7 @@ export default function CreateInvoice() {
                 onNameChange={setClientName}
                 onEmailChange={setClientEmail}
                 onAddressChange={setClientAddress}
+                onCreateNew={() => navigate('/customers')}
                />
               {creditLimitExceeded && selectedCustomer && (
                 <Alert variant="destructive" className="mt-3">
