@@ -202,7 +202,7 @@ export default function CreateInvoice() {
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
-            <Button type="submit">Save as Draft</Button>
+            <Button type="submit" disabled={creditLimitExceeded && selectedCustomer?.blockOnCreditLimit}>Save as Draft</Button>
           </div>
         </div>
 
