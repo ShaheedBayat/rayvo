@@ -5,7 +5,7 @@ import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
-import type { Currency, InvoiceItem } from '@/types/invoice';
+import type { Currency } from '@/types/invoice';
 import {
   FileText, Plus, MoreHorizontal, Trash2, Eye, Search, RefreshCw,
   ToggleLeft, ToggleRight, ChevronDown, ChevronLeft, ChevronRight, Ban,
@@ -13,19 +13,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
 
 const PAGE_SIZE = 20;
 
