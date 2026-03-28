@@ -235,16 +235,26 @@ export default function RecurringInvoiceForm() {
         items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
         notes, frequency, dayOfMonth, nextRunDate,
       });
-      if (success) { toast.success('Recurring invoice updated'); goBack(); }
-      else toast.error('Failed to update');
+      if (success) {
+        await logActivity('recurring', editId, 'updated', `Recurring template for ${clientName} updated`);
+        toast.success('Recurring invoice updated');
+        goBack();
+      } else {
+        toast.error('Failed to update');
+      }
     } else {
       const result = await addRecurring({
         companyId, clientName, clientEmail, clientAddress, currency,
         items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
         notes, frequency, dayOfMonth, nextRunDate, endDate: null, isActive: true,
       });
-      if (result) { toast.success('Recurring invoice created'); goBack(); }
-      else toast.error('Failed to create');
+      if (result) {
+        await logActivity('recurring', result.id, 'created', `Recurring template created for ${clientName} (${frequency})`);
+        toast.success('Recurring invoice created');
+        goBack();
+      } else {
+        toast.error('Failed to create');
+      }
     }
   };
 
