@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
 import {
   FileText, Plus, MoreHorizontal, Trash2, Eye, Search, RefreshCw,
-  ToggleLeft, ToggleRight, ChevronDown, ChevronLeft, ChevronRight, Ban,
+  ToggleLeft, ToggleRight, ChevronDown, ChevronLeft, ChevronRight, Ban, Pencil,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
