@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { v4 as uuidv4 } from 'uuid';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { useActiveCompany } from '@/hooks/useActiveCompany';

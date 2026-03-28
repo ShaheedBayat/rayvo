@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { v4 as uuidv4 } from 'uuid';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
