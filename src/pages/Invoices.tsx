@@ -198,7 +198,7 @@ export default function Invoices() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild><Link to="/invoices/new">New Invoice</Link></DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setTab('recurring'); }}>New Recurring Invoice</DropdownMenuItem>
+              <DropdownMenuItem asChild><Link to="/invoices/recurring/new">New Recurring Invoice</Link></DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
