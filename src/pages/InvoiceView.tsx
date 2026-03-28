@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, Edit, Ban, CreditCard, Clock, Activity, Paperclip, Mail, FileText, Image } from 'lucide-react';
+import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, Edit, Ban, CreditCard, Clock, Activity, Paperclip, Mail, FileText, Image, Receipt } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
