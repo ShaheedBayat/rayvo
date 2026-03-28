@@ -24,6 +24,7 @@ import InvoiceSummary from '@/components/invoice/InvoiceSummary';
 import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 import { supabase } from '@/integrations/supabase/client';
+import { safeExecuteAction } from '@/lib/safeExecuteAction';
 
 export default function CreateInvoice() {
   const navigate = useNavigate();
