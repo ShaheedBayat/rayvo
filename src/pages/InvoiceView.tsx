@@ -173,12 +173,21 @@ export default function InvoiceView() {
   };
 
   const markApproveAndSend = async () => {
-    await updateInvoice({ ...invoice, status: 'sent' });
-    // Create VAT ledger entries when invoice is sent
-    await createVatEntries(invoice);
-    await logActivity('invoice', invoice.id, 'approved_and_sent', `Invoice ${invoice.invoiceNumber} approved & sent`);
-    toast.success('Invoice approved & sent');
-    fetchLogs('invoice', invoice.id).then(setActivityLogs);
+    const result = await safeExecuteAction({
+      actionName: 'Approve & send invoice',
+      actionFn: () => updateInvoice({ ...invoice, status: 'sent' }),
+      verifyFn: async (updated) => {
+        const { data } = await supabase.from('invoices').select('id, status').eq('id', updated.id).maybeSingle();
+        return data?.status === 'sent';
+      },
+      silentSuccess: true,
+    });
+    if (result) {
+      await createVatEntries(invoice);
+      await logActivity('invoice', invoice.id, 'approved_and_sent', `Invoice ${invoice.invoiceNumber} approved & sent`);
+      toast.success('Invoice approved & sent');
+      fetchLogs('invoice', invoice.id).then(setActivityLogs);
+    }
   };
 
   const handleVoid = async () => {
