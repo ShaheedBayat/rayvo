@@ -713,6 +713,41 @@ export default function InvoiceView() {
         {!isVoided && <FileUpload onUpload={uploadAttachment} />}
       </div>
 
+      {/* Credit Notes */}
+      {invoiceCreditNotes.length > 0 && (
+        <div className="mt-8 max-w-[800px] mx-auto">
+          <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Receipt className="h-4 w-4" /> Credit Notes
+          </h2>
+          <div className="rounded-lg border bg-card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/20">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Number</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoiceCreditNotes.map(cn => {
+                  const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+                  const cnTotal = calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+                  return (
+                    <tr key={cn.id} className="border-b last:border-0">
+                      <td className="px-4 py-2.5 mono font-medium">{cn.creditNoteNumber}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground">{formatDate(cn.createdAt)}</td>
+                      <td className="px-4 py-2.5 capitalize text-muted-foreground">{cn.status}</td>
+                      <td className="px-4 py-2.5 text-right mono font-medium text-info">− {formatCurrency(cnTotal, cn.currency)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Payment History */}
       {payments.length > 0 && (
         <div className="mt-8 max-w-[800px] mx-auto">
