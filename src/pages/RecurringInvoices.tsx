@@ -83,12 +83,47 @@ export default function RecurringInvoices() {
   // Recurring-specific fields
   const [frequency, setFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
   const [dayOfMonth, setDayOfMonth] = useState(1);
-  const [nextRunDate, setNextRunDate] = useState(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    d.setDate(1);
-    return d.toISOString().split('T')[0];
-  });
+
+  // Helper: compute next_run_date based on frequency + dayOfMonth
+  const computeNextRunDate = (freq: string, dom: number): string => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (freq === 'weekly') {
+      const d = new Date(today);
+      d.setDate(d.getDate() + 7);
+      return d.toISOString().split('T')[0];
+    }
+    if (freq === 'yearly') {
+      const d = new Date(today);
+      d.setFullYear(d.getFullYear() + 1);
+      return d.toISOString().split('T')[0];
+    }
+    // Monthly: next occurrence of dayOfMonth
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const maxDayThis = new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1, 0).getDate();
+    const targetDayThis = Math.min(dom, maxDayThis);
+    const candidateThis = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), targetDayThis);
+    if (candidateThis > today) {
+      return candidateThis.toISOString().split('T')[0];
+    }
+    // Use next month
+    const nextMonth = new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1, 1);
+    const maxDayNext = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+    const targetDayNext = Math.min(dom, maxDayNext);
+    return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), targetDayNext).toISOString().split('T')[0];
+  };
+
+  const [nextRunDate, setNextRunDate] = useState(() => computeNextRunDate('monthly', 1));
+
+  // Auto-recalculate next_run_date when frequency or dayOfMonth changes (only for new, not edit)
+  const handleFrequencyChange = (newFreq: 'monthly' | 'weekly' | 'yearly') => {
+    setFrequency(newFreq);
+    if (!editId) setNextRunDate(computeNextRunDate(newFreq, dayOfMonth));
+  };
+  const handleDayOfMonthChange = (newDay: number) => {
+    setDayOfMonth(newDay);
+    if (!editId) setNextRunDate(computeNextRunDate(frequency, newDay));
+  };
 
   const makeDefaultItem = (): InvoiceItem => {
     const item: InvoiceItem = { id: uuidv4(), description: '', quantity: 0, unitPrice: 0 };
@@ -191,8 +226,7 @@ export default function RecurringInvoices() {
     setPaymentTerms(''); setSelectedCustomer(null); setOutstandingBalance(0);
     setFrequency('monthly'); setDayOfMonth(1);
     setItems([makeDefaultItem()]);
-    const d = new Date(); d.setMonth(d.getMonth() + 1); d.setDate(1);
-    setNextRunDate(d.toISOString().split('T')[0]);
+    setNextRunDate(computeNextRunDate('monthly', 1));
     const dd = new Date(); dd.setDate(dd.getDate() + 30);
     setDueDate(dd.toISOString().split('T')[0]);
   };
@@ -359,7 +393,7 @@ export default function RecurringInvoices() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Frequency</Label>
-                    <Select value={frequency} onValueChange={v => setFrequency(v as any)}>
+                    <Select value={frequency} onValueChange={v => handleFrequencyChange(v as any)}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="weekly">Weekly</SelectItem>
@@ -371,7 +405,7 @@ export default function RecurringInvoices() {
                   {frequency === 'monthly' && (
                     <div className="space-y-1.5">
                       <Label className="text-xs">Day of Month</Label>
-                      <Input type="number" min={1} max={28} value={dayOfMonth} onChange={e => setDayOfMonth(parseInt(e.target.value) || 1)} className="h-9" />
+                      <Input type="number" min={1} max={28} value={dayOfMonth} onChange={e => handleDayOfMonthChange(parseInt(e.target.value) || 1)} className="h-9" />
                     </div>
                   )}
                   <div className="space-y-1.5">
