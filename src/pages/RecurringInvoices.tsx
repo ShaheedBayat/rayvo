@@ -229,17 +229,35 @@ export default function RecurringInvoices() {
       }
     }
     const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
-    const result = await addRecurring({
-      companyId, clientName, clientEmail, clientAddress, currency,
-      items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
-      notes, frequency, dayOfMonth, nextRunDate, endDate: null, isActive: true,
-    });
-    if (result) {
-      toast.success('Recurring invoice created');
-      resetForm();
-      setShowForm(false);
+    
+    if (editId) {
+      // UPDATE existing recurring invoice
+      const success = await updateRecurring(editId, {
+        companyId, clientName, clientEmail, clientAddress, currency,
+        items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
+        notes, frequency, dayOfMonth, nextRunDate,
+      });
+      if (success) {
+        toast.success('Recurring invoice updated');
+        resetForm();
+        setShowForm(false);
+      } else {
+        toast.error('Failed to update');
+      }
     } else {
-      toast.error('Failed to create');
+      // CREATE new recurring invoice
+      const result = await addRecurring({
+        companyId, clientName, clientEmail, clientAddress, currency,
+        items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
+        notes, frequency, dayOfMonth, nextRunDate, endDate: null, isActive: true,
+      });
+      if (result) {
+        toast.success('Recurring invoice created');
+        resetForm();
+        setShowForm(false);
+      } else {
+        toast.error('Failed to create');
+      }
     }
   };
 
