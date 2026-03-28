@@ -328,8 +328,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             {user && (
               <DropdownMenu>
