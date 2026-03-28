@@ -28,6 +28,7 @@ import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { useActivityLog } from '@/hooks/useActivityLog';
 
 export default function CreateInvoice() {
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const permissions = usePermissions();
