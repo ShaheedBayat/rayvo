@@ -184,11 +184,11 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
                     />
                   </td>
                   <td className="py-2">
-                    <Input type="number" min={0} step="0.01" value={item.unitPrice} onChange={(e) => onUpdate(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono" />
+                    <Input type="number" min={0} step="0.01" value={item.unitPrice} onChange={(e) => onUpdate(item.id, 'unitPrice', parseFloat(e.target.value) || 0)} className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                   </td>
                   <td className="py-2">
                     <div className="flex items-center justify-end gap-1">
-                      <Input type="number" min={0} max={100} step="0.5" value={discount} onChange={(e) => onUpdate(item.id, 'discount' as any, parseFloat(e.target.value) || 0)} className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono w-16" />
+                      <Input type="number" min={0} max={100} step="0.5" value={discount} onChange={(e) => onUpdate(item.id, 'discount' as any, parseFloat(e.target.value) || 0)} className="border-0 shadow-none bg-transparent px-0 h-9 text-right focus-visible:ring-0 mono w-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                       <span className="text-xs text-muted-foreground">%</span>
                     </div>
                   </td>
