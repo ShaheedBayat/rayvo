@@ -168,7 +168,7 @@ export default function Overview() {
       )}
 
       {/* Money summary */}
-      <div className="grid gap-4 sm:grid-cols-3 mb-8">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <div className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow">
           <div className="flex items-center gap-2 mb-1">
             <Send className="h-3.5 w-3.5 text-warning" />
@@ -198,6 +198,16 @@ export default function Overview() {
             {formatMultiCurrency(overdueByCurrency)}
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
+        </div>
+        <div className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow">
+          <div className="flex items-center gap-2 mb-1">
+            <Receipt className="h-3.5 w-3.5 text-destructive" />
+            <p className="text-xs font-medium text-muted-foreground">Total Expenses</p>
+          </div>
+          <p className="text-lg font-semibold mono text-destructive">
+            {formatCurrency(expenses.reduce((sum, e) => sum + e.amount, 0), primaryCurrency)}
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{expenses.length} expense{expenses.length !== 1 ? 's' : ''} recorded</p>
         </div>
       </div>
 
