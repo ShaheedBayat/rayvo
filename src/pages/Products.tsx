@@ -366,13 +366,19 @@ export default function Products() {
                           <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(p)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                          <DropdownMenuItem onClick={async () => { await updateProduct(p.id, { status: p.status === 'active' ? 'archived' : 'active' }); toast.success(p.status === 'active' ? 'Archived' : 'Activated'); }}>
-                            <Archive className="mr-2 h-4 w-4" /> {p.status === 'active' ? 'Archive' : 'Activate'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
+                          {permissions.canEditProduct && (
+                            <DropdownMenuItem onClick={() => openEdit(p)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                          )}
+                          {permissions.canEditProduct && (
+                            <DropdownMenuItem onClick={async () => { await updateProduct(p.id, { status: p.status === 'active' ? 'archived' : 'active' }); toast.success(p.status === 'active' ? 'Archived' : 'Activated'); }}>
+                              <Archive className="mr-2 h-4 w-4" /> {p.status === 'active' ? 'Archive' : 'Activate'}
+                            </DropdownMenuItem>
+                          )}
+                          {permissions.canDeleteProduct && (
+                            <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="text-destructive focus:text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
