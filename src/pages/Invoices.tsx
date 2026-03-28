@@ -40,46 +40,10 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 function RecurringTab() {
-  const { recurring: allRecurring, addRecurring, updateRecurring, deleteRecurring } = useRecurringInvoices();
+  const { recurring: allRecurring, updateRecurring, deleteRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
-  const [open, setOpen] = useState(false);
-  const [companyId, setCompanyId] = useState(companies[0]?.id || '');
-  const [clientName, setClientName] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
-  const [clientAddress, setClientAddress] = useState('');
-  const [currency, setCurrency] = useState<Currency>('ZAR');
-  const [taxRate, setTaxRate] = useState(15);
-  const [notes, setNotes] = useState('');
-  const [frequency, setFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
-  const [dayOfMonth, setDayOfMonth] = useState(1);
-  const [nextRunDate, setNextRunDate] = useState(() => {
-    const d = new Date(); d.setMonth(d.getMonth() + 1); d.setDate(1);
-    return d.toISOString().split('T')[0];
-  });
-  const [items, setItems] = useState<InvoiceItem[]>([
-    { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 },
-  ]);
-
-  const resetForm = () => {
-    setCompanyId(companies[0]?.id || ''); setClientName(''); setClientEmail('');
-    setClientAddress(''); setCurrency('ZAR'); setTaxRate(15); setNotes('');
-    setFrequency('monthly'); setDayOfMonth(1);
-    setItems([{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!companyId) { toast.error('Select a company'); return; }
-    if (!clientName) { toast.error('Enter client name'); return; }
-    const result = await addRecurring({
-      companyId, clientName, clientEmail, clientAddress, currency,
-      items, taxRate, notes, frequency, dayOfMonth, nextRunDate, isActive: true,
-    });
-    if (result) { toast.success('Recurring invoice created'); resetForm(); setOpen(false); }
-    else { toast.error('Failed to create'); }
-  };
 
   const toggleActive = async (id: string, current: boolean) => {
     await updateRecurring(id, { isActive: !current });
@@ -90,98 +54,9 @@ function RecurringTab() {
     <>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{recurring.length} recurring template{recurring.length !== 1 ? 's' : ''}</p>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-1.5 rounded-lg"><Plus className="h-4 w-4" /> New Recurring</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>New Recurring Invoice</DialogTitle></DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Company</Label>
-                  <Select value={companyId} onValueChange={setCompanyId}>
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Customer Name</Label>
-                  <Input required value={clientName} onChange={e => setClientName(e.target.value)} className="h-9" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Email</Label>
-                  <Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="h-9" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Currency</Label>
-                  <Select value={currency} onValueChange={v => setCurrency(v as Currency)}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ZAR">ZAR</SelectItem>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Address</Label>
-                <Textarea value={clientAddress} onChange={e => setClientAddress(e.target.value)} rows={2} />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Frequency</Label>
-                  <Select value={frequency} onValueChange={v => setFrequency(v as any)}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Day of Month</Label>
-                  <Input type="number" min={1} max={28} value={dayOfMonth} onChange={e => setDayOfMonth(parseInt(e.target.value) || 1)} className="h-9" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Next Run</Label>
-                  <Input type="date" value={nextRunDate} onChange={e => setNextRunDate(e.target.value)} className="h-9" />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs mb-2 block">Line Items</Label>
-                {items.map((item, i) => (
-                  <div key={item.id} className="flex gap-2 mb-2">
-                    <Input placeholder="Description" value={item.description} onChange={e => { const u = [...items]; u[i] = { ...item, description: e.target.value }; setItems(u); }} className="h-8 text-xs flex-1" />
-                    <Input type="number" placeholder="Qty" value={item.quantity} onChange={e => { const u = [...items]; u[i] = { ...item, quantity: parseInt(e.target.value) || 0 }; setItems(u); }} className="h-8 text-xs w-16" />
-                    <Input type="number" placeholder="Price" value={item.unitPrice} onChange={e => { const u = [...items]; u[i] = { ...item, unitPrice: parseFloat(e.target.value) || 0 }; setItems(u); }} className="h-8 text-xs w-24" />
-                    {items.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setItems(items.filter((_, j) => j !== i))}><Trash2 className="h-3 w-3" /></Button>
-                    )}
-                  </div>
-                ))}
-                <Button type="button" variant="ghost" size="sm" className="text-primary text-xs" onClick={() => setItems([...items, { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }])}>
-                  <Plus className="h-3 w-3 mr-1" /> Add item
-                </Button>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Tax Rate (%)</Label>
-                <Input type="number" min={0} max={100} value={taxRate} onChange={e => setTaxRate(parseFloat(e.target.value) || 0)} className="h-9 w-24" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Notes</Label>
-                <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit">Create Recurring</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" className="gap-1.5 rounded-lg" asChild>
+          <Link to="/recurring-invoices?action=new"><Plus className="h-4 w-4" /> New Recurring</Link>
+        </Button>
       </div>
 
       {recurring.length === 0 ? (
