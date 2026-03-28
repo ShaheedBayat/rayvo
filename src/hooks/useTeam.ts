@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 
 export interface TeamInvite {
   id: string;
@@ -30,38 +31,39 @@ function mapInvite(row: any): TeamInvite {
 
 export function useTeam() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [invites, setInvites] = useState<TeamInvite[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTeam = useCallback(async () => {
-    if (!user) { setLoading(false); return; }
+    if (!user || !activeCompanyId) { setLoading(false); return; }
     
-    const [inviteRes, rolesRes] = await Promise.all([
+    const [inviteRes, membersRes] = await Promise.all([
       supabase.from('team_invites').select('*').order('invited_at', { ascending: false }),
-      supabase.from('user_roles').select('user_id, role'),
+      supabase.from('company_users').select('user_id, role').eq('company_id', activeCompanyId),
     ]);
     
     if (inviteRes.data) setInvites(inviteRes.data.map(mapInvite));
     
-    if (rolesRes.data) {
-      const userIds = rolesRes.data.map(r => r.user_id);
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, display_name')
-          .in('user_id', userIds);
-        
-        const profileMap = new Map((profiles || []).map(p => [p.user_id, p.display_name || 'Unknown']));
-        setMembers(rolesRes.data.map(r => ({
-          userId: r.user_id,
-          displayName: profileMap.get(r.user_id) || 'Unknown',
-          role: r.role,
-        })));
-      }
+    if (membersRes.data && membersRes.data.length > 0) {
+      const userIds = membersRes.data.map(r => r.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', userIds);
+      
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p.display_name || 'Unknown']));
+      setMembers(membersRes.data.map(r => ({
+        userId: r.user_id,
+        displayName: profileMap.get(r.user_id) || 'Unknown',
+        role: r.role,
+      })));
+    } else {
+      setMembers([]);
     }
     setLoading(false);
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   useEffect(() => { fetchTeam(); }, [fetchTeam]);
 
@@ -75,10 +77,9 @@ export function useTeam() {
     if (!error && data) {
       const mapped = mapInvite(data);
       setInvites(prev => [mapped, ...prev]);
-      // Also call edge function to send email
       try {
         await supabase.functions.invoke('invite-team-member', {
-          body: { email, role, inviteId: data.id },
+          body: { email, role, inviteId: data.id, companyId: activeCompanyId },
         });
       } catch (e) {
         console.error('Failed to send invite email:', e);
@@ -86,7 +87,7 @@ export function useTeam() {
       return mapped;
     }
     return null;
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   const deleteInvite = useCallback(async (id: string) => {
     const { error } = await supabase.from('team_invites').delete().eq('id', id);
@@ -94,5 +95,33 @@ export function useTeam() {
     return !error;
   }, []);
 
-  return { invites, members, loading, sendInvite, deleteInvite, refetch: fetchTeam };
+  const updateMemberRole = useCallback(async (userId: string, newRole: string) => {
+    if (!activeCompanyId) return false;
+    const { error } = await supabase
+      .from('company_users')
+      .update({ role: newRole })
+      .eq('company_id', activeCompanyId)
+      .eq('user_id', userId);
+    if (!error) {
+      setMembers(prev => prev.map(m => m.userId === userId ? { ...m, role: newRole } : m));
+      return true;
+    }
+    return false;
+  }, [activeCompanyId]);
+
+  const removeMember = useCallback(async (userId: string) => {
+    if (!activeCompanyId) return false;
+    const { error } = await supabase
+      .from('company_users')
+      .delete()
+      .eq('company_id', activeCompanyId)
+      .eq('user_id', userId);
+    if (!error) {
+      setMembers(prev => prev.filter(m => m.userId !== userId));
+      return true;
+    }
+    return false;
+  }, [activeCompanyId]);
+
+  return { invites, members, loading, sendInvite, deleteInvite, updateMemberRole, removeMember, refetch: fetchTeam };
 }

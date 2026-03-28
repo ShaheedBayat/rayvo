@@ -184,6 +184,12 @@ export function useCompanies() {
       pricing_mode: company.pricingMode || 'exclusive',
     });
     if (error) return false;
+    // Also add creator as admin in company_users
+    await supabase.from('company_users').insert({
+      company_id: company.id,
+      user_id: user.id,
+      role: 'admin',
+    });
     setCompanies(prev => [company, ...prev]);
     return true;
   }, [user]);
