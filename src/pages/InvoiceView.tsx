@@ -265,15 +265,30 @@ export default function InvoiceView() {
       return false;
     }
     const dbTotalPaid = (dbPayments || []).reduce((sum, p) => sum + Number(p.amount), 0);
-    console.log('[Payment] DB total paid:', dbTotalPaid, 'Invoice total:', invoiceTotal);
+
+    // Refetch credit notes from DB
+    const { data: dbCreditNotes } = await supabase
+      .from('credit_notes')
+      .select('items, tax_rate')
+      .eq('invoice_id', invoice.id)
+      .is('deleted_at', null);
+    const dbTotalCredits = (dbCreditNotes || []).reduce((sum, cn) => {
+      const cnItems = ((cn.items as unknown) as InvoiceItem[]) || [];
+      const cnCo = company;
+      return sum + calculateSmartTotals(cnItems, Number(cn.tax_rate), cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+    }, 0);
+
+    const remaining = invoiceTotal - dbTotalPaid - dbTotalCredits;
 
     let newStatus: string;
-    if (dbTotalPaid <= 0) {
-      newStatus = 'sent';
-    } else if (dbTotalPaid >= invoiceTotal) {
+    if (remaining <= 0.01 && dbTotalCredits > 0 && dbTotalPaid <= 0) {
+      newStatus = 'credited';
+    } else if (remaining <= 0.01) {
       newStatus = 'paid';
-    } else {
+    } else if (dbTotalPaid > 0 || dbTotalCredits > 0) {
       newStatus = 'partially_paid';
+    } else {
+      newStatus = 'sent';
     }
 
     // Update invoice status
