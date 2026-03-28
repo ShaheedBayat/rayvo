@@ -28,6 +28,7 @@ import CustomerStatement from "./pages/CustomerStatement";
 import CustomerStatements from "./pages/CustomerStatements";
 import Expenses from "./pages/Expenses";
 import VatReport from "./pages/VatReport";
+import RecurringInvoices from "./pages/RecurringInvoices";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/recurring" element={<Navigate to="/invoices?tab=recurring" replace />} />
+              <Route path="/recurring-invoices" element={<ProtectedRoute><RecurringInvoices /></ProtectedRoute>} />
               <Route path="/online-payments" element={<ProtectedRoute><OnlinePayments /></ProtectedRoute>} />
               <Route path="/credit-notes" element={<ProtectedRoute><CreditNotes /></ProtectedRoute>} />
               <Route path="/quotes" element={<ProtectedRoute><Quotes /></ProtectedRoute>} />
