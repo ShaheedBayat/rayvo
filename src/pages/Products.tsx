@@ -273,9 +273,11 @@ export default function Products() {
             </TooltipTrigger>
             <TooltipContent>Coming soon</TooltipContent>
           </Tooltip>
-          <Button className="gap-1.5 rounded-lg" onClick={openNew}>
-            <Plus className="h-4 w-4" /> New Item
-          </Button>
+          {permissions.canCreateProduct && (
+            <Button className="gap-1.5 rounded-lg" onClick={openNew}>
+              <Plus className="h-4 w-4" /> New Item
+            </Button>
+          )}
         </div>
       </div>
 
