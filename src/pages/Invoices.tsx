@@ -46,23 +46,59 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
     toast.success(!current ? 'Activated' : 'Paused');
   };
 
+  const [generating, setGenerating] = useState<string | null>(null);
+
   const handleGenerate = async (r: typeof recurring[0]) => {
+    setGenerating(r.id);
     try {
       const { data, error } = await supabase.functions.invoke('process-recurring-invoices', {
         body: { recurringId: r.id },
       });
-      console.log('Recurring generation result:', data);
-      if (error) { console.error('Generation error:', error); toast.error('Failed to generate invoice'); return; }
-      if (data?.created > 0) {
-        const invoiceNum = data?.createdInvoices?.[0]?.invoice_number || 'new invoice';
-        toast.success(`Invoice ${invoiceNum} created`);
-        await Promise.all([refetchRecurring(), refetchInvoices()]);
-      } else {
-        const reason = data?.skipped?.[0] || 'No invoice generated';
-        console.warn('Skipped:', reason);
-        toast.info(reason);
+
+      console.log('[RecurringGen] Edge function response:', JSON.stringify(data));
+
+      if (error) {
+        console.error('[RecurringGen] Edge function error:', error);
+        toast.error('Invoice generation failed');
+        return;
       }
-    } catch (err) { console.error('Generate failed:', err); toast.error('Failed to generate invoice'); }
+
+      // Validate response
+      if (!data?.created || data.created < 1 || !data?.createdInvoices?.length || !data.createdInvoices[0]?.id) {
+        console.error('[RecurringGen] Invalid response — created:', data?.created, 'createdInvoices:', data?.createdInvoices);
+        const reason = data?.skipped?.[0] || 'Invoice generation failed';
+        toast.error(reason);
+        return;
+      }
+
+      const newInvoiceId = data.createdInvoices[0].id;
+      const newInvoiceNumber = data.createdInvoices[0].invoice_number;
+      console.log('[RecurringGen] Invoice created — ID:', newInvoiceId, 'Number:', newInvoiceNumber);
+
+      // Refetch both lists and wait for completion
+      await Promise.all([refetchRecurring(), refetchInvoices()]);
+
+      // Verify invoice exists in refetched list by querying DB directly
+      const { data: verifyRow, error: verifyError } = await supabase
+        .from('invoices')
+        .select('id, invoice_number')
+        .eq('id', newInvoiceId)
+        .maybeSingle();
+
+      console.log('[RecurringGen] Verification query result:', verifyRow, 'error:', verifyError);
+
+      if (!verifyRow) {
+        toast.error('Invoice created but not visible — refresh required');
+        return;
+      }
+
+      toast.success(`Invoice ${verifyRow.invoice_number || newInvoiceNumber} created`);
+    } catch (err) {
+      console.error('[RecurringGen] Generate failed:', err);
+      toast.error('Invoice generation failed');
+    } finally {
+      setGenerating(null);
+    }
   };
 
   const formatFrequency = (r: typeof recurring[0]) => {
