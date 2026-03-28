@@ -192,7 +192,7 @@ export default function CreditNotes() {
           .is('deleted_at', null);
 
         const totalCredits = (dbCreditNotes || []).reduce((sum, cn) => {
-          const cnItems = (cn.items as InvoiceItem[]) || [];
+          const cnItems = ((cn.items as unknown) as InvoiceItem[]) || [];
           return sum + calculateSmartTotals(cnItems, Number(cn.tax_rate), invCo?.pricingMode || 'exclusive', invCo?.isVatRegistered ?? false).total;
         }, 0);
 
