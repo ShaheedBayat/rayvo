@@ -231,10 +231,17 @@ export default function CreditNotes() {
     setSaving(false);
   };
 
+  const [deleting, setDeleting] = useState(false);
+
   const handleDelete = async () => {
     if (!deleteId) return;
+    setDeleting(true);
+    const cn = creditNotes.find(c => c.id === deleteId);
     await deleteCreditNote(deleteId);
-    toast.success('Credit note deleted');
+    await logActivity('credit_note', deleteId, 'deleted', `Credit note ${cn?.creditNoteNumber || ''} deleted`);
+    await refetch();
+    toast.success(`Credit note ${cn?.creditNoteNumber || ''} deleted`);
+    setDeleting(false);
     setDeleteId(null);
   };
 
