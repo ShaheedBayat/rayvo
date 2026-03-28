@@ -13,11 +13,11 @@ export interface Product {
   purchaseEnabled: boolean;
   purchasePrice: number;
   purchaseDescription: string;
-  purchaseTaxRate: number;
+  purchaseTaxRate?: number;
   sellEnabled: boolean;
   sellPrice: number;
   sellDescription: string;
-  sellTaxRate: number;
+  sellTaxRate?: number;
   status: 'active' | 'archived';
   createdAt: string;
 }
