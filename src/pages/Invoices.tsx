@@ -40,6 +40,7 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
   const { recurring: allRecurring, updateRecurring, deleteRecurring, refetch: refetchRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
+  const { logActivity } = useActivityLog();
   const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
 
   const toggleActive = async (id: string, current: boolean) => {
