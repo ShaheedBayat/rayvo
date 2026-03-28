@@ -247,6 +247,16 @@ export default function RecurringInvoiceForm() {
     }
   };
 
+  if (!permissions.loading && !permissions.canManageRecurring) {
+    return (
+      <AppLayout>
+        <div className="text-center py-20">
+          <p className="text-muted-foreground">You do not have permission to manage recurring invoices.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <button

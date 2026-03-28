@@ -204,6 +204,16 @@ export default function CreateInvoice() {
     }
   };
 
+  if (!permissions.loading && !permissions.canCreateInvoice) {
+    return (
+      <AppLayout>
+        <div className="text-center py-20">
+          <p className="text-muted-foreground">You do not have permission to create invoices.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <button
