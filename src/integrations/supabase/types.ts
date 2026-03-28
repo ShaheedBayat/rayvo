@@ -329,6 +329,38 @@ export type Database = {
           },
         ]
       }
+      company_users: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_notes: {
         Row: {
           client_address: string | null
@@ -954,6 +986,7 @@ export type Database = {
           display_name: string | null
           id: string
           is_blocked: boolean
+          is_super_admin: boolean
           user_id: string
         }
         Insert: {
@@ -962,6 +995,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_blocked?: boolean
+          is_super_admin?: boolean
           user_id: string
         }
         Update: {
@@ -970,6 +1004,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_blocked?: boolean
+          is_super_admin?: boolean
           user_id?: string
         }
         Relationships: []
@@ -1332,6 +1367,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_company_role: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: string
+      }
+      has_company_access: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_company_role: {
+        Args: { _company_id: string; _min_role: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1339,6 +1386,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       soft_delete_invoice: { Args: { p_invoice_id: string }; Returns: Json }
       unblock_user: { Args: { p_user_id: string }; Returns: boolean }
     }
