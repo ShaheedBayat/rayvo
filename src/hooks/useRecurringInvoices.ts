@@ -18,6 +18,7 @@ export interface RecurringInvoice {
   nextRunDate: string;
   isActive: boolean;
   createdAt: string;
+  lastGeneratedAt: string | null;
 }
 
 function mapRecurring(row: any): RecurringInvoice {
@@ -36,6 +37,7 @@ function mapRecurring(row: any): RecurringInvoice {
     nextRunDate: row.next_run_date,
     isActive: row.is_active,
     createdAt: row.created_at,
+    lastGeneratedAt: row.last_generated_at || null,
   };
 }
 
@@ -56,7 +58,7 @@ export function useRecurringInvoices() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const addRecurring = useCallback(async (r: Omit<RecurringInvoice, 'id' | 'createdAt'>) => {
+  const addRecurring = useCallback(async (r: Omit<RecurringInvoice, 'id' | 'createdAt' | 'lastGeneratedAt'>) => {
     if (!user) return null;
     const { data, error } = await supabase.from('recurring_invoices').insert({
       owner_id: user.id,
@@ -106,5 +108,23 @@ export function useRecurringInvoices() {
     return !error;
   }, []);
 
-  return { recurring, loading, addRecurring, updateRecurring, deleteRecurring, refetch: fetch };
+  // Trigger the edge function to process any due recurring invoices
+  const processRecurring = useCallback(async () => {
+    if (!user) return { created: 0 };
+    try {
+      const { data, error } = await supabase.functions.invoke('process-recurring-invoices');
+      if (error) {
+        console.error('Failed to process recurring invoices:', error);
+        return { created: 0 };
+      }
+      // Refetch to update next_run_date and last_generated_at
+      await fetch();
+      return data as { created: number; processed: number };
+    } catch (err) {
+      console.error('Error processing recurring invoices:', err);
+      return { created: 0 };
+    }
+  }, [user, fetch]);
+
+  return { recurring, loading, addRecurring, updateRecurring, deleteRecurring, processRecurring, refetch: fetch };
 }
