@@ -6,7 +6,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
-import { ActiveCompanyProvider } from "@/hooks/useActiveCompany";
+import { ActiveCompanyProvider, useActiveCompany } from "@/hooks/useActiveCompany";
 import { usePermissions } from "@/hooks/usePermissions";
 import Overview from "./pages/Overview";
 import Invoices from "./pages/Invoices";
