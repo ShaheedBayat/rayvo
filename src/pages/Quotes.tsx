@@ -124,6 +124,7 @@ export default function Quotes() {
 
       await safeExecuteAction({
         actionName: 'Convert quote to invoice',
+        silentSuccess: true,
         actionFn: async () => {
           return await addInvoice({
             id: invoiceId,
