@@ -208,9 +208,10 @@ export default function CreateInvoice() {
           .maybeSingle();
         return !!data;
       },
-      successMessage: 'Invoice created!',
+      successMessage: `Invoice ${invoice.invoiceNumber || 'draft'} created successfully`,
       onSuccess: async (created) => {
         await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
+        toast.success(`Invoice ${created.invoiceNumber} created successfully`);
         navigate(`/invoices/${created.id}`);
       },
     });
