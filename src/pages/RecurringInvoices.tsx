@@ -9,7 +9,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
-import { ArrowLeft, RefreshCw, Plus, Trash2, ToggleLeft, ToggleRight, Calendar, Clock, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Plus, Trash2, ToggleLeft, ToggleRight, Calendar, Clock, Loader2, AlertTriangle, Pencil } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ export default function RecurringInvoices() {
   const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
   const [searchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(searchParams.get('action') === 'new');
+  const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
@@ -184,6 +185,7 @@ export default function RecurringInvoices() {
   const canSave = clientName.trim() !== '' && hasLineItems && !(creditLimitExceeded && selectedCustomer?.blockOnCreditLimit);
 
   const resetForm = () => {
+    setEditId(null);
     setClientName(''); setClientEmail(''); setClientAddress('');
     setCurrency('ZAR'); setTaxRate(defaultRate); setNotes('');
     setPaymentTerms(''); setSelectedCustomer(null); setOutstandingBalance(0);
@@ -193,6 +195,26 @@ export default function RecurringInvoices() {
     setNextRunDate(d.toISOString().split('T')[0]);
     const dd = new Date(); dd.setDate(dd.getDate() + 30);
     setDueDate(dd.toISOString().split('T')[0]);
+  };
+
+  const startEdit = (r: typeof recurring[0]) => {
+    setEditId(r.id);
+    setClientName(r.clientName);
+    setClientEmail(r.clientEmail);
+    setClientAddress(r.clientAddress);
+    setCurrency(r.currency);
+    setTaxRate(r.taxRate);
+    setNotes(r.notes);
+    setFrequency(r.frequency);
+    setDayOfMonth(r.dayOfMonth);
+    setNextRunDate(r.nextRunDate);
+    setItems(r.items.length > 0 ? r.items.map(i => ({ ...i, id: i.id || uuidv4() })) : [makeDefaultItem()]);
+    setPaymentTerms('');
+    const found = customers.find(c => c.name === r.clientName);
+    setSelectedCustomer(found || null);
+    const dd = new Date(); dd.setDate(dd.getDate() + 30);
+    setDueDate(dd.toISOString().split('T')[0]);
+    setShowForm(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -207,17 +229,35 @@ export default function RecurringInvoices() {
       }
     }
     const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
-    const result = await addRecurring({
-      companyId, clientName, clientEmail, clientAddress, currency,
-      items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
-      notes, frequency, dayOfMonth, nextRunDate, endDate: null, isActive: true,
-    });
-    if (result) {
-      toast.success('Recurring invoice created');
-      resetForm();
-      setShowForm(false);
+    
+    if (editId) {
+      // UPDATE existing recurring invoice
+      const success = await updateRecurring(editId, {
+        companyId, clientName, clientEmail, clientAddress, currency,
+        items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
+        notes, frequency, dayOfMonth, nextRunDate,
+      });
+      if (success) {
+        toast.success('Recurring invoice updated');
+        resetForm();
+        setShowForm(false);
+      } else {
+        toast.error('Failed to update');
+      }
     } else {
-      toast.error('Failed to create');
+      // CREATE new recurring invoice
+      const result = await addRecurring({
+        companyId, clientName, clientEmail, clientAddress, currency,
+        items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
+        notes, frequency, dayOfMonth, nextRunDate, endDate: null, isActive: true,
+      });
+      if (result) {
+        toast.success('Recurring invoice created');
+        resetForm();
+        setShowForm(false);
+      } else {
+        toast.error('Failed to create');
+      }
     }
   };
 
@@ -253,14 +293,14 @@ export default function RecurringInvoices() {
         <form onSubmit={handleSubmit}>
           <div className="flex items-start justify-between mb-8">
             <div>
-              <h1 className="text-2xl font-semibold">New Recurring Invoice</h1>
+              <h1 className="text-2xl font-semibold">{editId ? 'Edit Recurring Invoice' : 'New Recurring Invoice'}</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : 'Fill in the details below to create a recurring invoice.'}
+                {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : editId ? 'Update the recurring invoice details.' : 'Fill in the details below to create a recurring invoice.'}
               </p>
             </div>
             <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button type="submit" disabled={!canSave}>Create Recurring</Button>
+              <Button type="button" variant="outline" onClick={() => { resetForm(); setShowForm(false); }}>Cancel</Button>
+              <Button type="submit" disabled={!canSave}>{editId ? 'Save Changes' : 'Create Recurring'}</Button>
             </div>
           </div>
 
@@ -531,6 +571,9 @@ export default function RecurringInvoices() {
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(r)} title="Edit">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>
                         {r.isActive ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4" />}
                       </Button>
