@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { ActiveCompanyProvider } from "@/hooks/useActiveCompany";
+import { usePermissions } from "@/hooks/usePermissions";
 import Overview from "./pages/Overview";
 import Invoices from "./pages/Invoices";
 import CreateInvoice from "./pages/CreateInvoice";
@@ -29,6 +30,7 @@ import CustomerStatements from "./pages/CustomerStatements";
 import Expenses from "./pages/Expenses";
 import VatReport from "./pages/VatReport";
 import RecurringInvoiceForm from "./pages/RecurringInvoiceForm";
+import { toast } from "sonner";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +49,42 @@ const AuthRoute = React.forwardRef<HTMLDivElement, { children: React.ReactNode }
   return <>{children}</>;
 });
 AuthRoute.displayName = 'AuthRoute';
+
+/** Route guard that checks role-based permissions */
+function RoleGuard({ check, fallback = "/", children }: { check: () => boolean; fallback?: string; children: React.ReactNode }) {
+  const permissions = usePermissions();
+  
+  if (permissions.loading) {
+    return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
+  }
+  
+  if (!check()) {
+    toast.error("You don't have permission to access this page");
+    return <Navigate to={fallback} replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+/** Admin-only route guard */
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const permissions = usePermissions();
+  return (
+    <RoleGuard check={() => permissions.canAccessSettings}>
+      {children}
+    </RoleGuard>
+  );
+}
+
+/** Guard for recurring invoice management (admin only) */
+function RecurringGuard({ children }: { children: React.ReactNode }) {
+  const permissions = usePermissions();
+  return (
+    <RoleGuard check={() => permissions.canManageRecurring} fallback="/invoices">
+      {children}
+    </RoleGuard>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -73,14 +111,14 @@ const App = () => (
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/recurring" element={<Navigate to="/invoices?tab=recurring" replace />} />
               <Route path="/recurring-invoices" element={<Navigate to="/invoices?tab=recurring" replace />} />
-              <Route path="/invoices/recurring/new" element={<ProtectedRoute><RecurringInvoiceForm /></ProtectedRoute>} />
+              <Route path="/invoices/recurring/new" element={<ProtectedRoute><RecurringGuard><RecurringInvoiceForm /></RecurringGuard></ProtectedRoute>} />
               <Route path="/online-payments" element={<ProtectedRoute><OnlinePayments /></ProtectedRoute>} />
               <Route path="/credit-notes" element={<ProtectedRoute><CreditNotes /></ProtectedRoute>} />
               <Route path="/quotes" element={<ProtectedRoute><Quotes /></ProtectedRoute>} />
-              <Route path="/settings/invoice" element={<ProtectedRoute><InvoiceSettings /></ProtectedRoute>} />
+              <Route path="/settings/invoice" element={<ProtectedRoute><AdminRoute><InvoiceSettings /></AdminRoute></ProtectedRoute>} />
               <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
               <Route path="/vat-report" element={<ProtectedRoute><VatReport /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><AdminRoute><SettingsPage /></AdminRoute></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ActiveCompanyProvider>
