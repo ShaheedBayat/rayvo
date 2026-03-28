@@ -238,10 +238,64 @@ export default function InvoiceView() {
     });
   };
 
+  /** Compute correct invoice status from DB payment totals */
+  const recalculateAndUpdateStatus = async (invoiceTotal: number, logContext?: { action: string; details: string }) => {
+    // Refetch all payments from DB to get true total
+    const { data: dbPayments, error: payErr } = await supabase
+      .from('payments')
+      .select('amount')
+      .eq('invoice_id', invoice.id);
+    if (payErr) {
+      console.error('[Payment] Failed to refetch payments', payErr);
+      toast.error('Failed to verify payment totals');
+      return false;
+    }
+    const dbTotalPaid = (dbPayments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+    console.log('[Payment] DB total paid:', dbTotalPaid, 'Invoice total:', invoiceTotal);
+
+    let newStatus: string;
+    if (dbTotalPaid <= 0) {
+      newStatus = 'sent';
+    } else if (dbTotalPaid >= invoiceTotal) {
+      newStatus = 'paid';
+    } else {
+      newStatus = 'partially_paid';
+    }
+
+    // Update invoice status
+    const statusResult = await safeExecuteAction({
+      actionName: 'Update invoice status',
+      actionFn: () => updateInvoice({ ...invoice, status: newStatus as any }),
+      verifyFn: async (updated) => {
+        const { data } = await supabase.from('invoices').select('id, status').eq('id', updated.id).maybeSingle();
+        return data?.status === newStatus;
+      },
+      silentSuccess: true,
+    });
+
+    if (!statusResult) {
+      toast.error('Payment recorded but invoice status update failed — please refresh');
+      return false;
+    }
+
+    if (logContext) {
+      await logActivity('invoice', invoice.id, logContext.action, logContext.details);
+    }
+    return true;
+  };
+
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0) { toast.error('Enter a valid amount'); return; }
+
+    // Verify invoice exists in DB before recording
+    const { data: dbInvoice } = await supabase.from('invoices').select('id, status').eq('id', invoice.id).maybeSingle();
+    if (!dbInvoice) { toast.error('Invoice not found in database'); return; }
+    if (dbInvoice.status === 'paid') { toast.error('Invoice is already fully paid'); return; }
+    if (dbInvoice.status === 'voided') { toast.error('Cannot record payment on a voided invoice'); return; }
+    if (dbInvoice.status === 'draft') { toast.error('Cannot record payment on a draft invoice'); return; }
+
     if (amount > amountDue + 0.01) { toast.error(`Amount exceeds balance due of ${formatCurrency(amountDue, invoice.currency)}`); return; }
 
     const result = await safeExecuteAction({
@@ -262,15 +316,18 @@ export default function InvoiceView() {
     });
 
     if (result) {
+      // Refetch payments & recalculate status from DB
       const newTotalPaid = totalPaid + amount;
-      if (newTotalPaid >= total) {
-        await updateInvoice({ ...invoice, status: 'paid' });
-        await logActivity('invoice', invoice.id, 'paid', `Full payment received. Total: ${formatCurrency(newTotalPaid, invoice.currency)}`);
-      } else {
-        await updateInvoice({ ...invoice, status: 'partially_paid' });
-        await logActivity('invoice', invoice.id, 'partial_payment', `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(total - newTotalPaid, invoice.currency)}`);
+      const statusOk = await recalculateAndUpdateStatus(total, {
+        action: newTotalPaid >= total ? 'paid' : 'partial_payment',
+        details: newTotalPaid >= total
+          ? `Full payment received. Total: ${formatCurrency(newTotalPaid, invoice.currency)}`
+          : `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(total - newTotalPaid, invoice.currency)}`,
+      });
+
+      if (statusOk) {
+        toast.success('Payment recorded');
       }
-      toast.success('Payment recorded');
       setPaymentOpen(false);
       setPayAmount(''); setPayRef(''); setPayNotes('');
       fetchLogs('invoice', invoice.id).then(setActivityLogs);
