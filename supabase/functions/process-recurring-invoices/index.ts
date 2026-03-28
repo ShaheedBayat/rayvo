@@ -98,11 +98,14 @@ Deno.serve(async (req) => {
         if (rec.frequency === 'weekly') {
           nextDate.setDate(nextDate.getDate() + 7)
         } else if (rec.frequency === 'monthly') {
-          nextDate.setMonth(nextDate.getMonth() + 1)
-          if (rec.day_of_month) {
-            const maxDay = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate()
-            nextDate.setDate(Math.min(rec.day_of_month, maxDay))
-          }
+          // Move to next month first
+          const curMonth = nextDate.getMonth()
+          const curYear = nextDate.getFullYear()
+          const nextMonth = curMonth === 11 ? 0 : curMonth + 1
+          const nextYear = curMonth === 11 ? curYear + 1 : curYear
+          const dom = rec.day_of_month || 1
+          const maxDay = new Date(nextYear, nextMonth + 1, 0).getDate()
+          nextDate = new Date(nextYear, nextMonth, Math.min(dom, maxDay))
         } else if (rec.frequency === 'yearly') {
           nextDate.setFullYear(nextDate.getFullYear() + 1)
         }
