@@ -128,24 +128,30 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
     onUpdate(itemId, 'description', product.sellDescription || product.name);
     onUpdate(itemId, 'unitPrice', product.sellPrice);
     onUpdate(itemId, 'quantity', 1);
+
     if (isVatRegistered) {
-      if (product.sellTaxRate !== undefined && product.sellTaxRate !== null) {
+      const standardDefaultRate = uniqueTaxRates.find(t => t.type === 'standard' && t.active)
+        || uniqueTaxRates.find(t => t.active && t.rate > 0)
+        || uniqueTaxRates[0];
+
+      if (product.sellTaxRate == null) {
+        if (standardDefaultRate) {
+          onUpdate(itemId, 'taxRate', standardDefaultRate.rate);
+          onUpdate(itemId, 'taxRateName' as any, standardDefaultRate.name);
+        }
+      } else {
         onUpdate(itemId, 'taxRate', product.sellTaxRate);
-        const matchingRate = uniqueTaxRates.find(t => t.rate === product.sellTaxRate);
+        const matchingRate = uniqueTaxRates.find(t => t.rate === product.sellTaxRate)
+          || (product.sellTaxRate === 0
+            ? uniqueTaxRates.find(t => t.type === 'zero' && t.active) || uniqueTaxRates.find(t => t.rate === 0)
+            : undefined);
         if (matchingRate) {
           onUpdate(itemId, 'taxRateName' as any, matchingRate.name);
         }
-      } else {
-        // Fallback to company default (first standard active rate)
-        const defaultRate = uniqueTaxRates.find(t => t.rate > 0) || uniqueTaxRates[0];
-        if (defaultRate) {
-          onUpdate(itemId, 'taxRate', defaultRate.rate);
-          onUpdate(itemId, 'taxRateName' as any, defaultRate.name);
-        }
       }
     }
+
     onProductSelect?.(itemId, product);
-    // Focus quantity field after selection
     requestAnimationFrame(() => quantityRefs.current[itemId]?.focus());
   };
 
