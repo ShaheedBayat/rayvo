@@ -168,7 +168,16 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>
                           {r.isActive ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4" />}
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => { await deleteRecurring(r.id); toast.success('Deleted'); }}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => {
+                          const ok = await deleteRecurring(r.id);
+                          if (ok) {
+                            await logActivity('recurring', r.id, 'deleted', `Recurring template for ${r.clientName} deleted`);
+                            await refetchRecurring();
+                            toast.success('Recurring template deleted');
+                          } else {
+                            toast.error('Failed to delete recurring template');
+                          }
+                        }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
