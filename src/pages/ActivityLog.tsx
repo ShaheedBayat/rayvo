@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
-import { formatDate } from '@/lib/formatDate';
+import { format, parseISO } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
 import { Activity, FileText, CreditCard, RefreshCw, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ interface LogEntry {
   action: string;
   details: string;
   createdAt: string;
+  userName: string;
 }
 
 const entityIcons: Record<string, React.ElementType> = {
@@ -59,6 +60,15 @@ export default function ActivityLog() {
 
     const { data, error } = await query;
     if (!error && data) {
+      // Fetch unique owner_ids to get display names
+      const ownerIds = [...new Set(data.map(r => r.owner_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', ownerIds);
+      const nameMap: Record<string, string> = {};
+      profiles?.forEach(p => { nameMap[p.user_id] = p.display_name || 'Unknown'; });
+
       setLogs(data.map(row => ({
         id: row.id,
         entityType: row.entity_type,
@@ -66,6 +76,7 @@ export default function ActivityLog() {
         action: row.action,
         details: row.details || '',
         createdAt: row.created_at,
+        userName: nameMap[row.owner_id] || 'Unknown',
       })));
     }
     setLoading(false);
@@ -122,7 +133,8 @@ export default function ActivityLog() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/20">
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date & Time</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">User</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Action</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Entity</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Description</th>
@@ -135,7 +147,11 @@ export default function ActivityLog() {
                 return (
                   <tr key={log.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {formatDate(log.createdAt)}
+                      <div>{format(parseISO(log.createdAt), 'dd MMM yyyy')}</div>
+                      <div className="text-xs text-muted-foreground/70">{format(parseISO(log.createdAt), 'HH:mm:ss')}</div>
+                    </td>
+                    <td className="px-4 py-3 text-foreground whitespace-nowrap">
+                      {log.userName}
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="outline" className={`${colorClass} text-[11px] capitalize`}>
