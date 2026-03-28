@@ -128,11 +128,20 @@ export default function InvoiceLineItems({ items, currency, products, taxRates, 
     onUpdate(itemId, 'description', product.sellDescription || product.name);
     onUpdate(itemId, 'unitPrice', product.sellPrice);
     onUpdate(itemId, 'quantity', 1);
-    if (isVatRegistered && product.sellTaxRate !== undefined) {
-      onUpdate(itemId, 'taxRate', product.sellTaxRate);
-      const matchingRate = uniqueTaxRates.find(t => t.rate === product.sellTaxRate);
-      if (matchingRate) {
-        onUpdate(itemId, 'taxRateName' as any, matchingRate.name);
+    if (isVatRegistered) {
+      if (product.sellTaxRate !== undefined && product.sellTaxRate !== null) {
+        onUpdate(itemId, 'taxRate', product.sellTaxRate);
+        const matchingRate = uniqueTaxRates.find(t => t.rate === product.sellTaxRate);
+        if (matchingRate) {
+          onUpdate(itemId, 'taxRateName' as any, matchingRate.name);
+        }
+      } else {
+        // Fallback to company default (first standard active rate)
+        const defaultRate = uniqueTaxRates.find(t => t.rate > 0) || uniqueTaxRates[0];
+        if (defaultRate) {
+          onUpdate(itemId, 'taxRate', defaultRate.rate);
+          onUpdate(itemId, 'taxRateName' as any, defaultRate.name);
+        }
       }
     }
     onProductSelect?.(itemId, product);

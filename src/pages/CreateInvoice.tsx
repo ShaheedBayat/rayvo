@@ -59,9 +59,32 @@ export default function CreateInvoice() {
   });
   const [taxRate, setTaxRate] = useState(dupState?.taxRate ?? defaultRate);
   const [notes, setNotes] = useState(dupState?.notes || '');
+  const makeDefaultItem = (): InvoiceItem => {
+    const item: InvoiceItem = { id: uuidv4(), description: '', quantity: 0, unitPrice: 0 };
+    if (isVatRegistered && taxRates.length > 0) {
+      const defaultTax = taxRates.find(t => t.type === 'standard' && t.active) || taxRates.find(t => t.active) || taxRates[0];
+      item.taxRate = defaultTax.rate;
+      item.taxRateName = defaultTax.name;
+    }
+    return item;
+  };
+
   const [items, setItems] = useState<InvoiceItem[]>(
-    dupState?.items?.map(i => ({ ...i, id: uuidv4() })) || [{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]
+    dupState?.items?.map(i => ({ ...i, id: uuidv4() })) || [makeDefaultItem()]
   );
+
+  // Update initial item's tax rate once tax rates load
+  useEffect(() => {
+    if (isVatRegistered && taxRates.length > 0 && !dupState?.items) {
+      setItems(prev => prev.map(item => {
+        if (item.taxRate === undefined || item.taxRateName === undefined) {
+          const defaultTax = taxRates.find(t => t.type === 'standard' && t.active) || taxRates.find(t => t.active) || taxRates[0];
+          return { ...item, taxRate: defaultTax.rate, taxRateName: defaultTax.name };
+        }
+        return item;
+      }));
+    }
+  }, [isVatRegistered, taxRates, dupState]);
 
   // Credit limit tracking
   const [selectedCustomer, setSelectedCustomer] = useState<typeof customers[0] | null>(null);
@@ -108,13 +131,7 @@ export default function CreateInvoice() {
   }, [selectedCustomer, companyId]);
 
   const addItem = () => {
-    const newItem: InvoiceItem = { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 };
-    if (isVatRegistered && taxRates.length > 0) {
-      const defaultTax = taxRates.find(t => t.type === 'standard' && t.active) || taxRates[0];
-      newItem.taxRate = defaultTax.rate;
-      newItem.taxRateName = defaultTax.name;
-    }
-    setItems((prev) => [...prev, newItem]);
+    setItems((prev) => [...prev, makeDefaultItem()]);
   };
 
   const removeItem = (id: string) => {
