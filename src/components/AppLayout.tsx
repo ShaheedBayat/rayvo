@@ -243,7 +243,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }`}
       >
         <LogoSection isCollapsed={collapsed} />
-        <SidebarContent collapsed={collapsed} isActive={isActive} />
+        <SidebarContent collapsed={collapsed} isActive={isActive} salesNav={salesNav} manageNav={manageNav} />
         <div className="border-t border-border/40 p-3">
           <button
             onClick={() => setCollapsed(!collapsed)}
