@@ -36,6 +36,7 @@ function mapRecurring(row: any): RecurringInvoice {
     frequency: row.frequency,
     dayOfMonth: row.day_of_month || 1,
     nextRunDate: row.next_run_date,
+    endDate: row.end_date || null,
     isActive: row.is_active,
     createdAt: row.created_at,
     lastGeneratedAt: row.last_generated_at || null,

@@ -177,6 +177,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { activeCompany, companies, switchCompany } = useActiveCompany();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  useRecurringProcessor();
 
   const cachedName = localStorage.getItem('activeCompanyName');
   const cachedLogo = localStorage.getItem('activeCompanyLogo');
