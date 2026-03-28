@@ -1045,6 +1045,7 @@ export type Database = {
           created_at: string
           currency: string
           day_of_month: number | null
+          end_date: string | null
           frequency: string
           id: string
           is_active: boolean
@@ -1064,6 +1065,7 @@ export type Database = {
           created_at?: string
           currency?: string
           day_of_month?: number | null
+          end_date?: string | null
           frequency?: string
           id?: string
           is_active?: boolean
@@ -1083,6 +1085,7 @@ export type Database = {
           created_at?: string
           currency?: string
           day_of_month?: number | null
+          end_date?: string | null
           frequency?: string
           id?: string
           is_active?: boolean
