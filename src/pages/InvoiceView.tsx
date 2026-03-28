@@ -68,7 +68,7 @@ export default function InvoiceView() {
   const [payMethod, setPayMethod] = useState('bank_transfer');
   const [payRef, setPayRef] = useState('');
   const [payNotes, setPayNotes] = useState('');
-
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   // Send email state
   const [emailAddresses, setEmailAddresses] = useState('');
   const [sending, setSending] = useState(false);
