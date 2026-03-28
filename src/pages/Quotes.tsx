@@ -262,7 +262,12 @@ export default function Quotes() {
           converting={converting}
           onEdit={openEdit}
           onConvert={handleConvertToInvoice}
-          onUpdateStatus={(q, status) => updateQuote({ ...q, status })}
+          onUpdateStatus={async (q, status) => {
+            await updateQuote({ ...q, status });
+            await logActivity('quote', q.id, 'status_updated', `Quote ${q.quoteNumber} status changed to ${status}`);
+            await refetch();
+            toast.success(`Quote ${q.quoteNumber} marked as ${status}`);
+          }}
           onDelete={setDeleteId}
         />
       )}
