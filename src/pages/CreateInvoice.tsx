@@ -131,13 +131,7 @@ export default function CreateInvoice() {
   }, [selectedCustomer, companyId]);
 
   const addItem = () => {
-    const newItem: InvoiceItem = { id: uuidv4(), description: '', quantity: 1, unitPrice: 0 };
-    if (isVatRegistered && taxRates.length > 0) {
-      const defaultTax = taxRates.find(t => t.type === 'standard' && t.active) || taxRates[0];
-      newItem.taxRate = defaultTax.rate;
-      newItem.taxRateName = defaultTax.name;
-    }
-    setItems((prev) => [...prev, newItem]);
+    setItems((prev) => [...prev, makeDefaultItem()]);
   };
 
   const removeItem = (id: string) => {
