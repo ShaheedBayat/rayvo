@@ -191,15 +191,23 @@ export default function InvoiceView() {
   };
 
   const handleVoid = async () => {
-    const success = await voidInvoice(invoice.id);
+    const success = await safeDeleteAction({
+      actionName: 'Void invoice',
+      actionFn: async () => {
+        const ok = await voidInvoice(invoice.id);
+        return ok ? { error: null } : { error: 'Failed to void invoice' };
+      },
+      verifyFn: async () => {
+        const { data } = await supabase.from('invoices').select('id, status').eq('id', invoice.id).maybeSingle();
+        return data?.status === 'voided';
+      },
+      silentSuccess: false,
+      successMessage: 'Invoice voided',
+    });
     if (success) {
-      // Reverse VAT ledger entries when voided
       await reverseVatEntries(invoice);
       await logActivity('invoice', invoice.id, 'voided', `Invoice ${invoice.invoiceNumber} voided`);
-      toast.success('Invoice voided');
       fetchLogs('invoice', invoice.id).then(setActivityLogs);
-    } else {
-      toast.error('Failed to void invoice');
     }
     setVoidOpen(false);
   };
