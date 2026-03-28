@@ -186,7 +186,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   useRecurringProcessor();
 
-  const { salesNav, manageNav } = getNavItems(permissions.canAccessSettings, permissions.canManageCompanies);
+  const { salesNav, manageNav } = getNavItems(permissions.canAccessSettings, permissions.canManageCompanies, permissions.canCreateInvoice);
 
   const cachedName = localStorage.getItem('activeCompanyName');
   const cachedLogo = localStorage.getItem('activeCompanyLogo');
