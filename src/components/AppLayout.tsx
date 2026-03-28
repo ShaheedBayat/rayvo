@@ -127,7 +127,7 @@ function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean) {
   return { salesNav, manageNav };
 }
 
-function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void; salesNav: typeof import('lucide-react')[]; manageNav: typeof import('lucide-react')[] }) {
+function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void; salesNav: any[]; manageNav: any[] }) {
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
       <div>
