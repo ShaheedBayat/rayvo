@@ -1,0 +1,2 @@
+UPDATE public.company_invoice_counters SET last_number = 5 WHERE company_id = '29a7481d-0ad6-47eb-8208-2c665e8ab168';
+UPDATE public.company_invoice_counters SET last_number = 1 WHERE company_id = 'e0f7bffb-0573-400e-aff8-ca17b5062708';

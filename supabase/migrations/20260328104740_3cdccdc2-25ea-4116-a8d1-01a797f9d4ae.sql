@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS set_invoice_number ON public.invoices;
