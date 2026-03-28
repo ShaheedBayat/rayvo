@@ -341,7 +341,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuContent align="end">
                   <div className="px-2 py-1.5"><p className="text-sm font-medium">{user.email}</p></div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
+                  {permissions.canAccessSettings && (
+                    <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" /> Sign out
                   </DropdownMenuItem>
