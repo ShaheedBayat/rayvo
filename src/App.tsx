@@ -117,30 +117,30 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
               <Route path="/public/invoice/:id" element={<PublicInvoice />} />
-              <Route path="/" element={<ProtectedRoute><Overview /></ProtectedRoute>} />
-              <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-              <Route path="/invoices/new" element={<ProtectedRoute><CreateInvoice /></ProtectedRoute>} />
-              <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceView /></ProtectedRoute>} />
-              <Route path="/invoices/:id/edit" element={<ProtectedRoute><EditInvoice /></ProtectedRoute>} />
-              <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
-              <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-              <Route path="/customer-statements" element={<ProtectedRoute><CustomerStatements /></ProtectedRoute>} />
-              <Route path="/customers/:id/statement" element={<ProtectedRoute><CustomerStatement /></ProtectedRoute>} />
-              <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute><CompanyRequired><Overview /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/invoices" element={<ProtectedRoute><CompanyRequired><Invoices /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/invoices/new" element={<ProtectedRoute><CompanyRequired><CreateInvoice /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/invoices/:id" element={<ProtectedRoute><CompanyRequired><InvoiceView /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/invoices/:id/edit" element={<ProtectedRoute><CompanyRequired><EditInvoice /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/companies" element={<ProtectedRoute><CompanyRequired><Companies /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/customers" element={<ProtectedRoute><CompanyRequired><Customers /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/customer-statements" element={<ProtectedRoute><CompanyRequired><CustomerStatements /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/customers/:id/statement" element={<ProtectedRoute><CompanyRequired><CustomerStatement /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/products" element={<ProtectedRoute><CompanyRequired><Products /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><CompanyRequired><Reports /></CompanyRequired></ProtectedRoute>} />
               <Route path="/recurring" element={<Navigate to="/invoices?tab=recurring" replace />} />
               <Route path="/recurring-invoices" element={<Navigate to="/invoices?tab=recurring" replace />} />
-              <Route path="/invoices/recurring/new" element={<ProtectedRoute><RecurringGuard><RecurringInvoiceForm /></RecurringGuard></ProtectedRoute>} />
-              <Route path="/online-payments" element={<ProtectedRoute><OnlinePayments /></ProtectedRoute>} />
-              <Route path="/credit-notes" element={<ProtectedRoute><CreditNotes /></ProtectedRoute>} />
-              <Route path="/quotes" element={<ProtectedRoute><Quotes /></ProtectedRoute>} />
-              <Route path="/quotes/new" element={<ProtectedRoute><CreateQuote /></ProtectedRoute>} />
-              <Route path="/quotes/:id/edit" element={<ProtectedRoute><EditQuote /></ProtectedRoute>} />
-              <Route path="/settings/invoice" element={<ProtectedRoute><AdminRoute><InvoiceSettings /></AdminRoute></ProtectedRoute>} />
-              <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
-              <Route path="/vat-report" element={<ProtectedRoute><VatReport /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><AdminRoute><SettingsPage /></AdminRoute></ProtectedRoute>} />
-              <Route path="/activity" element={<ProtectedRoute><AdminRoute><ActivityLog /></AdminRoute></ProtectedRoute>} />
+              <Route path="/invoices/recurring/new" element={<ProtectedRoute><CompanyRequired><RecurringGuard><RecurringInvoiceForm /></RecurringGuard></CompanyRequired></ProtectedRoute>} />
+              <Route path="/online-payments" element={<ProtectedRoute><CompanyRequired><OnlinePayments /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/credit-notes" element={<ProtectedRoute><CompanyRequired><CreditNotes /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/quotes" element={<ProtectedRoute><CompanyRequired><Quotes /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/quotes/new" element={<ProtectedRoute><CompanyRequired><CreateQuote /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/quotes/:id/edit" element={<ProtectedRoute><CompanyRequired><EditQuote /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/settings/invoice" element={<ProtectedRoute><CompanyRequired><AdminRoute><InvoiceSettings /></AdminRoute></CompanyRequired></ProtectedRoute>} />
+              <Route path="/expenses" element={<ProtectedRoute><CompanyRequired><Expenses /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/vat-report" element={<ProtectedRoute><CompanyRequired><VatReport /></CompanyRequired></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><CompanyRequired><AdminRoute><SettingsPage /></AdminRoute></CompanyRequired></ProtectedRoute>} />
+              <Route path="/activity" element={<ProtectedRoute><CompanyRequired><AdminRoute><ActivityLog /></AdminRoute></CompanyRequired></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ActiveCompanyProvider>
