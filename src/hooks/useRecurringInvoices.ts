@@ -16,6 +16,7 @@ export interface RecurringInvoice {
   frequency: 'monthly' | 'weekly' | 'yearly';
   dayOfMonth: number;
   nextRunDate: string;
+  endDate: string | null;
   isActive: boolean;
   createdAt: string;
   lastGeneratedAt: string | null;
