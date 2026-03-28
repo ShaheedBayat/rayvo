@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
-import { formatDate } from '@/lib/formatDate';
+import { format, parseISO } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
 import { Activity, FileText, CreditCard, RefreshCw, Filter } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
