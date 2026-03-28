@@ -293,14 +293,14 @@ export default function RecurringInvoices() {
         <form onSubmit={handleSubmit}>
           <div className="flex items-start justify-between mb-8">
             <div>
-              <h1 className="text-2xl font-semibold">New Recurring Invoice</h1>
+              <h1 className="text-2xl font-semibold">{editId ? 'Edit Recurring Invoice' : 'New Recurring Invoice'}</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : 'Fill in the details below to create a recurring invoice.'}
+                {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : editId ? 'Update the recurring invoice details.' : 'Fill in the details below to create a recurring invoice.'}
               </p>
             </div>
             <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button type="submit" disabled={!canSave}>Create Recurring</Button>
+              <Button type="button" variant="outline" onClick={() => { resetForm(); setShowForm(false); }}>Cancel</Button>
+              <Button type="submit" disabled={!canSave}>{editId ? 'Save Changes' : 'Create Recurring'}</Button>
             </div>
           </div>
 
