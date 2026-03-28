@@ -128,18 +128,10 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Tax rate</Label>
-                    <Select value={purchaseTaxRate} onValueChange={setPurchaseTaxRate}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TAX_RATES.map((rate) => (
-                          <SelectItem key={rate} value={rate.replace('%', '')}>
-                            {rate}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="relative">
+                      <Input type="number" min="0" max="100" step="0.01" value={purchaseTaxRate} onChange={e => setPurchaseTaxRate(e.target.value)} placeholder="0" className="pr-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -181,18 +173,10 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Tax rate</Label>
-                    <Select value={sellTaxRate} onValueChange={setSellTaxRate}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TAX_RATES.map((rate) => (
-                          <SelectItem key={rate} value={rate.replace('%', '')}>
-                            {rate}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="relative">
+                      <Input type="number" min="0" max="100" step="0.01" value={sellTaxRate} onChange={e => setSellTaxRate(e.target.value)} placeholder="0" className="pr-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-1.5">
