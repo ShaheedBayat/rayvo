@@ -13,7 +13,7 @@ export interface Quote {
   items: InvoiceItem[];
   taxRate: number;
   currency: Currency;
-  status: 'draft' | 'sent' | 'accepted' | 'declined';
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'converted';
   notes: string;
   validUntil: string;
   createdAt: string;
