@@ -64,10 +64,12 @@ export default function Customers() {
             Manage customer profiles, contacts, and sales defaults.
           </p>
         </div>
-        <Button className="gap-1.5" onClick={openNew}>
-          <Plus className="h-4 w-4" />
-          New Customer
-        </Button>
+        {permissions.canCreateCustomer && (
+          <Button className="gap-1.5" onClick={openNew}>
+            <Plus className="h-4 w-4" />
+            New Customer
+          </Button>
+        )}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={v => { setDialogOpen(v); if (!v) setEditing(undefined); }}>
