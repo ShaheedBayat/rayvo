@@ -45,6 +45,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const permissions = usePermissions();
   const { getInvoice, updateInvoice, softDeleteInvoice, voidInvoice } = useInvoices();
   const { getCompany } = useCompanies();
   const { settings } = useGlobalSettings();
