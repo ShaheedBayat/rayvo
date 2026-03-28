@@ -49,7 +49,7 @@ function RecurringTab() {
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{recurring.length} recurring template{recurring.length !== 1 ? 's' : ''}</p>
         <Button size="sm" className="gap-1.5 rounded-lg" asChild>
-          <Link to="/recurring-invoices?action=new"><Plus className="h-4 w-4" /> New Recurring</Link>
+          <Link to="/invoices/recurring/new"><Plus className="h-4 w-4" /> New Recurring</Link>
         </Button>
       </div>
 
