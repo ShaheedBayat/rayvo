@@ -94,7 +94,7 @@ function NavItem({ to, label, icon: Icon, active, collapsed, children, onNavigat
   );
 }
 
-function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean) {
+function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean, canCreateInvoice: boolean) {
   const salesNav = [
     { to: '/', label: 'Overview', icon: LayoutDashboard },
     {
