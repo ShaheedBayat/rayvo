@@ -263,6 +263,10 @@ export default function SettingsPage() {
     },
   ];
 
+  if (!permissions.loading && !permissions.canAccessSettings) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <AppLayout>
       <div className="mb-8 flex items-center justify-between">
