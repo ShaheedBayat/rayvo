@@ -213,15 +213,16 @@ export default function InvoiceView() {
   };
 
   const handleDelete = async () => {
-    const result = await softDeleteInvoice(invoice.id);
-    if (result.blocked) {
-      toast.error(result.error);
-    } else if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success('Invoice moved to deleted');
-      navigate('/invoices');
-    }
+    await safeDeleteAction({
+      actionName: 'Delete invoice',
+      actionFn: () => softDeleteInvoice(invoice.id),
+      verifyFn: async () => {
+        const { data } = await supabase.from('invoices').select('id, deleted_at').eq('id', invoice.id).maybeSingle();
+        return !!data?.deleted_at;
+      },
+      successMessage: 'Invoice moved to deleted',
+      onSuccess: () => navigate('/invoices'),
+    });
   };
 
   const handleDuplicate = () => {
