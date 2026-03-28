@@ -5,6 +5,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
+import { useActivityLog } from '@/hooks/useActivityLog';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
@@ -39,6 +40,7 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
   const { recurring: allRecurring, updateRecurring, deleteRecurring, refetch: refetchRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
+  const { logActivity } = useActivityLog();
   const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
 
   const toggleActive = async (id: string, current: boolean) => {
@@ -92,6 +94,7 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
         return;
       }
 
+      await logActivity('recurring', r.id, 'generated', `Recurring invoice generated → ${verifyRow.invoice_number || newInvoiceNumber}`);
       toast.success(`Invoice ${verifyRow.invoice_number || newInvoiceNumber} created`);
     } catch (err) {
       console.error('[RecurringGen] Generate failed:', err);

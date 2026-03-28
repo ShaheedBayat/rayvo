@@ -220,7 +220,10 @@ export default function InvoiceView() {
         return !!data?.deleted_at;
       },
       successMessage: 'Invoice moved to deleted',
-      onSuccess: () => navigate('/invoices'),
+      onSuccess: async () => {
+        await logActivity('invoice', invoice.id, 'deleted', `Invoice ${invoice.invoiceNumber} deleted`);
+        navigate('/invoices');
+      },
     });
   };
 

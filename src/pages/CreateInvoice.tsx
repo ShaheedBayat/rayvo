@@ -25,12 +25,14 @@ import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
+import { useActivityLog } from '@/hooks/useActivityLog';
 
 export default function CreateInvoice() {
   const navigate = useNavigate();
   const location = useLocation();
   const permissions = usePermissions();
   const { addInvoice } = useInvoices();
+  const { logActivity } = useActivityLog();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
   const { products } = useProducts();
@@ -207,7 +209,10 @@ export default function CreateInvoice() {
         return !!data;
       },
       successMessage: 'Invoice created!',
-      onSuccess: (created) => navigate(`/invoices/${created.id}`),
+      onSuccess: async (created) => {
+        await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
+        navigate(`/invoices/${created.id}`);
+      },
     });
   };
 

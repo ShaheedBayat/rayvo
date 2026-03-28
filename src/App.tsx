@@ -30,6 +30,7 @@ import CustomerStatements from "./pages/CustomerStatements";
 import Expenses from "./pages/Expenses";
 import VatReport from "./pages/VatReport";
 import RecurringInvoiceForm from "./pages/RecurringInvoiceForm";
+import ActivityLog from "./pages/ActivityLog";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
@@ -119,6 +120,7 @@ const App = () => (
               <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
               <Route path="/vat-report" element={<ProtectedRoute><VatReport /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><AdminRoute><SettingsPage /></AdminRoute></ProtectedRoute>} />
+              <Route path="/activity" element={<ProtectedRoute><AdminRoute><ActivityLog /></AdminRoute></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ActiveCompanyProvider>
