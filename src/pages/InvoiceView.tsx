@@ -9,6 +9,7 @@ import { usePayments } from '@/hooks/usePayments';
 import { useActivityLog, type ActivityEntry } from '@/hooks/useActivityLog';
 import { useAttachments } from '@/hooks/useAttachments';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
+import type { InvoiceItem } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import InvoiceDocument from '@/components/invoice/InvoiceDocument';
 import FileUpload from '@/components/FileUpload';
