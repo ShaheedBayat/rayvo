@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Users, Plus, Search, Building2, User, Trash2, Edit, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
