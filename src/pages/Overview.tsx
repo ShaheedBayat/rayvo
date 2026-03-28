@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
 import {
   FileText, Plus, TrendingUp, Clock, CheckCircle2, AlertCircle,
-  ArrowUpRight, Send, Building2,
+  ArrowUpRight, Send, Building2, Receipt,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/AppLayout';
