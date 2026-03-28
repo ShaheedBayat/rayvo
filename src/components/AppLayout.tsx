@@ -268,7 +268,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
                 <LogoSection isCollapsed={false} />
-                <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} />
+                <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} salesNav={salesNav} manageNav={manageNav} />
               </SheetContent>
             </Sheet>
 
