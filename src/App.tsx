@@ -28,6 +28,7 @@ import CustomerStatement from "./pages/CustomerStatement";
 import CustomerStatements from "./pages/CustomerStatements";
 import Expenses from "./pages/Expenses";
 import VatReport from "./pages/VatReport";
+import RecurringInvoices from "./pages/RecurringInvoices";
 
 const queryClient = new QueryClient();
 
