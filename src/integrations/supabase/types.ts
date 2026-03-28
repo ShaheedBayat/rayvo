@@ -1049,6 +1049,7 @@ export type Database = {
           id: string
           is_active: boolean
           items: Json
+          last_generated_at: string | null
           next_run_date: string
           notes: string | null
           owner_id: string
@@ -1067,6 +1068,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           items?: Json
+          last_generated_at?: string | null
           next_run_date: string
           notes?: string | null
           owner_id: string
@@ -1085,6 +1087,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           items?: Json
+          last_generated_at?: string | null
           next_run_date?: string
           notes?: string | null
           owner_id?: string

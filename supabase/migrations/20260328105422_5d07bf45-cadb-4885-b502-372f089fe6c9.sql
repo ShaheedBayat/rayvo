@@ -1,0 +1,1 @@
+ALTER TABLE public.recurring_invoices ADD COLUMN IF NOT EXISTS last_generated_at timestamp with time zone DEFAULT NULL;
