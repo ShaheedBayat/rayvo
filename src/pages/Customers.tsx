@@ -170,17 +170,21 @@ export default function Customers() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/customers/${c.id}/statement`)} title="View Statement">
                         <FileText className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeleteTarget(c)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {permissions.canEditCustomer && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {permissions.canDeleteCustomer && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => setDeleteTarget(c)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
