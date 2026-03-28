@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { formatDate } from '@/lib/formatDate';
 
 export default function SettingsPage() {
+  const permissions = usePermissions();
   const { theme, toggleTheme, colorTheme, setColorTheme } = useTheme();
   const { settings, saveSettings } = useGlobalSettings();
   const { invites, members, sendInvite, deleteInvite } = useTeam();
