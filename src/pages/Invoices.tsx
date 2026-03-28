@@ -46,6 +46,8 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
 
   const toggleActive = async (id: string, current: boolean) => {
     await updateRecurring(id, { isActive: !current });
+    await logActivity('recurring', id, current ? 'paused' : 'activated', `Recurring template ${current ? 'paused' : 'activated'}`);
+    await refetchRecurring();
     toast.success(!current ? 'Activated' : 'Paused');
   };
 
