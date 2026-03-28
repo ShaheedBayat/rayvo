@@ -306,18 +306,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" className="gap-1.5 rounded-lg">
-                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New</span> <ChevronDown className="h-3 w-3 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild><Link to="/invoices/new"><FileText className="mr-2 h-4 w-4" /> New Invoice</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to="/recurring-invoices?action=new"><Receipt className="mr-2 h-4 w-4" /> New Recurring Invoice</Link></DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link to="/customers"><Users className="mr-2 h-4 w-4" /> New Customer</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to="/products"><Package className="mr-2 h-4 w-4" /> New Product / Service</Link></DropdownMenuItem>
+            {permissions.canCreateInvoice && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="gap-1.5 rounded-lg">
+                    <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New</span> <ChevronDown className="h-3 w-3 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild><Link to="/invoices/new"><FileText className="mr-2 h-4 w-4" /> New Invoice</Link></DropdownMenuItem>
+                  {permissions.canManageRecurring && (
+                    <DropdownMenuItem asChild><Link to="/invoices/recurring/new"><Receipt className="mr-2 h-4 w-4" /> New Recurring Invoice</Link></DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  {permissions.canCreateCustomer && (
+                    <DropdownMenuItem asChild><Link to="/customers"><Users className="mr-2 h-4 w-4" /> New Customer</Link></DropdownMenuItem>
+                  )}
+                  {permissions.canCreateProduct && (
+                    <DropdownMenuItem asChild><Link to="/products"><Package className="mr-2 h-4 w-4" /> New Product / Service</Link></DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
               </DropdownMenuContent>
             </DropdownMenu>
 
