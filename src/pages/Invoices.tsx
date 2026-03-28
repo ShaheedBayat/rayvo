@@ -94,6 +94,7 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
         return;
       }
 
+      await logActivity('recurring', r.id, 'generated', `Recurring invoice generated → ${verifyRow.invoice_number || newInvoiceNumber}`);
       toast.success(`Invoice ${verifyRow.invoice_number || newInvoiceNumber} created`);
     } catch (err) {
       console.error('[RecurringGen] Generate failed:', err);
