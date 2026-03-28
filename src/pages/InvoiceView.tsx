@@ -558,8 +558,10 @@ export default function InvoiceView() {
               <Textarea value={payNotes} onChange={e => setPayNotes(e.target.value)} rows={2} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)}>Cancel</Button>
-              <Button type="submit">Record Payment</Button>
+              <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)} disabled={paymentProcessing}>Cancel</Button>
+              <Button type="submit" disabled={paymentProcessing}>
+                {paymentProcessing ? 'Processing...' : 'Record Payment'}
+              </Button>
             </div>
           </form>
         </DialogContent>
