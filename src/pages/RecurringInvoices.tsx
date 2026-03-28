@@ -164,14 +164,16 @@ export default function RecurringInvoices() {
                 <DialogTitle>New Recurring Invoice</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Customer</Label>
                   <CustomerCombobox
                     customers={customers}
                     clientName={clientName}
+                    clientEmail={clientEmail}
+                    clientAddress={clientAddress}
                     onSelect={handleCustomerSelect}
+                    onNameChange={setClientName}
+                    onEmailChange={setClientEmail}
+                    onAddressChange={setClientAddress}
                   />
-                </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
