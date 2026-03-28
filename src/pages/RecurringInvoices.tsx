@@ -393,7 +393,7 @@ export default function RecurringInvoices() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Frequency</Label>
-                    <Select value={frequency} onValueChange={v => setFrequency(v as any)}>
+                    <Select value={frequency} onValueChange={v => handleFrequencyChange(v as any)}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="weekly">Weekly</SelectItem>
@@ -405,7 +405,7 @@ export default function RecurringInvoices() {
                   {frequency === 'monthly' && (
                     <div className="space-y-1.5">
                       <Label className="text-xs">Day of Month</Label>
-                      <Input type="number" min={1} max={28} value={dayOfMonth} onChange={e => setDayOfMonth(parseInt(e.target.value) || 1)} className="h-9" />
+                      <Input type="number" min={1} max={28} value={dayOfMonth} onChange={e => handleDayOfMonthChange(parseInt(e.target.value) || 1)} className="h-9" />
                     </div>
                   )}
                   <div className="space-y-1.5">
