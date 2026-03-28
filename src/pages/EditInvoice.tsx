@@ -75,9 +75,9 @@ export default function EditInvoice() {
     );
   }
 
-  // Block editing for paid, partially_paid, voided, or sent invoices
+  // Block editing based on role + status
   const isLocked = invoice.status === 'paid' || invoice.status === 'partially_paid' || invoice.status === 'voided' || invoice.status === 'sent';
-  if (isLocked || (invoice.status !== 'draft' && invoice.status !== 'approved')) {
+  if (isLocked || !permissions.canEditInvoice(invoice.status) || (invoice.status !== 'draft' && invoice.status !== 'approved')) {
     navigate(`/invoices/${invoice.id}`);
     return null;
   }
