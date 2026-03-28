@@ -9,7 +9,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
-import { ArrowLeft, RefreshCw, Plus, Trash2, ToggleLeft, ToggleRight, Calendar, Clock, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Plus, Trash2, ToggleLeft, ToggleRight, Calendar, Clock, Loader2, AlertTriangle, Pencil } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
