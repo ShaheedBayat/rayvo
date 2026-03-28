@@ -98,14 +98,18 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
                           const { data, error } = await supabase.functions.invoke('process-recurring-invoices', {
                             body: { recurringId: r.id },
                           });
-                          if (error) { toast.error('Failed to generate'); return; }
+                          console.log('Recurring generation result:', data);
+                          if (error) { console.error('Generation error:', error); toast.error('Failed to generate'); return; }
                           if (data?.created > 0) {
                             toast.success('Invoice generated — check All Invoices tab');
-                            refetchRecurring();
+                            await refetchRecurring();
+                            await refetchInvoices();
                           } else {
-                            toast.info(data?.skipped?.[0] || 'No invoice generated');
+                            const reason = data?.skipped?.[0] || 'No invoice generated';
+                            console.warn('Skipped:', reason);
+                            toast.info(reason);
                           }
-                        } catch { toast.error('Failed to generate'); }
+                        } catch (err) { console.error('Generate failed:', err); toast.error('Failed to generate'); }
                       }}>
                         <RefreshCw className="h-4 w-4" />
                       </Button>
