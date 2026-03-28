@@ -29,11 +29,6 @@ export default function CreateInvoice() {
   const navigate = useNavigate();
   const location = useLocation();
   const permissions = usePermissions();
-  
-  if (!permissions.loading && !permissions.canCreateInvoice) {
-    navigate('/invoices');
-    return null;
-  }
   const { addInvoice } = useInvoices();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
