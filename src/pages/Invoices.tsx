@@ -360,7 +360,7 @@ export default function Invoices() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild><Link to={`/invoices/${inv.id}`}><Eye className="mr-2 h-4 w-4" /> View</Link></DropdownMenuItem>
-                  {(inv.status === 'approved' || inv.status === 'sent' || inv.status === 'partially_paid') && (
+                  {permissions.canVoidInvoice && (inv.status === 'approved' || inv.status === 'sent' || inv.status === 'partially_paid') && (
                                     <>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
@@ -375,7 +375,7 @@ export default function Invoices() {
                                       </DropdownMenuItem>
                                     </>
                                   )}
-                                  {inv.status === 'draft' && (
+                                  {permissions.canDeleteInvoice && inv.status === 'draft' && (
                                     <>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
