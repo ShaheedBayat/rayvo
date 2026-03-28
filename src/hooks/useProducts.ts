@@ -33,11 +33,11 @@ function mapProduct(row: any): Product {
     purchaseEnabled: row.purchase_enabled ?? true,
     purchasePrice: Number(row.purchase_price) || 0,
     purchaseDescription: row.purchase_description || '',
-    purchaseTaxRate: row.purchase_tax_rate != null ? Number(row.purchase_tax_rate) : 0,
+    purchaseTaxRate: row.purchase_tax_rate != null ? Number(row.purchase_tax_rate) : undefined,
     sellEnabled: row.sell_enabled ?? true,
     sellPrice: Number(row.sell_price) || 0,
     sellDescription: row.sell_description || '',
-    sellTaxRate: row.sell_tax_rate != null ? Number(row.sell_tax_rate) : 0,
+    sellTaxRate: row.sell_tax_rate != null ? Number(row.sell_tax_rate) : undefined,
     status: row.status || 'active',
     createdAt: row.created_at,
   };
