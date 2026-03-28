@@ -254,7 +254,7 @@ export default function Invoices() {
       </div>
 
       {activeTab === 'recurring' ? (
-        <RecurringTab refetchInvoices={refetchInvoices} />
+        <RecurringTab refetchInvoices={refetchInvoices} canManage={permissions.canManageRecurring} />
       ) : (
         <>
           {/* Filters */}
