@@ -60,6 +60,15 @@ export default function ActivityLog() {
 
     const { data, error } = await query;
     if (!error && data) {
+      // Fetch unique owner_ids to get display names
+      const ownerIds = [...new Set(data.map(r => r.owner_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', ownerIds);
+      const nameMap: Record<string, string> = {};
+      profiles?.forEach(p => { nameMap[p.user_id] = p.display_name || 'Unknown'; });
+
       setLogs(data.map(row => ({
         id: row.id,
         entityType: row.entity_type,
@@ -67,6 +76,7 @@ export default function ActivityLog() {
         action: row.action,
         details: row.details || '',
         createdAt: row.created_at,
+        userName: nameMap[row.owner_id] || 'Unknown',
       })));
     }
     setLoading(false);
