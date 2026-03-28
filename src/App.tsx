@@ -51,40 +51,36 @@ const AuthRoute = React.forwardRef<HTMLDivElement, { children: React.ReactNode }
 });
 AuthRoute.displayName = 'AuthRoute';
 
-/** Route guard that checks role-based permissions */
-function RoleGuard({ check, fallback = "/", children }: { check: () => boolean; fallback?: string; children: React.ReactNode }) {
+/** Admin-only route guard */
+function AdminRoute({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions();
   
   if (permissions.loading) {
     return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
   }
   
-  if (!check()) {
+  if (!permissions.canAccessSettings) {
     toast.error("You don't have permission to access this page");
-    return <Navigate to={fallback} replace />;
+    return <Navigate to="/" replace />;
   }
   
   return <>{children}</>;
 }
 
-/** Admin-only route guard */
-function AdminRoute({ children }: { children: React.ReactNode }) {
-  const permissions = usePermissions();
-  return (
-    <RoleGuard check={() => permissions.canAccessSettings}>
-      {children}
-    </RoleGuard>
-  );
-}
-
 /** Guard for recurring invoice management (admin only) */
 function RecurringGuard({ children }: { children: React.ReactNode }) {
   const permissions = usePermissions();
-  return (
-    <RoleGuard check={() => permissions.canManageRecurring} fallback="/invoices">
-      {children}
-    </RoleGuard>
-  );
+  
+  if (permissions.loading) {
+    return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
+  }
+  
+  if (!permissions.canManageRecurring) {
+    toast.error("You don't have permission to access this page");
+    return <Navigate to="/invoices" replace />;
+  }
+  
+  return <>{children}</>;
 }
 
 const App = () => (
