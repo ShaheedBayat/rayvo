@@ -40,6 +40,7 @@ export default function RecurringInvoiceForm() {
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const pricingMode = activeCompany?.pricingMode || 'exclusive';
   const { taxRates, ensureDefaults } = useTaxRates(companyId);
+  const { logActivity } = useActivityLog();
 
   const defaultRate = isVatRegistered ? (activeCompany?.vatRate ?? 15) : 0;
 
