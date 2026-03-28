@@ -45,6 +45,32 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
     toast.success(!current ? 'Activated' : 'Paused');
   };
 
+  const handleGenerate = async (r: typeof recurring[0]) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('process-recurring-invoices', {
+        body: { recurringId: r.id },
+      });
+      console.log('Recurring generation result:', data);
+      if (error) { console.error('Generation error:', error); toast.error('Failed to generate invoice'); return; }
+      if (data?.created > 0) {
+        const invoiceNum = data?.createdInvoices?.[0]?.invoice_number || 'new invoice';
+        toast.success(`Invoice ${invoiceNum} created`);
+        await Promise.all([refetchRecurring(), refetchInvoices()]);
+      } else {
+        const reason = data?.skipped?.[0] || 'No invoice generated';
+        console.warn('Skipped:', reason);
+        toast.info(reason);
+      }
+    } catch (err) { console.error('Generate failed:', err); toast.error('Failed to generate invoice'); }
+  };
+
+  const formatFrequency = (r: typeof recurring[0]) => {
+    if (r.frequency === 'weekly') return 'Weekly';
+    if (r.frequency === 'monthly') return `Monthly (Day ${r.dayOfMonth})`;
+    if (r.frequency === 'yearly') return 'Yearly';
+    return r.frequency;
+  };
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -57,7 +83,7 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
       {recurring.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
           <RefreshCw className="h-10 w-10 text-muted-foreground/30" />
-          <h3 className="mt-4 text-lg font-medium">No recurring invoices</h3>
+          <h3 className="mt-4 text-lg font-medium">No recurring templates</h3>
           <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">Set up automatic invoicing for repeat clients.</p>
         </div>
       ) : (
@@ -68,7 +94,7 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Customer</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Frequency</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Next Run</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground hidden md:table-cell">Last Generated</th>
                 <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
                 <th className="px-4 py-3 w-20" />
               </tr>
@@ -77,15 +103,12 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
               {recurring.map((r) => (
                 <tr key={r.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">
                   <td className="px-4 py-3.5 font-medium">{r.clientName}</td>
-                  <td className="px-4 py-3.5 capitalize text-muted-foreground">{r.frequency} · Day {r.dayOfMonth}</td>
+                  <td className="px-4 py-3.5 text-muted-foreground">{formatFrequency(r)}</td>
                   <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{formatDate(r.nextRunDate)}</td>
-                  <td className="px-4 py-3.5 text-right mono font-medium">{(() => {
-                    const co = companies.find(c => c.id === r.companyId);
-                    return formatCurrency(calculateSmartTotals(r.items, r.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total, r.currency);
-                  })()}</td>
+                  <td className="px-4 py-3.5 text-muted-foreground hidden md:table-cell">{r.lastGeneratedAt ? formatDate(r.lastGeneratedAt) : '—'}</td>
                   <td className="px-4 py-3.5 text-center">
                     <Badge variant="outline" className={r.isActive ? 'bg-success/10 text-success border-success/20' : 'bg-muted text-muted-foreground'}>
-                      {r.isActive ? 'Active' : 'Paused'}
+                      {r.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </td>
                   <td className="px-4 py-3.5">
@@ -93,24 +116,7 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
                       <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Edit">
                         <Link to={`/invoices/recurring/new?edit=${r.id}`}><Pencil className="h-4 w-4" /></Link>
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={async () => {
-                        try {
-                          const { data, error } = await supabase.functions.invoke('process-recurring-invoices', {
-                            body: { recurringId: r.id },
-                          });
-                          console.log('Recurring generation result:', data);
-                          if (error) { console.error('Generation error:', error); toast.error('Failed to generate'); return; }
-                          if (data?.created > 0) {
-                            toast.success('Invoice generated — check All Invoices tab');
-                            await refetchRecurring();
-                            await refetchInvoices();
-                          } else {
-                            const reason = data?.skipped?.[0] || 'No invoice generated';
-                            console.warn('Skipped:', reason);
-                            toast.info(reason);
-                          }
-                        } catch (err) { console.error('Generate failed:', err); toast.error('Failed to generate'); }
-                      }}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={() => handleGenerate(r)}>
                         <RefreshCw className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>

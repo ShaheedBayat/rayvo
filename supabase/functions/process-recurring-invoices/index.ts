@@ -32,10 +32,8 @@ Deno.serve(async (req) => {
       .eq('is_active', true)
 
     if (forceId) {
-      // Manual generation: target specific recurring invoice regardless of next_run_date
       query = query.eq('id', forceId)
     } else {
-      // Auto processing: only due invoices
       query = query.lte('next_run_date', today)
     }
 
@@ -44,6 +42,7 @@ Deno.serve(async (req) => {
 
     let created = 0
     const skipped: string[] = []
+    const createdInvoices: { id: string; invoice_number: string }[] = []
 
     for (const rec of recurring || []) {
       // Safety: skip if end_date exists and today > end_date
@@ -58,21 +57,6 @@ Deno.serve(async (req) => {
         const lastGen = new Date(rec.last_generated_at).toISOString().split('T')[0]
         if (lastGen === today) {
           skipped.push(`${rec.id}: already generated today`)
-          continue
-        }
-      }
-
-      // Validate customer exists
-      if (rec.client_name) {
-        const { data: customer } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('name', rec.client_name)
-          .eq('owner_id', rec.owner_id)
-          .limit(1)
-        if (!customer || customer.length === 0) {
-          console.error(`Skipping recurring ${rec.id}: customer "${rec.client_name}" not found`)
-          skipped.push(`${rec.id}: customer not found`)
           continue
         }
       }
@@ -102,6 +86,9 @@ Deno.serve(async (req) => {
         continue
       }
 
+      console.log(`Created invoice ${newInvoice.invoice_number} (${newInvoice.id}) from recurring ${rec.id}`)
+      createdInvoices.push({ id: newInvoice.id, invoice_number: newInvoice.invoice_number })
+
       // Calculate next run date based on frequency
       let nextDate = new Date(rec.next_run_date)
       
@@ -121,19 +108,25 @@ Deno.serve(async (req) => {
         }
       } while (nextDate <= todayDate)
 
-      await supabase.from('recurring_invoices').update({
+      // Only update recurring template AFTER successful invoice creation
+      const { error: updateError } = await supabase.from('recurring_invoices').update({
         next_run_date: nextDate.toISOString().split('T')[0],
         last_generated_at: new Date().toISOString(),
       }).eq('id', rec.id)
+
+      if (updateError) {
+        console.error(`Failed to update recurring ${rec.id} after generation:`, updateError)
+      }
 
       created++
     }
 
     return new Response(
-      JSON.stringify({ success: true, created, processed: recurring?.length || 0, skipped }),
+      JSON.stringify({ success: true, created, processed: recurring?.length || 0, skipped, createdInvoices }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error('Process recurring error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
