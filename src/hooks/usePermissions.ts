@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useMemo } from 'react';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 
-export type AppRole = 'admin' | 'staff' | 'viewer';
+export type CompanyRole = 'admin' | 'staff' | 'viewer';
 
 export interface Permissions {
-  role: AppRole;
+  role: CompanyRole;
   loading: boolean;
+  isSuperAdmin: boolean;
 
   // Invoices
   canCreateInvoice: boolean;
@@ -16,7 +16,7 @@ export interface Permissions {
   canRecordPayment: boolean;
 
   // Recurring
-  canManageRecurring: boolean; // create/edit/delete/generate
+  canManageRecurring: boolean;
 
   // Customers & Products
   canCreateCustomer: boolean;
@@ -36,35 +36,25 @@ export interface Permissions {
 
   // Companies
   canManageCompanies: boolean;
+
+  // Expenses
+  canCreateExpense: boolean;
+  canEditExpense: boolean;
+  canDeleteExpense: boolean;
 }
 
 export function usePermissions(): Permissions {
-  const { user } = useAuth();
-  const [role, setRole] = useState<AppRole>('viewer');
-  const [loading, setLoading] = useState(true);
+  const { companyRole, loading, isSuperAdmin } = useActiveCompany();
 
-  const fetchRole = useCallback(async () => {
-    if (!user) { setLoading(false); return; }
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-    if (data) {
-      setRole(data.role as AppRole);
-    }
-    setLoading(false);
-  }, [user]);
+  const role: CompanyRole = (companyRole as CompanyRole) || 'viewer';
 
-  useEffect(() => { fetchRole(); }, [fetchRole]);
-
-  const isAdmin = role === 'admin';
+  const isAdmin = isSuperAdmin || role === 'admin';
   const isStaff = role === 'staff';
-  const isViewer = role === 'viewer';
 
   return useMemo(() => ({
     role,
     loading,
+    isSuperAdmin,
 
     // Invoices
     canCreateInvoice: isAdmin || isStaff,
@@ -85,10 +75,10 @@ export function usePermissions(): Permissions {
     // Customers & Products
     canCreateCustomer: isAdmin || isStaff,
     canEditCustomer: isAdmin || isStaff,
-    canDeleteCustomer: isAdmin || isStaff,
+    canDeleteCustomer: isAdmin,
     canCreateProduct: isAdmin || isStaff,
     canEditProduct: isAdmin || isStaff,
-    canDeleteProduct: isAdmin || isStaff,
+    canDeleteProduct: isAdmin,
 
     // Settings & Users
     canAccessSettings: isAdmin,
@@ -96,9 +86,14 @@ export function usePermissions(): Permissions {
     canChangeVat: isAdmin,
 
     // Reports
-    canViewReports: true, // all roles can view
+    canViewReports: true,
 
-    // Companies
-    canManageCompanies: isAdmin,
-  }), [role, loading, isAdmin, isStaff, isViewer]);
+    // Companies — only super admins can manage all companies
+    canManageCompanies: isSuperAdmin || isAdmin,
+
+    // Expenses
+    canCreateExpense: isAdmin || isStaff,
+    canEditExpense: isAdmin || isStaff,
+    canDeleteExpense: isAdmin,
+  }), [role, loading, isSuperAdmin, isAdmin, isStaff]);
 }
