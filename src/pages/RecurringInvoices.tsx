@@ -40,6 +40,7 @@ export default function RecurringInvoices() {
   const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
   const [searchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(searchParams.get('action') === 'new');
+  const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
