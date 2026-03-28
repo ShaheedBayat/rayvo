@@ -2,26 +2,31 @@ import { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useExpenses, EXPENSE_CATEGORIES, type Expense } from '@/hooks/useExpenses';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useActivityLog } from '@/hooks/useActivityLog';
+import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Receipt } from 'lucide-react';
-import { toast } from 'sonner';
+import { Plus, Pencil, Trash2, Receipt, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/formatDate';
 import { formatCurrency } from '@/types/invoice';
 import type { Currency } from '@/types/invoice';
 
 export default function Expenses() {
-  const { expenses, loading, addExpense, updateExpense, deleteExpense } = useExpenses();
+  const { expenses, loading, addExpense, updateExpense, deleteExpense, refetch } = useExpenses();
   const { activeCompanyId } = useActiveCompany();
+  const { logActivity } = useActivityLog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Expense | null>(null);
   const [filterCategory, setFilterCategory] = useState('all');
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Form state
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -31,6 +36,7 @@ export default function Expenses() {
   const [vendor, setVendor] = useState('');
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
+  const [includeVat, setIncludeVat] = useState(false);
 
   const resetForm = () => {
     setDate(new Date().toISOString().split('T')[0]);
@@ -40,6 +46,7 @@ export default function Expenses() {
     setVendor('');
     setReference('');
     setNotes('');
+    setIncludeVat(false);
     setEditing(null);
   };
 
@@ -58,28 +65,51 @@ export default function Expenses() {
 
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
+    setSubmitting(true);
+    const parsedAmount = parseFloat(amount) || 0;
     const data = {
-      date, category, description, amount: parseFloat(amount) || 0,
+      date, category, description, amount: parsedAmount,
       currency: 'ZAR', vendor, reference, notes, companyId: activeCompanyId || null,
     };
+
     if (editing) {
-      const ok = await updateExpense({ ...editing, ...data });
-      if (ok) toast.success('Expense updated');
-      else toast.error('Failed to update');
+      await safeExecuteAction({
+        actionName: 'Update expense',
+        actionFn: () => updateExpense({ ...editing, ...data }),
+        successMessage: `Expense updated — ${formatCurrency(parsedAmount, 'ZAR')}`,
+        onSuccess: async () => {
+          await logActivity('expense', editing.id, 'updated', `Expense updated: ${description} ${formatCurrency(parsedAmount, 'ZAR')}`);
+          await refetch();
+        },
+      });
     } else {
-      const result = await addExpense(data);
-      if (result) toast.success('Expense added');
-      else toast.error('Failed to add');
+      await safeExecuteAction({
+        actionName: 'Add expense',
+        actionFn: () => addExpense(data),
+        successMessage: `Expense added — ${formatCurrency(parsedAmount, 'ZAR')}`,
+        onSuccess: async (result) => {
+          await logActivity('expense', result.id, 'created', `Expense created: ${description} ${formatCurrency(parsedAmount, 'ZAR')}`);
+          await refetch();
+        },
+      });
     }
+    setSubmitting(false);
     setDialogOpen(false);
     resetForm();
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
+    setDeleting(true);
+    const expense = expenses.find(e => e.id === deleteId);
     const ok = await deleteExpense(deleteId);
-    if (ok) toast.success('Expense deleted');
-    else toast.error('Failed to delete');
+    if (ok) {
+      if (expense) {
+        await logActivity('expense', deleteId, 'deleted', `Expense deleted: ${expense.description} ${formatCurrency(expense.amount, (expense.currency || 'ZAR') as Currency)}`);
+      }
+      await refetch();
+    }
+    setDeleting(false);
     setDeleteId(null);
   };
 
@@ -93,7 +123,15 @@ export default function Expenses() {
           <h1 className="text-2xl font-semibold">Expenses</h1>
           <p className="mt-1 text-sm text-muted-foreground">Track business expenses and costs.</p>
         </div>
-        <Button onClick={openNew}><Plus className="mr-1.5 h-4 w-4" /> Add Expense</Button>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Total Expenses</p>
+            <p className="text-lg font-semibold mono text-destructive">
+              {formatCurrency(totalExpenses, (filtered[0]?.currency || 'ZAR') as Currency)}
+            </p>
+          </div>
+          <Button onClick={openNew}><Plus className="mr-1.5 h-4 w-4" /> Add Expense</Button>
+        </div>
       </div>
 
       <div className="mb-4 flex items-center gap-3">
@@ -104,9 +142,6 @@ export default function Expenses() {
             {EXPENSE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
-        <div className="ml-auto text-sm text-muted-foreground">
-          Total: <span className="mono font-semibold text-foreground">{formatCurrency(totalExpenses, (filtered[0]?.currency || 'ZAR') as Currency)}</span>
-        </div>
       </div>
 
       {loading ? (
@@ -187,6 +222,10 @@ export default function Expenses() {
                 <Input value={vendor} onChange={e => setVendor(e.target.value)} className="h-9" />
               </div>
             </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={includeVat} onCheckedChange={setIncludeVat} id="include-vat" />
+              <Label htmlFor="include-vat" className="text-xs text-muted-foreground">Amount includes VAT</Label>
+            </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Reference</Label>
               <Input value={reference} onChange={e => setReference(e.target.value)} className="h-9" placeholder="e.g. receipt number" />
@@ -197,7 +236,10 @@ export default function Expenses() {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button type="submit">{editing ? 'Update' : 'Add'} Expense</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                {editing ? 'Update' : 'Add'} Expense
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -212,7 +254,10 @@ export default function Expenses() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

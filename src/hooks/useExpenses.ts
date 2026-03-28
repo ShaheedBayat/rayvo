@@ -18,8 +18,8 @@ export interface Expense {
 }
 
 export const EXPENSE_CATEGORIES = [
-  'Rent', 'Utilities', 'Salaries', 'Office Supplies', 'Travel',
-  'Marketing', 'Software', 'Insurance', 'Professional Services', 'Other',
+  'Office', 'Software', 'Travel', 'Rent', 'Utilities', 'Salaries',
+  'Marketing', 'Insurance', 'Professional Services', 'Other',
 ];
 
 function mapExpense(row: any): Expense {
@@ -46,6 +46,7 @@ export function useExpenses() {
 
   const fetchExpenses = useCallback(async () => {
     if (!user) { setExpenses([]); setLoading(false); return; }
+    setLoading(true);
     let query = supabase.from('expenses').select('*').order('date', { ascending: false });
     if (activeCompanyId) query = query.eq('company_id', activeCompanyId);
     const { data, error } = await query;
@@ -69,16 +70,12 @@ export function useExpenses() {
       reference: expense.reference,
       notes: expense.notes,
     }).select().single();
-    if (!error && data) {
-      const mapped = mapExpense(data);
-      setExpenses(prev => [mapped, ...prev]);
-      return mapped;
-    }
-    return null;
+    if (error || !data) return null;
+    return mapExpense(data);
   }, [user]);
 
   const updateExpense = useCallback(async (expense: Expense) => {
-    const { error } = await supabase.from('expenses').update({
+    const { data, error } = await supabase.from('expenses').update({
       date: expense.date,
       category: expense.category,
       description: expense.description,
@@ -88,14 +85,13 @@ export function useExpenses() {
       reference: expense.reference,
       notes: expense.notes,
       company_id: expense.companyId,
-    }).eq('id', expense.id);
-    if (!error) setExpenses(prev => prev.map(e => e.id === expense.id ? expense : e));
-    return !error;
+    }).eq('id', expense.id).select().single();
+    if (error || !data) return null;
+    return mapExpense(data);
   }, []);
 
   const deleteExpense = useCallback(async (id: string) => {
     const { error } = await supabase.from('expenses').delete().eq('id', id);
-    if (!error) setExpenses(prev => prev.filter(e => e.id !== id));
     return !error;
   }, []);
 
