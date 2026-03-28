@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
     )
 
     const today = new Date().toISOString().split('T')[0]
+    const todayDate = new Date(today)
 
     // Get all active recurring invoices where next_run_date <= today
     const { data: recurring, error: fetchError } = await supabase
@@ -28,9 +29,43 @@ Deno.serve(async (req) => {
     if (fetchError) throw fetchError
 
     let created = 0
+    const skipped: string[] = []
 
     for (const rec of recurring || []) {
-      // Create a draft invoice with the same line items (including per-line tax rates)
+      // Safety: skip if end_date exists and today > end_date
+      if (rec.end_date && new Date(rec.end_date) < todayDate) {
+        // Auto-deactivate expired recurring invoices
+        await supabase.from('recurring_invoices').update({ is_active: false }).eq('id', rec.id)
+        skipped.push(`${rec.id}: end_date passed, deactivated`)
+        continue
+      }
+
+      // Safety: skip if already generated today (prevent duplicates)
+      if (rec.last_generated_at) {
+        const lastGen = new Date(rec.last_generated_at).toISOString().split('T')[0]
+        if (lastGen === today) {
+          skipped.push(`${rec.id}: already generated today`)
+          continue
+        }
+      }
+
+      // Safety: validate customer exists
+      if (rec.client_name) {
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('name', rec.client_name)
+          .eq('owner_id', rec.owner_id)
+          .limit(1)
+        // If customer was deleted, skip and log
+        if (!customer || customer.length === 0) {
+          console.error(`Skipping recurring ${rec.id}: customer "${rec.client_name}" not found`)
+          skipped.push(`${rec.id}: customer not found`)
+          continue
+        }
+      }
+
+      // Create a draft invoice with the same line items
       const dueDate = new Date()
       dueDate.setDate(dueDate.getDate() + 30)
 
@@ -51,21 +86,20 @@ Deno.serve(async (req) => {
 
       if (insertError) {
         console.error(`Failed to create invoice for recurring ${rec.id}:`, insertError)
+        skipped.push(`${rec.id}: insert failed`)
         continue
       }
 
       // Calculate next run date based on frequency
       let nextDate = new Date(rec.next_run_date)
       
-      // Handle catching up: if next_run_date is far in the past, keep advancing
-      const todayDate = new Date(today)
+      // Advance past today to prevent re-generation
       do {
         if (rec.frequency === 'weekly') {
           nextDate.setDate(nextDate.getDate() + 7)
         } else if (rec.frequency === 'monthly') {
           nextDate.setMonth(nextDate.getMonth() + 1)
           if (rec.day_of_month) {
-            // Clamp to valid day for the month
             const maxDay = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate()
             nextDate.setDate(Math.min(rec.day_of_month, maxDay))
           }
@@ -83,7 +117,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, created, processed: recurring?.length || 0 }),
+      JSON.stringify({ success: true, created, processed: recurring?.length || 0, skipped }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
