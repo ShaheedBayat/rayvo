@@ -16,6 +16,7 @@ interface LogEntry {
   action: string;
   details: string;
   createdAt: string;
+  userName: string;
 }
 
 const entityIcons: Record<string, React.ElementType> = {
