@@ -12,11 +12,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
 import { useCreditNotes } from '@/hooks/useCreditNotes';
-import { useInvoices } from '@/hooks/useInvoiceStore';
+import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useActivityLog } from '@/hooks/useActivityLog';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { safeExecuteAction } from '@/lib/safeExecuteAction';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
@@ -25,13 +28,16 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 export default function CreditNotes() {
-  const { creditNotes, addCreditNote, updateCreditNote, deleteCreditNote } = useCreditNotes();
-  const { invoices } = useInvoices();
+  const { creditNotes, addCreditNote, updateCreditNote, deleteCreditNote, refetch } = useCreditNotes();
+  const { invoices, updateInvoice } = useInvoices();
+  const { getCompany } = useCompanies();
   const { activeCompany, activeCompanyId } = useActiveCompany();
+  const { logActivity } = useActivityLog();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingCN, setEditingCN] = useState<typeof creditNotes[0] | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const filtered = creditNotes
     .filter(cn => !activeCompanyId || cn.companyId === activeCompanyId)
@@ -47,7 +53,7 @@ export default function CreditNotes() {
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<InvoiceItem[]>([{ id: uuidv4(), description: '', quantity: 1, unitPrice: 0 }]);
 
-  const companyInvoices = invoices.filter(i => i.companyId === activeCompanyId && i.status !== 'draft');
+  const companyInvoices = invoices.filter(i => i.companyId === activeCompanyId && i.status !== 'draft' && i.status !== 'voided');
 
   const resetForm = () => {
     setClientName(''); setClientEmail(''); setClientAddress('');
@@ -82,10 +88,46 @@ export default function CreditNotes() {
     setOpen(true);
   };
 
+  /** Get the remaining creditable amount for the selected invoice */
+  const getInvoiceOutstanding = (invId: string) => {
+    const inv = invoices.find(i => i.id === invId);
+    if (!inv) return 0;
+    const co = getCompany(inv.companyId);
+    const invoiceTotal = calculateSmartTotals(inv.items, inv.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
+
+    // Sum existing approved/sent credit notes for this invoice
+    const existingCredits = creditNotes
+      .filter(cn => cn.invoiceId === invId && cn.id !== editingCN?.id)
+      .reduce((sum, cn) => {
+        const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+        return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+      }, 0);
+
+    return Math.max(0, invoiceTotal - existingCredits);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!activeCompanyId) { toast.error('Select a company first'); return; }
     if (!clientName) { toast.error('Enter client name'); return; }
+    if (!invoiceId) { toast.error('Select an invoice to credit'); return; }
+
+    const co = activeCompany;
+    const creditTotal = calculateSmartTotals(items, taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
+    const outstanding = getInvoiceOutstanding(invoiceId);
+
+    if (creditTotal > outstanding + 0.01) {
+      toast.error(`Credit amount (${formatCurrency(creditTotal, currency)}) exceeds invoice outstanding (${formatCurrency(outstanding, currency)})`);
+      return;
+    }
+
+    if (creditTotal <= 0) {
+      toast.error('Credit note amount must be greater than zero');
+      return;
+    }
+
+    setSaving(true);
 
     if (editingCN) {
       await updateCreditNote({
@@ -95,25 +137,88 @@ export default function CreditNotes() {
       });
       toast.success(`Credit note ${editingCN.creditNoteNumber} updated`);
       resetForm(); setOpen(false);
-    } else {
-      const d = new Date(); d.setDate(d.getDate() + 30);
-      const result = await addCreditNote({
-        id: uuidv4(),
+      setSaving(false);
+      return;
+    }
+
+    const cnId = uuidv4();
+    const d = new Date(); d.setDate(d.getDate() + 30);
+
+    const result = await safeExecuteAction({
+      actionName: 'Create credit note',
+      silentSuccess: true,
+      actionFn: () => addCreditNote({
+        id: cnId,
         companyId: activeCompanyId,
         invoiceId: invoiceId || null,
         clientName, clientEmail, clientAddress,
         items, taxRate, currency,
-        status: 'draft',
+        status: 'approved',
         notes,
         dueDate: d.toISOString().split('T')[0],
-      });
-      if (result) {
-        toast.success(`Credit note ${result.creditNoteNumber} created`);
-        resetForm(); setOpen(false);
-      } else {
-        toast.error('Failed to create credit note');
+      }),
+      verifyFn: async () => {
+        const { data } = await supabase.from('credit_notes').select('id').eq('id', cnId).maybeSingle();
+        return !!data;
+      },
+    });
+
+    if (result) {
+      const linkedInvoice = invoices.find(i => i.id === invoiceId);
+
+      // Log activity
+      await logActivity(
+        'credit_note', cnId, 'created',
+        `Credit note ${result.creditNoteNumber} created for ${linkedInvoice?.invoiceNumber || 'N/A'} amount ${formatCurrency(creditTotal, currency)}`
+      );
+
+      // Update invoice status based on remaining balance
+      if (linkedInvoice) {
+        const invCo = getCompany(linkedInvoice.companyId);
+        const invoiceTotal = calculateSmartTotals(linkedInvoice.items, linkedInvoice.taxRate, invCo?.pricingMode || 'exclusive', invCo?.isVatRegistered ?? false).total;
+
+        // Get DB payments total
+        const { data: dbPayments } = await supabase
+          .from('payments')
+          .select('amount')
+          .eq('invoice_id', linkedInvoice.id);
+        const totalPaid = (dbPayments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+
+        // Get all credit notes for this invoice (including the one just created)
+        const { data: dbCreditNotes } = await supabase
+          .from('credit_notes')
+          .select('items, tax_rate')
+          .eq('invoice_id', linkedInvoice.id)
+          .is('deleted_at', null);
+
+        const totalCredits = (dbCreditNotes || []).reduce((sum, cn) => {
+          const cnItems = (cn.items as InvoiceItem[]) || [];
+          return sum + calculateSmartTotals(cnItems, Number(cn.tax_rate), invCo?.pricingMode || 'exclusive', invCo?.isVatRegistered ?? false).total;
+        }, 0);
+
+        const remaining = invoiceTotal - totalPaid - totalCredits;
+
+        let newStatus = linkedInvoice.status;
+        if (remaining <= 0.01) {
+          newStatus = 'credited';
+        } else if (totalCredits > 0 || totalPaid > 0) {
+          newStatus = 'partially_paid';
+        }
+
+        if (newStatus !== linkedInvoice.status) {
+          await updateInvoice({ ...linkedInvoice, status: newStatus as any });
+          await logActivity(
+            'invoice', linkedInvoice.id, 'status_updated',
+            `Invoice ${linkedInvoice.invoiceNumber} status changed to ${newStatus} after credit note ${result.creditNoteNumber}`
+          );
+        }
       }
+
+      toast.success(`Credit note ${result.creditNoteNumber} created for ${linkedInvoice?.invoiceNumber || ''}`);
+      resetForm(); setOpen(false);
+      await refetch();
     }
+    setSaving(false);
   };
 
   const handleDelete = async () => {
@@ -123,12 +228,16 @@ export default function CreditNotes() {
     setDeleteId(null);
   };
 
+  // Compute selected invoice outstanding for display
+  const selectedInvoiceOutstanding = invoiceId ? getInvoiceOutstanding(invoiceId) : null;
+  const selectedInvoice = invoiceId ? invoices.find(i => i.id === invoiceId) : null;
+
   return (
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Credit Notes</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Issue credit notes against invoices.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Issue credit notes against invoices to adjust balances.</p>
         </div>
         <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
@@ -137,9 +246,9 @@ export default function CreditNotes() {
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingCN ? 'Edit Credit Note' : 'New Credit Note'}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-              {!editingCN && companyInvoices.length > 0 && (
+              {!editingCN && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Link to Invoice (optional)</Label>
+                  <Label className="text-xs">Link to Invoice <span className="text-destructive">*</span></Label>
                   <Select value={invoiceId} onValueChange={handleSelectInvoice}>
                     <SelectTrigger className="h-9"><SelectValue placeholder="Select invoice..." /></SelectTrigger>
                     <SelectContent>
@@ -148,8 +257,25 @@ export default function CreditNotes() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {companyInvoices.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No eligible invoices found. Only non-draft, non-voided invoices can be credited.</p>
+                  )}
                 </div>
               )}
+
+              {selectedInvoice && selectedInvoiceOutstanding !== null && (
+                <div className="rounded-lg bg-muted/40 p-3 text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Invoice</span>
+                    <span className="mono font-medium">{selectedInvoice.invoiceNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Available to credit</span>
+                    <span className="mono font-semibold text-primary">{formatCurrency(selectedInvoiceOutstanding, currency)}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Customer Name</Label>
@@ -202,7 +328,7 @@ export default function CreditNotes() {
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => { setOpen(false); resetForm(); }}>Cancel</Button>
-                <Button type="submit">{editingCN ? 'Update Credit Note' : 'Create Credit Note'}</Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Creating...' : editingCN ? 'Update Credit Note' : 'Create Credit Note'}</Button>
               </div>
             </form>
           </DialogContent>
