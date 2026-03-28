@@ -709,16 +709,24 @@ export default function InvoiceView() {
                     <td className="px-4 py-2.5">
                       {!isVoided && (
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={async () => {
+                          // Verify payment exists before deleting
+                          const { data: existsCheck } = await supabase.from('payments').select('id').eq('id', p.id).maybeSingle();
+                          if (!existsCheck) { toast.error('Payment not found'); return; }
+
                           await deletePayment(p.id);
-                          const remainingPaid = totalPaid - p.amount;
-                          if (remainingPaid <= 0) {
-                            updateInvoice({ ...invoice, status: 'sent' });
-                            await logActivity('invoice', invoice.id, 'payment_removed', `Payment of ${formatCurrency(p.amount, invoice.currency)} removed. Status reverted to awaiting payment.`);
-                          } else if (remainingPaid < total) {
-                            updateInvoice({ ...invoice, status: 'partially_paid' });
-                            await logActivity('invoice', invoice.id, 'payment_removed', `Payment of ${formatCurrency(p.amount, invoice.currency)} removed. Remaining: ${formatCurrency(total - remainingPaid, invoice.currency)}`);
+
+                          // Verify deletion
+                          const { data: stillExists } = await supabase.from('payments').select('id').eq('id', p.id).maybeSingle();
+                          if (stillExists) { toast.error('Payment deletion failed — please refresh'); return; }
+
+                          // Recalculate status from DB
+                          const statusOk = await recalculateAndUpdateStatus(total, {
+                            action: 'payment_removed',
+                            details: `Payment of ${formatCurrency(p.amount, invoice.currency)} removed.`,
+                          });
+                          if (statusOk) {
+                            toast.success('Payment removed');
                           }
-                          toast.success('Payment removed');
                           fetchLogs('invoice', invoice.id).then(setActivityLogs);
                         }}>
                           <Trash2 className="h-3 w-3" />
