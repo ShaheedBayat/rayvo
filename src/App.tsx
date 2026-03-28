@@ -120,6 +120,7 @@ const App = () => (
               <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
               <Route path="/vat-report" element={<ProtectedRoute><VatReport /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><AdminRoute><SettingsPage /></AdminRoute></ProtectedRoute>} />
+              <Route path="/activity" element={<ProtectedRoute><AdminRoute><ActivityLog /></AdminRoute></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ActiveCompanyProvider>
