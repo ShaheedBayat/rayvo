@@ -18,6 +18,7 @@ const PAGE_SIZE = 20;
 
 export default function Customers() {
   const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const permissions = usePermissions();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | undefined>(undefined);
