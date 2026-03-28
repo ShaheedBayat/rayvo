@@ -189,10 +189,21 @@ export default function Quotes() {
     }
   };
 
+  const [deleting, setDeleting] = useState(false);
+
   const handleDelete = async () => {
     if (!deleteId) return;
-    await deleteQuote(deleteId);
-    toast.success('Quote deleted');
+    setDeleting(true);
+    const q = quotes.find(q => q.id === deleteId);
+    const ok = await deleteQuote(deleteId);
+    if (ok !== undefined) {
+      await logActivity('quote', deleteId, 'deleted', `Quote ${q?.quoteNumber || ''} deleted`);
+      await refetch();
+      toast.success(`Quote ${q?.quoteNumber || ''} deleted`);
+    } else {
+      toast.error('Failed to delete quote');
+    }
+    setDeleting(false);
     setDeleteId(null);
   };
 
