@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useState, useEffect } from 'react';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
