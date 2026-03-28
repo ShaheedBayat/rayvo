@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
@@ -34,7 +35,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 function RecurringTab() {
-  const { recurring: allRecurring, updateRecurring, deleteRecurring } = useRecurringInvoices();
+  const { recurring: allRecurring, updateRecurring, deleteRecurring, refetch: refetchRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
@@ -94,13 +95,16 @@ function RecurringTab() {
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={async () => {
                         try {
-                          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-recurring-invoices`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-                            body: JSON.stringify({ recurringId: r.id }),
+                          const { data, error } = await supabase.functions.invoke('process-recurring-invoices', {
+                            body: { recurringId: r.id },
                           });
-                          if (res.ok) toast.success('Invoice generated');
-                          else toast.error('Failed to generate');
+                          if (error) { toast.error('Failed to generate'); return; }
+                          if (data?.created > 0) {
+                            toast.success('Invoice generated — check All Invoices tab');
+                            refetchRecurring();
+                          } else {
+                            toast.info(data?.skipped?.[0] || 'No invoice generated');
+                          }
                         } catch { toast.error('Failed to generate'); }
                       }}>
                         <RefreshCw className="h-4 w-4" />
