@@ -134,7 +134,7 @@ export default function InvoiceDocument({ invoice, company, bankingDetails, term
                   group.vat !== 0 && (
                     <div key={key} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">VAT — {group.rateName}</span>
-                      <span className="mono">{pricingMode === 'inclusive' ? '(incl.)' : ''} {formatCurrency(group.vat, invoice.currency)}</span>
+                      <span className="mono">{formatCurrency(group.vat, invoice.currency)}</span>
                     </div>
                   )
                 ))}
