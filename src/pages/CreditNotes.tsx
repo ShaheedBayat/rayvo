@@ -130,12 +130,22 @@ export default function CreditNotes() {
     setSaving(true);
 
     if (editingCN) {
-      await updateCreditNote({
-        ...editingCN,
-        clientName, clientEmail, clientAddress,
-        items, taxRate, currency, notes,
+      await safeExecuteAction({
+        actionName: 'Update credit note',
+        actionFn: async () => {
+          await updateCreditNote({
+            ...editingCN,
+            clientName, clientEmail, clientAddress,
+            items, taxRate, currency, notes,
+          });
+          return editingCN;
+        },
+        successMessage: `Credit note ${editingCN.creditNoteNumber} updated`,
+        onSuccess: async () => {
+          await logActivity('credit_note', editingCN.id, 'updated', `Credit note ${editingCN.creditNoteNumber} updated`);
+          await refetch();
+        },
       });
-      toast.success(`Credit note ${editingCN.creditNoteNumber} updated`);
       resetForm(); setOpen(false);
       setSaving(false);
       return;
