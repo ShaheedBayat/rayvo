@@ -175,27 +175,17 @@ export default function RecurringInvoices() {
                     onAddressChange={setClientAddress}
                   />
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Email</Label>
-                    <Input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="h-9" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Currency</Label>
-                    <Select value={currency} onValueChange={v => setCurrency(v as Currency)}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ZAR">ZAR</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="GBP">GBP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Address</Label>
-                  <Textarea value={clientAddress} onChange={e => setClientAddress(e.target.value)} rows={2} />
+                  <Label className="text-xs">Currency</Label>
+                  <Select value={currency} onValueChange={v => setCurrency(v as Currency)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ZAR">ZAR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Schedule */}
