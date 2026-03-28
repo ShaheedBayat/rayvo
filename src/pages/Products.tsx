@@ -214,6 +214,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
+  const permissions = usePermissions();
   const { activeCompany } = useActiveCompany();
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const [dialogOpen, setDialogOpen] = useState(false);
