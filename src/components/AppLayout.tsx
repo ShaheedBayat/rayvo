@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useRecurringProcessor } from '@/hooks/useRecurringProcessor';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import {
@@ -176,6 +177,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { activeCompany, companies, switchCompany } = useActiveCompany();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  useRecurringProcessor();
 
   const cachedName = localStorage.getItem('activeCompanyName');
   const cachedLogo = localStorage.getItem('activeCompanyLogo');

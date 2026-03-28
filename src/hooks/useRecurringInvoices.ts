@@ -16,6 +16,7 @@ export interface RecurringInvoice {
   frequency: 'monthly' | 'weekly' | 'yearly';
   dayOfMonth: number;
   nextRunDate: string;
+  endDate: string | null;
   isActive: boolean;
   createdAt: string;
   lastGeneratedAt: string | null;
@@ -35,6 +36,7 @@ function mapRecurring(row: any): RecurringInvoice {
     frequency: row.frequency,
     dayOfMonth: row.day_of_month || 1,
     nextRunDate: row.next_run_date,
+    endDate: row.end_date || null,
     isActive: row.is_active,
     createdAt: row.created_at,
     lastGeneratedAt: row.last_generated_at || null,
@@ -96,6 +98,7 @@ export function useRecurringInvoices() {
     if (updates.frequency !== undefined) dbUpdates.frequency = updates.frequency;
     if (updates.dayOfMonth !== undefined) dbUpdates.day_of_month = updates.dayOfMonth;
     if (updates.nextRunDate !== undefined) dbUpdates.next_run_date = updates.nextRunDate;
+    if (updates.endDate !== undefined) dbUpdates.end_date = updates.endDate;
     if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
     const { error } = await supabase.from('recurring_invoices').update(dbUpdates).eq('id', id);
     if (!error) setRecurring(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));

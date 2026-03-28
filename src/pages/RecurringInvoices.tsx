@@ -210,7 +210,7 @@ export default function RecurringInvoices() {
     const result = await addRecurring({
       companyId, clientName, clientEmail, clientAddress, currency,
       items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
-      notes, frequency, dayOfMonth, nextRunDate, isActive: true,
+      notes, frequency, dayOfMonth, nextRunDate, endDate: null, isActive: true,
     });
     if (result) {
       toast.success('Recurring invoice created');
