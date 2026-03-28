@@ -7,6 +7,7 @@ import {
   CreditCard, Receipt, FileCheck, Menu, X, Wallet,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useRecurringProcessor } from '@/hooks/useRecurringProcessor';
 import { Button } from '@/components/ui/button';
@@ -93,36 +94,40 @@ function NavItem({ to, label, icon: Icon, active, collapsed, children, onNavigat
   );
 }
 
-const salesNav = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard },
-  {
-    to: '/invoices', label: 'Invoices', icon: FileText,
-    children: [
-      { to: '/invoices', label: 'All Invoices' },
-      { to: '/invoices?status=draft', label: 'Draft' },
-      { to: '/invoices?status=sent', label: 'Awaiting Payment' },
-      { to: '/invoices?status=paid', label: 'Paid' },
-      { to: '/invoices?status=overdue', label: 'Overdue' },
-      { to: '/invoices?tab=recurring', label: 'Recurring Invoices' },
-    ],
-  },
-  { to: '/credit-notes', label: 'Credit Notes', icon: Receipt },
-  { to: '/quotes', label: 'Quotes', icon: FileCheck },
-  { to: '/customers', label: 'Customers', icon: Users },
-  { to: '/customer-statements', label: 'Statements', icon: FileText },
-  { to: '/products', label: 'Products & Services', icon: Package },
-  { to: '/online-payments', label: 'Online Payments', icon: CreditCard },
-  { to: '/expenses', label: 'Expenses', icon: Wallet },
-];
+function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean) {
+  const salesNav = [
+    { to: '/', label: 'Overview', icon: LayoutDashboard },
+    {
+      to: '/invoices', label: 'Invoices', icon: FileText,
+      children: [
+        { to: '/invoices', label: 'All Invoices' },
+        { to: '/invoices?status=draft', label: 'Draft' },
+        { to: '/invoices?status=sent', label: 'Awaiting Payment' },
+        { to: '/invoices?status=paid', label: 'Paid' },
+        { to: '/invoices?status=overdue', label: 'Overdue' },
+        { to: '/invoices?tab=recurring', label: 'Recurring Invoices' },
+      ],
+    },
+    { to: '/credit-notes', label: 'Credit Notes', icon: Receipt },
+    { to: '/quotes', label: 'Quotes', icon: FileCheck },
+    { to: '/customers', label: 'Customers', icon: Users },
+    { to: '/customer-statements', label: 'Statements', icon: FileText },
+    { to: '/products', label: 'Products & Services', icon: Package },
+    { to: '/online-payments', label: 'Online Payments', icon: CreditCard },
+    { to: '/expenses', label: 'Expenses', icon: Wallet },
+  ];
 
-const manageNav = [
-  { to: '/companies', label: 'Companies', icon: Building2 },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/vat-report', label: 'VAT Report', icon: Receipt },
-  { to: '/settings', label: 'Settings', icon: Settings },
-];
+  const manageNav = [
+    ...(canManageCompanies ? [{ to: '/companies', label: 'Companies', icon: Building2 }] : []),
+    { to: '/reports', label: 'Reports', icon: BarChart3 },
+    { to: '/vat-report', label: 'VAT Report', icon: Receipt },
+    ...(canAccessSettings ? [{ to: '/settings', label: 'Settings', icon: Settings }] : []),
+  ];
 
-function SidebarContent({ collapsed, isActive, onNavigate }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void }) {
+  return { salesNav, manageNav };
+}
+
+function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void; salesNav: any[]; manageNav: any[] }) {
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
       <div>
@@ -173,11 +178,14 @@ function SidebarContent({ collapsed, isActive, onNavigate }: { collapsed: boolea
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const permissions = usePermissions();
   const { theme, toggleTheme } = useTheme();
   const { activeCompany, companies, switchCompany } = useActiveCompany();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   useRecurringProcessor();
+
+  const { salesNav, manageNav } = getNavItems(permissions.canAccessSettings, permissions.canManageCompanies);
 
   const cachedName = localStorage.getItem('activeCompanyName');
   const cachedLogo = localStorage.getItem('activeCompanyLogo');
@@ -235,7 +243,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }`}
       >
         <LogoSection isCollapsed={collapsed} />
-        <SidebarContent collapsed={collapsed} isActive={isActive} />
+        <SidebarContent collapsed={collapsed} isActive={isActive} salesNav={salesNav} manageNav={manageNav} />
         <div className="border-t border-border/40 p-3">
           <button
             onClick={() => setCollapsed(!collapsed)}
@@ -260,7 +268,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
                 <LogoSection isCollapsed={false} />
-                <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} />
+                <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} salesNav={salesNav} manageNav={manageNav} />
               </SheetContent>
             </Sheet>
 
@@ -298,20 +306,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" className="gap-1.5 rounded-lg">
-                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New</span> <ChevronDown className="h-3 w-3 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild><Link to="/invoices/new"><FileText className="mr-2 h-4 w-4" /> New Invoice</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to="/recurring-invoices?action=new"><Receipt className="mr-2 h-4 w-4" /> New Recurring Invoice</Link></DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link to="/customers"><Users className="mr-2 h-4 w-4" /> New Customer</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to="/products"><Package className="mr-2 h-4 w-4" /> New Product / Service</Link></DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {permissions.canCreateInvoice && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="gap-1.5 rounded-lg">
+                    <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New</span> <ChevronDown className="h-3 w-3 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild><Link to="/invoices/new"><FileText className="mr-2 h-4 w-4" /> New Invoice</Link></DropdownMenuItem>
+                  {permissions.canManageRecurring && (
+                    <DropdownMenuItem asChild><Link to="/invoices/recurring/new"><Receipt className="mr-2 h-4 w-4" /> New Recurring Invoice</Link></DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  {permissions.canCreateCustomer && (
+                    <DropdownMenuItem asChild><Link to="/customers"><Users className="mr-2 h-4 w-4" /> New Customer</Link></DropdownMenuItem>
+                  )}
+                  {permissions.canCreateProduct && (
+                    <DropdownMenuItem asChild><Link to="/products"><Package className="mr-2 h-4 w-4" /> New Product / Service</Link></DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {user && (
               <DropdownMenu>
@@ -325,7 +341,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuContent align="end">
                   <div className="px-2 py-1.5"><p className="text-sm font-medium">{user.email}</p></div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
+                  {permissions.canAccessSettings && (
+                    <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" /> Sign out
                   </DropdownMenuItem>

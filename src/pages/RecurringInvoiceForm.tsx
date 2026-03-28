@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { v4 as uuidv4 } from 'uuid';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
@@ -27,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 export default function RecurringInvoiceForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const permissions = usePermissions();
   const editId = searchParams.get('edit');
   const { recurring, addRecurring, updateRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
@@ -244,6 +246,16 @@ export default function RecurringInvoiceForm() {
       else toast.error('Failed to create');
     }
   };
+
+  if (!permissions.loading && !permissions.canManageRecurring) {
+    return (
+      <AppLayout>
+        <div className="text-center py-20">
+          <p className="text-muted-foreground">You do not have permission to manage recurring invoices.</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

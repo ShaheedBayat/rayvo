@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { v4 as uuidv4 } from 'uuid';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
@@ -27,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 export default function CreateInvoice() {
   const navigate = useNavigate();
   const location = useLocation();
+  const permissions = usePermissions();
   const { addInvoice } = useInvoices();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
@@ -201,6 +203,16 @@ export default function CreateInvoice() {
       toast.error('Failed to create invoice');
     }
   };
+
+  if (!permissions.loading && !permissions.canCreateInvoice) {
+    return (
+      <AppLayout>
+        <div className="text-center py-20">
+          <p className="text-muted-foreground">You do not have permission to create invoices.</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

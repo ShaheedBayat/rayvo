@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { v4 as uuidv4 } from 'uuid';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
@@ -24,6 +25,7 @@ import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 export default function EditInvoice() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const permissions = usePermissions();
   const { getInvoice, updateInvoice } = useInvoices();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
@@ -73,9 +75,9 @@ export default function EditInvoice() {
     );
   }
 
-  // Block editing for paid, partially_paid, voided, or sent invoices
+  // Block editing based on role + status
   const isLocked = invoice.status === 'paid' || invoice.status === 'partially_paid' || invoice.status === 'voided' || invoice.status === 'sent';
-  if (isLocked || (invoice.status !== 'draft' && invoice.status !== 'approved')) {
+  if (isLocked || !permissions.canEditInvoice(invoice.status) || (invoice.status !== 'draft' && invoice.status !== 'approved')) {
     navigate(`/invoices/${invoice.id}`);
     return null;
   }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Package, Plus, Upload, Download, Trash2, Edit, MoreHorizontal, Archive, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -213,6 +214,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
 
 export default function Products() {
   const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
+  const permissions = usePermissions();
   const { activeCompany } = useActiveCompany();
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -272,9 +274,11 @@ export default function Products() {
             </TooltipTrigger>
             <TooltipContent>Coming soon</TooltipContent>
           </Tooltip>
-          <Button className="gap-1.5 rounded-lg" onClick={openNew}>
-            <Plus className="h-4 w-4" /> New Item
-          </Button>
+          {permissions.canCreateProduct && (
+            <Button className="gap-1.5 rounded-lg" onClick={openNew}>
+              <Plus className="h-4 w-4" /> New Item
+            </Button>
+          )}
         </div>
       </div>
 
@@ -362,13 +366,19 @@ export default function Products() {
                           <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(p)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                          <DropdownMenuItem onClick={async () => { await updateProduct(p.id, { status: p.status === 'active' ? 'archived' : 'active' }); toast.success(p.status === 'active' ? 'Archived' : 'Activated'); }}>
-                            <Archive className="mr-2 h-4 w-4" /> {p.status === 'active' ? 'Archive' : 'Activate'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
+                          {permissions.canEditProduct && (
+                            <DropdownMenuItem onClick={() => openEdit(p)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                          )}
+                          {permissions.canEditProduct && (
+                            <DropdownMenuItem onClick={async () => { await updateProduct(p.id, { status: p.status === 'active' ? 'archived' : 'active' }); toast.success(p.status === 'active' ? 'Archived' : 'Activated'); }}>
+                              <Archive className="mr-2 h-4 w-4" /> {p.status === 'active' ? 'Archive' : 'Activate'}
+                            </DropdownMenuItem>
+                          )}
+                          {permissions.canDeleteProduct && (
+                            <DropdownMenuItem onClick={() => setDeleteTarget(p)} className="text-destructive focus:text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>

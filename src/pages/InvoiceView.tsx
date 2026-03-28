@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useState, useEffect } from 'react';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
@@ -44,6 +45,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const permissions = usePermissions();
   const { getInvoice, updateInvoice, softDeleteInvoice, voidInvoice } = useInvoices();
   const { getCompany } = useCompanies();
   const { settings } = useGlobalSettings();
@@ -105,11 +107,10 @@ export default function InvoiceView() {
   const isVoided = invoice.status === 'voided';
   const isDraft = invoice.status === 'draft';
   // Paid & partially paid: no editing. Sent: allow edit only if no payments recorded.
-  const canEdit = (invoice.status === 'draft' || invoice.status === 'approved') || (isSent && totalPaid === 0);
-  const canVoid = invoice.status === 'approved' || isSent || isPartiallyPaid;
-  const canRecordPayment = isSent || isPartiallyPaid;
-  // Paid and sent invoices cannot be deleted; only drafts can
-  const canDelete = isDraft;
+  const canEdit = permissions.canEditInvoice(invoice.status) && ((invoice.status === 'draft' || invoice.status === 'approved') || (isSent && totalPaid === 0));
+  const canVoid = permissions.canVoidInvoice && (invoice.status === 'approved' || isSent || isPartiallyPaid);
+  const canRecordPayment = permissions.canRecordPayment && (isSent || isPartiallyPaid);
+  const canDelete = permissions.canDeleteInvoice && isDraft;
   const isLocked = isPaid;
   const amountDue = total - totalPaid;
 

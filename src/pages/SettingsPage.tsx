@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check, Users, Bell, Plus, Trash2 } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 import AppLayout from '@/components/AppLayout';
 import { useTheme, colorThemes } from '@/hooks/useTheme';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
@@ -17,6 +18,7 @@ import { toast } from 'sonner';
 import { formatDate } from '@/lib/formatDate';
 
 export default function SettingsPage() {
+  const permissions = usePermissions();
   const { theme, toggleTheme, colorTheme, setColorTheme } = useTheme();
   const { settings, saveSettings } = useGlobalSettings();
   const { invites, members, sendInvite, deleteInvite } = useTeam();
@@ -180,7 +182,8 @@ export default function SettingsPage() {
               <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="viewer">Viewer</SelectItem>
               </SelectContent>
             </Select>
             <Button size="sm" onClick={handleInvite}><Plus className="mr-1 h-3 w-3" /> Invite</Button>
@@ -259,6 +262,10 @@ export default function SettingsPage() {
       ),
     },
   ];
+
+  if (!permissions.loading && !permissions.canAccessSettings) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <AppLayout>

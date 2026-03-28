@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link, useSearchParams } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
@@ -34,7 +35,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   partially_paid: { label: 'Partially Paid', className: 'bg-info/10 text-info border-info/20' },
 };
 
-function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void> }) {
+function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => Promise<void>; canManage: boolean }) {
   const { recurring: allRecurring, updateRecurring, deleteRecurring, refetch: refetchRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
@@ -75,9 +76,11 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
     <>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{recurring.length} recurring template{recurring.length !== 1 ? 's' : ''}</p>
-        <Button size="sm" className="gap-1.5 rounded-lg" asChild>
-          <Link to="/invoices/recurring/new"><Plus className="h-4 w-4" /> New Recurring</Link>
-        </Button>
+        {canManage && (
+          <Button size="sm" className="gap-1.5 rounded-lg" asChild>
+            <Link to="/invoices/recurring/new"><Plus className="h-4 w-4" /> New Recurring</Link>
+          </Button>
+        )}
       </div>
 
       {recurring.length === 0 ? (
@@ -112,20 +115,24 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
                     </Badge>
                   </td>
                   <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Edit">
-                        <Link to={`/invoices/recurring/new?edit=${r.id}`}><Pencil className="h-4 w-4" /></Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={() => handleGenerate(r)}>
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>
-                        {r.isActive ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4" />}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => { await deleteRecurring(r.id); toast.success('Deleted'); }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {canManage ? (
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Edit">
+                          <Link to={`/invoices/recurring/new?edit=${r.id}`}><Pencil className="h-4 w-4" /></Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={() => handleGenerate(r)}>
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>
+                          {r.isActive ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => { await deleteRecurring(r.id); toast.success('Deleted'); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">View only</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -139,6 +146,7 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
 
 export default function Invoices() {
   const { invoices, softDeleteInvoice, voidInvoice, fetchDeletedInvoices, loading, refetch: refetchInvoices } = useInvoices();
+  const permissions = usePermissions();
   const { getCompany } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -206,19 +214,23 @@ export default function Invoices() {
             {companyFiltered.length} invoice{companyFiltered.length !== 1 ? 's' : ''} total
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="gap-1.5 rounded-lg">
-                <Plus className="h-4 w-4" /> New <ChevronDown className="h-3 w-3 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild><Link to="/invoices/new">New Invoice</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link to="/invoices/recurring/new">New Recurring Invoice</Link></DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {permissions.canCreateInvoice && (
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="gap-1.5 rounded-lg">
+                  <Plus className="h-4 w-4" /> New <ChevronDown className="h-3 w-3 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild><Link to="/invoices/new">New Invoice</Link></DropdownMenuItem>
+                {permissions.canManageRecurring && (
+                  <DropdownMenuItem asChild><Link to="/invoices/recurring/new">New Recurring Invoice</Link></DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -242,7 +254,7 @@ export default function Invoices() {
       </div>
 
       {activeTab === 'recurring' ? (
-        <RecurringTab refetchInvoices={refetchInvoices} />
+        <RecurringTab refetchInvoices={refetchInvoices} canManage={permissions.canManageRecurring} />
       ) : (
         <>
           {/* Filters */}
@@ -348,7 +360,7 @@ export default function Invoices() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild><Link to={`/invoices/${inv.id}`}><Eye className="mr-2 h-4 w-4" /> View</Link></DropdownMenuItem>
-                  {(inv.status === 'approved' || inv.status === 'sent' || inv.status === 'partially_paid') && (
+                  {permissions.canVoidInvoice && (inv.status === 'approved' || inv.status === 'sent' || inv.status === 'partially_paid') && (
                                     <>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
@@ -363,7 +375,7 @@ export default function Invoices() {
                                       </DropdownMenuItem>
                                     </>
                                   )}
-                                  {inv.status === 'draft' && (
+                                  {permissions.canDeleteInvoice && inv.status === 'draft' && (
                                     <>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem

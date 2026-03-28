@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Users, Plus, Search, Building2, User, Trash2, Edit, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ const PAGE_SIZE = 20;
 
 export default function Customers() {
   const { customers, loading, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const permissions = usePermissions();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | undefined>(undefined);
@@ -62,10 +64,12 @@ export default function Customers() {
             Manage customer profiles, contacts, and sales defaults.
           </p>
         </div>
-        <Button className="gap-1.5" onClick={openNew}>
-          <Plus className="h-4 w-4" />
-          New Customer
-        </Button>
+        {permissions.canCreateCustomer && (
+          <Button className="gap-1.5" onClick={openNew}>
+            <Plus className="h-4 w-4" />
+            New Customer
+          </Button>
+        )}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={v => { setDialogOpen(v); if (!v) setEditing(undefined); }}>
@@ -166,17 +170,21 @@ export default function Customers() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/customers/${c.id}/statement`)} title="View Statement">
                         <FileText className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => setDeleteTarget(c)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {permissions.canEditCustomer && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(c)}>
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {permissions.canDeleteCustomer && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => setDeleteTarget(c)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
