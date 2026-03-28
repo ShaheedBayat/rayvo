@@ -304,7 +304,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild><Link to="/invoices/new"><FileText className="mr-2 h-4 w-4" /> New Invoice</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to="/invoices?tab=recurring&action=new"><Receipt className="mr-2 h-4 w-4" /> New Recurring Invoice</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to="/recurring-invoices?action=new"><Receipt className="mr-2 h-4 w-4" /> New Recurring Invoice</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild><Link to="/customers"><Users className="mr-2 h-4 w-4" /> New Customer</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/products"><Package className="mr-2 h-4 w-4" /> New Product / Service</Link></DropdownMenuItem>
