@@ -1,14 +1,9 @@
 import { useState } from 'react';
-import { FileCheck, Plus, Trash2, MoreHorizontal, Search, ArrowRight, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { FileCheck, Plus, Search } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
 import { useQuotes } from '@/hooks/useQuotes';
@@ -21,7 +16,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { useActivityLog } from '@/hooks/useActivityLog';
-import QuoteForm from '@/components/quote/QuoteForm';
 import QuoteTable from '@/components/quote/QuoteTable';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
