@@ -68,7 +68,7 @@ export default function InvoiceView() {
   const [payMethod, setPayMethod] = useState('bank_transfer');
   const [payRef, setPayRef] = useState('');
   const [payNotes, setPayNotes] = useState('');
-
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   // Send email state
   const [emailAddresses, setEmailAddresses] = useState('');
   const [sending, setSending] = useState(false);
@@ -287,8 +287,10 @@ export default function InvoiceView() {
     return true;
   };
 
+
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (paymentProcessing) return;
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0) { toast.error('Enter a valid amount'); return; }
 
@@ -301,6 +303,7 @@ export default function InvoiceView() {
 
     if (amount > amountDue + 0.01) { toast.error(`Amount exceeds balance due of ${formatCurrency(amountDue, invoice.currency)}`); return; }
 
+    setPaymentProcessing(true);
     const result = await safeExecuteAction({
       actionName: 'Record payment',
       actionFn: () => addPayment({
@@ -321,20 +324,26 @@ export default function InvoiceView() {
     if (result) {
       // Refetch payments & recalculate status from DB
       const newTotalPaid = totalPaid + amount;
+      const remaining = total - newTotalPaid;
       const statusOk = await recalculateAndUpdateStatus(total, {
         action: newTotalPaid >= total ? 'paid' : 'partial_payment',
         details: newTotalPaid >= total
           ? `Full payment received. Total: ${formatCurrency(newTotalPaid, invoice.currency)}`
-          : `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(total - newTotalPaid, invoice.currency)}`,
+          : `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(remaining, invoice.currency)}`,
       });
 
       if (statusOk) {
-        toast.success('Payment recorded');
+        toast.success(
+          newTotalPaid >= total
+            ? `Payment recorded. Invoice fully paid!`
+            : `Payment recorded. Remaining balance: ${formatCurrency(remaining, invoice.currency)}`
+        );
       }
       setPaymentOpen(false);
       setPayAmount(''); setPayRef(''); setPayNotes('');
       fetchLogs('invoice', invoice.id).then(setActivityLogs);
     }
+    setPaymentProcessing(false);
   };
 
   return (
@@ -548,8 +557,10 @@ export default function InvoiceView() {
               <Textarea value={payNotes} onChange={e => setPayNotes(e.target.value)} rows={2} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)}>Cancel</Button>
-              <Button type="submit">Record Payment</Button>
+              <Button type="button" variant="outline" onClick={() => setPaymentOpen(false)} disabled={paymentProcessing}>Cancel</Button>
+              <Button type="submit" disabled={paymentProcessing}>
+                {paymentProcessing ? 'Processing...' : 'Record Payment'}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -624,7 +635,7 @@ export default function InvoiceView() {
               <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Financial Summary</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">Subtotal (excl. VAT)</span>
                   <span className="mono font-medium">{formatCurrency(smartTotals.subtotal, invoice.currency)}</span>
                 </div>
                 {isVatRegistered && smartTotals.tax > 0 && (
