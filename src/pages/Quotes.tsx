@@ -82,36 +82,60 @@ export default function Quotes() {
     setOpen(true);
   };
 
+  const [saving, setSaving] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!activeCompanyId) { toast.error('Select a company first'); return; }
     if (!clientName) { toast.error('Enter client name'); return; }
 
+    setSaving(true);
     if (editingQuote) {
-      await updateQuote({
-        ...editingQuote,
-        clientName, clientEmail, clientAddress,
-        items, taxRate, currency, notes, validUntil,
+      await safeExecuteAction({
+        actionName: 'Update quote',
+        actionFn: async () => {
+          await updateQuote({
+            ...editingQuote,
+            clientName, clientEmail, clientAddress,
+            items, taxRate, currency, notes, validUntil,
+          });
+          return editingQuote;
+        },
+        successMessage: `Quote ${editingQuote.quoteNumber} updated`,
+        onSuccess: async () => {
+          await logActivity('quote', editingQuote.id, 'updated', `Quote ${editingQuote.quoteNumber} updated`);
+          await refetch();
+        },
       });
-      toast.success(`Quote ${editingQuote.quoteNumber} updated`);
       resetForm(); setOpen(false);
     } else {
-      const result = await addQuote({
-        id: uuidv4(),
-        companyId: activeCompanyId,
-        clientName, clientEmail, clientAddress,
-        items, taxRate, currency,
-        status: 'draft',
-        notes,
-        validUntil,
+      const quoteId = uuidv4();
+      await safeExecuteAction({
+        actionName: 'Create quote',
+        actionFn: () => addQuote({
+          id: quoteId,
+          companyId: activeCompanyId,
+          clientName, clientEmail, clientAddress,
+          items, taxRate, currency,
+          status: 'draft',
+          notes,
+          validUntil,
+        }),
+        verifyFn: async () => {
+          const { data } = await supabase.from('quotes').select('id').eq('id', quoteId).maybeSingle();
+          return !!data;
+        },
+        silentSuccess: true,
+        onSuccess: async (result) => {
+          await logActivity('quote', result.id, 'created', `Quote ${result.quoteNumber} created`);
+          await refetch();
+          toast.success(`Quote ${result.quoteNumber} created successfully`);
+        },
       });
-      if (result) {
-        toast.success(`Quote ${result.quoteNumber} created successfully`);
-        resetForm(); setOpen(false);
-      } else {
-        toast.error('Failed to create quote');
-      }
+      resetForm(); setOpen(false);
     }
+    setSaving(false);
   };
 
   const handleConvertToInvoice = async (q: typeof quotes[0]) => {
