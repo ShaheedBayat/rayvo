@@ -665,6 +665,12 @@ export default function InvoiceView() {
                     <span className="mono font-medium text-success">− {formatCurrency(totalPaid, invoice.currency)}</span>
                   </div>
                 )}
+                {totalCredits > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-info font-medium">Credit Notes</span>
+                    <span className="mono font-medium text-info">− {formatCurrency(totalCredits, invoice.currency)}</span>
+                  </div>
+                )}
                 <div className={`flex justify-between border-t pt-2 ${
                   isPaid ? 'text-success' : isOverdue ? 'text-destructive' : isPartial ? 'text-warning' : ''
                 }`}>
