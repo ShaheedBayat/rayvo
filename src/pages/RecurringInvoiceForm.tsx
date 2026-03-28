@@ -28,6 +28,13 @@ import { supabase } from '@/integrations/supabase/client';
 export default function RecurringInvoiceForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const permissions = usePermissions();
+  
+  if (!permissions.loading && !permissions.canManageRecurring) {
+    navigate('/invoices');
+    return null;
+  }
+  
   const editId = searchParams.get('edit');
   const { recurring, addRecurring, updateRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();

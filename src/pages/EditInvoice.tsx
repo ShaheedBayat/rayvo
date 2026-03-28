@@ -25,6 +25,7 @@ import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 export default function EditInvoice() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const permissions = usePermissions();
   const { getInvoice, updateInvoice } = useInvoices();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
