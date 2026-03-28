@@ -29,17 +29,18 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
 }) {
   const { activeCompanyId, activeCompany } = useActiveCompany();
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
+  const companyVatRate = activeCompany?.vatRate ?? 15;
   const [code, setCode] = useState(editing?.code || '');
   const [name, setName] = useState(editing?.name || '');
   const [isTracked, setIsTracked] = useState(editing?.isTracked || false);
   const [purchaseEnabled, setPurchaseEnabled] = useState(editing?.purchaseEnabled ?? true);
   const [purchasePrice, setPurchasePrice] = useState(editing?.purchasePrice?.toString() || '');
   const [purchaseDescription, setPurchaseDescription] = useState(editing?.purchaseDescription || '');
-  const [purchaseTaxRate, setPurchaseTaxRate] = useState(editing?.purchaseTaxRate?.toString() ?? (isVatRegistered ? '15' : '0'));
+  const [purchaseTaxRate, setPurchaseTaxRate] = useState(editing?.purchaseTaxRate?.toString() ?? (isVatRegistered ? companyVatRate.toString() : '0'));
   const [sellEnabled, setSellEnabled] = useState(editing?.sellEnabled ?? true);
   const [sellPrice, setSellPrice] = useState(editing?.sellPrice?.toString() || '');
   const [sellDescription, setSellDescription] = useState(editing?.sellDescription || '');
-  const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() ?? (isVatRegistered ? '15' : '0'));
+  const [sellTaxRate, setSellTaxRate] = useState(editing?.sellTaxRate?.toString() ?? (isVatRegistered ? companyVatRate.toString() : '0'));
   const [saving, setSaving] = useState(false);
 
   // Hard-reset tax rates when VAT registration changes
@@ -48,10 +49,10 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
       setPurchaseTaxRate('0');
       setSellTaxRate('0');
     } else {
-      setPurchaseTaxRate(editing?.purchaseTaxRate?.toString() ?? '15');
-      setSellTaxRate(editing?.sellTaxRate?.toString() ?? '15');
+      setPurchaseTaxRate(editing?.purchaseTaxRate?.toString() ?? companyVatRate.toString());
+      setSellTaxRate(editing?.sellTaxRate?.toString() ?? companyVatRate.toString());
     }
-  }, [isVatRegistered]);
+  }, [isVatRegistered, editing, companyVatRate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,11 +69,11 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
         purchaseEnabled,
         purchasePrice: parseFloat(purchasePrice) || 0,
         purchaseDescription,
-        purchaseTaxRate: isVatRegistered ? 15 : 0,
+        purchaseTaxRate: purchaseEnabled ? (isVatRegistered ? parseFloat(purchaseTaxRate) || companyVatRate : 0) : 0,
         sellEnabled,
         sellPrice: parseFloat(sellPrice) || 0,
         sellDescription,
-        sellTaxRate: isVatRegistered ? 15 : 0,
+        sellTaxRate: sellEnabled ? (isVatRegistered ? parseFloat(sellTaxRate) || companyVatRate : 0) : 0,
         status: 'active',
       });
       if (result) {
@@ -127,7 +128,18 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Tax rate</Label>
-                    <div className="flex items-center h-10 px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground">15%</div>
+                    <Select value={purchaseTaxRate} onValueChange={setPurchaseTaxRate}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TAX_RATES.map((rate) => (
+                          <SelectItem key={rate} value={rate.replace('%', '')}>
+                            {rate}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -169,7 +181,18 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Tax rate</Label>
-                    <div className="flex items-center h-10 px-3 rounded-md border border-input bg-muted text-sm text-muted-foreground">15%</div>
+                    <Select value={sellTaxRate} onValueChange={setSellTaxRate}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TAX_RATES.map((rate) => (
+                          <SelectItem key={rate} value={rate.replace('%', '')}>
+                            {rate}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="space-y-1.5">
