@@ -209,7 +209,10 @@ export default function CreateInvoice() {
         return !!data;
       },
       successMessage: 'Invoice created!',
-      onSuccess: (created) => navigate(`/invoices/${created.id}`),
+      onSuccess: async (created) => {
+        await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
+        navigate(`/invoices/${created.id}`);
+      },
     });
   };
 
