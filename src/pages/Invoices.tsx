@@ -89,6 +89,9 @@ function RecurringTab() {
                   </td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Edit">
+                        <Link to={`/invoices/recurring/new?edit=${r.id}`}><Pencil className="h-4 w-4" /></Link>
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={async () => {
                         try {
                           const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-recurring-invoices`, {
