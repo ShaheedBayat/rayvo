@@ -23,11 +23,13 @@ import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
+import { useActivityLog } from '@/hooks/useActivityLog';
 export default function EditInvoice() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const permissions = usePermissions();
   const { getInvoice, updateInvoice } = useInvoices();
+  const { logActivity } = useActivityLog();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
   const { products } = useProducts();
