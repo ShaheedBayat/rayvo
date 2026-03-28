@@ -236,7 +236,7 @@ export default function Invoices() {
       </div>
 
       {activeTab === 'recurring' ? (
-        <RecurringTab />
+        <RecurringTab refetchInvoices={refetchInvoices} />
       ) : (
         <>
           {/* Filters */}
