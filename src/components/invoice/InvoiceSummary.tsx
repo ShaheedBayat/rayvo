@@ -78,8 +78,8 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
     <div className="flex justify-end sticky bottom-0 bg-card py-2">
       <div className="w-72 space-y-2.5">
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal {pricingMode === 'inclusive' ? '(incl. VAT)' : '(excl. VAT)'}</span>
-          <span className="mono font-medium">{formatCurrency(pricingMode === 'inclusive' ? calculateSubtotal(items) : totalTaxable, currency)}</span>
+          <span className="text-muted-foreground">Subtotal (excl. VAT)</span>
+          <span className="mono font-medium">{formatCurrency(totalTaxable, currency)}</span>
         </div>
 
         {totalDiscount > 0 && (

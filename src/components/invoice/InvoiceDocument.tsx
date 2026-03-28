@@ -124,19 +124,17 @@ export default function InvoiceDocument({ invoice, company, bankingDetails, term
               <div className="w-72 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Subtotal {isVatRegistered && pricingMode === 'inclusive' ? '(incl. VAT)' : ''}
+                    Subtotal {isVatRegistered ? '(excl. VAT)' : ''}
                   </span>
                   <span className="mono">
-                    {formatCurrency(pricingMode === 'inclusive' && isVatRegistered 
-                      ? totals.subtotal + totals.tax 
-                      : totals.subtotal, invoice.currency)}
+                    {formatCurrency(totals.subtotal, invoice.currency)}
                   </span>
                 </div>
                 {isVatRegistered && Object.entries(vatGroups).map(([key, group]) => (
                   group.vat !== 0 && (
                     <div key={key} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">VAT — {group.rateName}</span>
-                      <span className="mono">{pricingMode === 'inclusive' ? '(incl.)' : ''} {formatCurrency(group.vat, invoice.currency)}</span>
+                      <span className="mono">{formatCurrency(group.vat, invoice.currency)}</span>
                     </div>
                   )
                 ))}
