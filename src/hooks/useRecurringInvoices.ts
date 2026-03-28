@@ -98,6 +98,7 @@ export function useRecurringInvoices() {
     if (updates.frequency !== undefined) dbUpdates.frequency = updates.frequency;
     if (updates.dayOfMonth !== undefined) dbUpdates.day_of_month = updates.dayOfMonth;
     if (updates.nextRunDate !== undefined) dbUpdates.next_run_date = updates.nextRunDate;
+    if (updates.endDate !== undefined) dbUpdates.end_date = updates.endDate;
     if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
     const { error } = await supabase.from('recurring_invoices').update(dbUpdates).eq('id', id);
     if (!error) setRecurring(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
