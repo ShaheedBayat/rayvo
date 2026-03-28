@@ -156,8 +156,8 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
                         <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Edit">
                           <Link to={`/invoices/recurring/new?edit=${r.id}`}><Pencil className="h-4 w-4" /></Link>
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={() => handleGenerate(r)}>
-                          <RefreshCw className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={() => handleGenerate(r)} disabled={generating === r.id}>
+                          <RefreshCw className={`h-4 w-4 ${generating === r.id ? 'animate-spin' : ''}`} />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>
                           {r.isActive ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4" />}
