@@ -287,8 +287,11 @@ export default function InvoiceView() {
     return true;
   };
 
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (paymentProcessing) return;
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0) { toast.error('Enter a valid amount'); return; }
 
@@ -301,6 +304,7 @@ export default function InvoiceView() {
 
     if (amount > amountDue + 0.01) { toast.error(`Amount exceeds balance due of ${formatCurrency(amountDue, invoice.currency)}`); return; }
 
+    setPaymentProcessing(true);
     const result = await safeExecuteAction({
       actionName: 'Record payment',
       actionFn: () => addPayment({
@@ -321,20 +325,26 @@ export default function InvoiceView() {
     if (result) {
       // Refetch payments & recalculate status from DB
       const newTotalPaid = totalPaid + amount;
+      const remaining = total - newTotalPaid;
       const statusOk = await recalculateAndUpdateStatus(total, {
         action: newTotalPaid >= total ? 'paid' : 'partial_payment',
         details: newTotalPaid >= total
           ? `Full payment received. Total: ${formatCurrency(newTotalPaid, invoice.currency)}`
-          : `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(total - newTotalPaid, invoice.currency)}`,
+          : `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(remaining, invoice.currency)}`,
       });
 
       if (statusOk) {
-        toast.success('Payment recorded');
+        toast.success(
+          newTotalPaid >= total
+            ? `Payment recorded. Invoice fully paid!`
+            : `Payment recorded. Remaining balance: ${formatCurrency(remaining, invoice.currency)}`
+        );
       }
       setPaymentOpen(false);
       setPayAmount(''); setPayRef(''); setPayNotes('');
       fetchLogs('invoice', invoice.id).then(setActivityLogs);
     }
+    setPaymentProcessing(false);
   };
 
   return (
