@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useVatLedger } from '@/hooks/useVatLedger';
+import { useCreditNotes, type CreditNote } from '@/hooks/useCreditNotes';
 import { usePayments } from '@/hooks/usePayments';
 import { useActivityLog, type ActivityEntry } from '@/hooks/useActivityLog';
 import { useAttachments } from '@/hooks/useAttachments';
