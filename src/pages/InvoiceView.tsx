@@ -115,8 +115,16 @@ export default function InvoiceView() {
   const canVoid = permissions.canVoidInvoice && (invoice.status === 'approved' || isSent || isPartiallyPaid);
   const canRecordPayment = permissions.canRecordPayment && (isSent || isPartiallyPaid);
   const canDelete = permissions.canDeleteInvoice && isDraft;
-  const isLocked = isPaid;
-  const amountDue = total - totalPaid;
+  const isLocked = isPaid || invoice.status === 'credited';
+
+  // Calculate total credits from credit notes linked to this invoice
+  const invoiceCreditNotes = creditNotes.filter(cn => cn.invoiceId === invoice.id);
+  const totalCredits = invoiceCreditNotes.reduce((sum, cn) => {
+    const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+    return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+  }, 0);
+
+  const amountDue = total - totalPaid - totalCredits;
 
   const handleExportPdf = async () => {
     const element = document.getElementById('invoice-document');
