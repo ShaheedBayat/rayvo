@@ -168,7 +168,7 @@ export default function RecurringInvoices() {
                   <Label className="text-xs">Customer</Label>
                   <CustomerCombobox
                     customers={customers}
-                    value={clientName}
+                    clientName={clientName}
                     onSelect={handleCustomerSelect}
                   />
                 </div>
