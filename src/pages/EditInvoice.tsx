@@ -146,7 +146,10 @@ export default function EditInvoice() {
         return !!data;
       },
       successMessage: 'Invoice updated!',
-      onSuccess: () => navigate(`/invoices/${invoice.id}`),
+      onSuccess: async () => {
+        await logActivity('invoice', invoice.id, 'updated', `Invoice ${invoice.invoiceNumber} updated`);
+        navigate(`/invoices/${invoice.id}`);
+      },
     });
   };
 
