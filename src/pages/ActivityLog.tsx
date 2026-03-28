@@ -147,7 +147,11 @@ export default function ActivityLog() {
                 return (
                   <tr key={log.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {formatDate(log.createdAt)}
+                      <div>{format(parseISO(log.createdAt), 'dd MMM yyyy')}</div>
+                      <div className="text-xs text-muted-foreground/70">{format(parseISO(log.createdAt), 'HH:mm:ss')}</div>
+                    </td>
+                    <td className="px-4 py-3 text-foreground whitespace-nowrap">
+                      {log.userName}
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="outline" className={`${colorClass} text-[11px] capitalize`}>
