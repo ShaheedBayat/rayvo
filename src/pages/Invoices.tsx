@@ -35,7 +35,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   partially_paid: { label: 'Partially Paid', className: 'bg-info/10 text-info border-info/20' },
 };
 
-function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void> }) {
+function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => Promise<void>; canManage: boolean }) {
   const { recurring: allRecurring, updateRecurring, deleteRecurring, refetch: refetchRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
