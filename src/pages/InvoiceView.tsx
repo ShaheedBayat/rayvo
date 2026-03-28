@@ -244,29 +244,37 @@ export default function InvoiceView() {
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0) { toast.error('Enter a valid amount'); return; }
     if (amount > amountDue + 0.01) { toast.error(`Amount exceeds balance due of ${formatCurrency(amountDue, invoice.currency)}`); return; }
-    const result = await addPayment({
-      invoiceId: invoice.id,
-      amount,
-      paymentDate: payDate,
-      method: payMethod,
-      reference: payRef,
-      notes: payNotes,
+
+    const result = await safeExecuteAction({
+      actionName: 'Record payment',
+      actionFn: () => addPayment({
+        invoiceId: invoice.id,
+        amount,
+        paymentDate: payDate,
+        method: payMethod,
+        reference: payRef,
+        notes: payNotes,
+      }),
+      verifyFn: async (payment) => {
+        const { data } = await supabase.from('payments').select('id').eq('id', payment.id).maybeSingle();
+        return !!data;
+      },
+      silentSuccess: true,
     });
+
     if (result) {
       const newTotalPaid = totalPaid + amount;
       if (newTotalPaid >= total) {
-        updateInvoice({ ...invoice, status: 'paid' });
+        await updateInvoice({ ...invoice, status: 'paid' });
         await logActivity('invoice', invoice.id, 'paid', `Full payment received. Total: ${formatCurrency(newTotalPaid, invoice.currency)}`);
       } else {
-        updateInvoice({ ...invoice, status: 'partially_paid' });
+        await updateInvoice({ ...invoice, status: 'partially_paid' });
         await logActivity('invoice', invoice.id, 'partial_payment', `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(total - newTotalPaid, invoice.currency)}`);
       }
       toast.success('Payment recorded');
       setPaymentOpen(false);
       setPayAmount(''); setPayRef(''); setPayNotes('');
       fetchLogs('invoice', invoice.id).then(setActivityLogs);
-    } else {
-      toast.error('Failed to record payment');
     }
   };
 
