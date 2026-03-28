@@ -38,7 +38,8 @@ export default function RecurringInvoices() {
   const pricingMode = activeCompany?.pricingMode || 'exclusive';
   const { taxRates, ensureDefaults } = useTaxRates(companyId);
   const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
-  const [showForm, setShowForm] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [showForm, setShowForm] = useState(searchParams.get('action') === 'new');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
