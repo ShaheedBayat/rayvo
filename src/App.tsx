@@ -23,6 +23,8 @@ import InvoiceSettings from "./pages/InvoiceSettings";
 import OnlinePayments from "./pages/OnlinePayments";
 import CreditNotes from "./pages/CreditNotes";
 import Quotes from "./pages/Quotes";
+import CreateQuote from "./pages/CreateQuote";
+import EditQuote from "./pages/EditQuote";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CustomerStatement from "./pages/CustomerStatement";
