@@ -287,7 +287,6 @@ export default function InvoiceView() {
     return true;
   };
 
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
