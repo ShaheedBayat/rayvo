@@ -636,7 +636,7 @@ export default function InvoiceView() {
               <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Financial Summary</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">Subtotal (excl. VAT)</span>
                   <span className="mono font-medium">{formatCurrency(smartTotals.subtotal, invoice.currency)}</span>
                 </div>
                 {isVatRegistered && smartTotals.tax > 0 && (
