@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check, Users, Bell, Plus, Trash2 } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 import AppLayout from '@/components/AppLayout';
 import { useTheme, colorThemes } from '@/hooks/useTheme';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
