@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useRecurringProcessor } from '@/hooks/useRecurringProcessor';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import {
