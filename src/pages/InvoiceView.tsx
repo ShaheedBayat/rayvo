@@ -201,7 +201,7 @@ export default function InvoiceView() {
         const { data } = await supabase.from('invoices').select('id, status').eq('id', invoice.id).maybeSingle();
         return data?.status === 'voided';
       },
-      silentSuccess: false,
+      successMessage: 'Invoice voided',
       successMessage: 'Invoice voided',
     });
     if (success) {
