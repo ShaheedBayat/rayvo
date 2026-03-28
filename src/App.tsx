@@ -30,6 +30,7 @@ import CustomerStatements from "./pages/CustomerStatements";
 import Expenses from "./pages/Expenses";
 import VatReport from "./pages/VatReport";
 import RecurringInvoiceForm from "./pages/RecurringInvoiceForm";
+import ActivityLog from "./pages/ActivityLog";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
