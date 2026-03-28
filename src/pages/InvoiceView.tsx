@@ -54,6 +54,7 @@ export default function InvoiceView() {
   const { settings } = useGlobalSettings();
   const { payments, addPayment, deletePayment, totalPaid } = usePayments(id);
   const { createVatEntries, reverseVatEntries } = useVatLedger();
+  const { creditNotes } = useCreditNotes();
   const { logActivity, fetchLogs } = useActivityLog();
   const { attachments, uploadAttachment, deleteAttachment, getPublicUrl } = useAttachments('invoice', id || '');
   const docRef = useRef<HTMLDivElement>(null);
