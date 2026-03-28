@@ -82,36 +82,60 @@ export default function Quotes() {
     setOpen(true);
   };
 
+  const [saving, setSaving] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!activeCompanyId) { toast.error('Select a company first'); return; }
     if (!clientName) { toast.error('Enter client name'); return; }
 
+    setSaving(true);
     if (editingQuote) {
-      await updateQuote({
-        ...editingQuote,
-        clientName, clientEmail, clientAddress,
-        items, taxRate, currency, notes, validUntil,
+      await safeExecuteAction({
+        actionName: 'Update quote',
+        actionFn: async () => {
+          await updateQuote({
+            ...editingQuote,
+            clientName, clientEmail, clientAddress,
+            items, taxRate, currency, notes, validUntil,
+          });
+          return editingQuote;
+        },
+        successMessage: `Quote ${editingQuote.quoteNumber} updated`,
+        onSuccess: async () => {
+          await logActivity('quote', editingQuote.id, 'updated', `Quote ${editingQuote.quoteNumber} updated`);
+          await refetch();
+        },
       });
-      toast.success(`Quote ${editingQuote.quoteNumber} updated`);
       resetForm(); setOpen(false);
     } else {
-      const result = await addQuote({
-        id: uuidv4(),
-        companyId: activeCompanyId,
-        clientName, clientEmail, clientAddress,
-        items, taxRate, currency,
-        status: 'draft',
-        notes,
-        validUntil,
+      const quoteId = uuidv4();
+      await safeExecuteAction({
+        actionName: 'Create quote',
+        actionFn: () => addQuote({
+          id: quoteId,
+          companyId: activeCompanyId,
+          clientName, clientEmail, clientAddress,
+          items, taxRate, currency,
+          status: 'draft',
+          notes,
+          validUntil,
+        }),
+        verifyFn: async () => {
+          const { data } = await supabase.from('quotes').select('id').eq('id', quoteId).maybeSingle();
+          return !!data;
+        },
+        silentSuccess: true,
+        onSuccess: async (result) => {
+          await logActivity('quote', result.id, 'created', `Quote ${result.quoteNumber} created`);
+          await refetch();
+          toast.success(`Quote ${result.quoteNumber} created successfully`);
+        },
       });
-      if (result) {
-        toast.success(`Quote ${result.quoteNumber} created successfully`);
-        resetForm(); setOpen(false);
-      } else {
-        toast.error('Failed to create quote');
-      }
+      resetForm(); setOpen(false);
     }
+    setSaving(false);
   };
 
   const handleConvertToInvoice = async (q: typeof quotes[0]) => {
@@ -165,10 +189,21 @@ export default function Quotes() {
     }
   };
 
+  const [deleting, setDeleting] = useState(false);
+
   const handleDelete = async () => {
     if (!deleteId) return;
-    await deleteQuote(deleteId);
-    toast.success('Quote deleted');
+    setDeleting(true);
+    const q = quotes.find(q => q.id === deleteId);
+    const ok = await deleteQuote(deleteId);
+    if (ok !== undefined) {
+      await logActivity('quote', deleteId, 'deleted', `Quote ${q?.quoteNumber || ''} deleted`);
+      await refetch();
+      toast.success(`Quote ${q?.quoteNumber || ''} deleted`);
+    } else {
+      toast.error('Failed to delete quote');
+    }
+    setDeleting(false);
     setDeleteId(null);
   };
 
@@ -227,7 +262,12 @@ export default function Quotes() {
           converting={converting}
           onEdit={openEdit}
           onConvert={handleConvertToInvoice}
-          onUpdateStatus={(q, status) => updateQuote({ ...q, status })}
+          onUpdateStatus={async (q, status) => {
+            await updateQuote({ ...q, status });
+            await logActivity('quote', q.id, 'status_updated', `Quote ${q.quoteNumber} status changed to ${status}`);
+            await refetch();
+            toast.success(`Quote ${q.quoteNumber} marked as ${status}`);
+          }}
           onDelete={setDeleteId}
         />
       )}
@@ -240,7 +280,7 @@ export default function Quotes() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deleting ? 'Deleting...' : 'Delete'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -130,12 +130,22 @@ export default function CreditNotes() {
     setSaving(true);
 
     if (editingCN) {
-      await updateCreditNote({
-        ...editingCN,
-        clientName, clientEmail, clientAddress,
-        items, taxRate, currency, notes,
+      await safeExecuteAction({
+        actionName: 'Update credit note',
+        actionFn: async () => {
+          await updateCreditNote({
+            ...editingCN,
+            clientName, clientEmail, clientAddress,
+            items, taxRate, currency, notes,
+          });
+          return editingCN;
+        },
+        successMessage: `Credit note ${editingCN.creditNoteNumber} updated`,
+        onSuccess: async () => {
+          await logActivity('credit_note', editingCN.id, 'updated', `Credit note ${editingCN.creditNoteNumber} updated`);
+          await refetch();
+        },
       });
-      toast.success(`Credit note ${editingCN.creditNoteNumber} updated`);
       resetForm(); setOpen(false);
       setSaving(false);
       return;
@@ -221,10 +231,17 @@ export default function CreditNotes() {
     setSaving(false);
   };
 
+  const [deleting, setDeleting] = useState(false);
+
   const handleDelete = async () => {
     if (!deleteId) return;
+    setDeleting(true);
+    const cn = creditNotes.find(c => c.id === deleteId);
     await deleteCreditNote(deleteId);
-    toast.success('Credit note deleted');
+    await logActivity('credit_note', deleteId, 'deleted', `Credit note ${cn?.creditNoteNumber || ''} deleted`);
+    await refetch();
+    toast.success(`Credit note ${cn?.creditNoteNumber || ''} deleted`);
+    setDeleting(false);
     setDeleteId(null);
   };
 

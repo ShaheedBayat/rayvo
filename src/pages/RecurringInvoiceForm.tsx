@@ -8,6 +8,7 @@ import { useCompanies } from '@/hooks/useInvoiceStore';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
+import { useActivityLog } from '@/hooks/useActivityLog';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
@@ -39,6 +40,7 @@ export default function RecurringInvoiceForm() {
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const pricingMode = activeCompany?.pricingMode || 'exclusive';
   const { taxRates, ensureDefaults } = useTaxRates(companyId);
+  const { logActivity } = useActivityLog();
 
   const defaultRate = isVatRegistered ? (activeCompany?.vatRate ?? 15) : 0;
 
@@ -234,16 +236,26 @@ export default function RecurringInvoiceForm() {
         items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
         notes, frequency, dayOfMonth, nextRunDate,
       });
-      if (success) { toast.success('Recurring invoice updated'); goBack(); }
-      else toast.error('Failed to update');
+      if (success) {
+        await logActivity('recurring', editId, 'updated', `Recurring template for ${clientName} updated`);
+        toast.success('Recurring invoice updated');
+        goBack();
+      } else {
+        toast.error('Failed to update');
+      }
     } else {
       const result = await addRecurring({
         companyId, clientName, clientEmail, clientAddress, currency,
         items: finalItems, taxRate: isVatRegistered ? taxRate : 0,
         notes, frequency, dayOfMonth, nextRunDate, endDate: null, isActive: true,
       });
-      if (result) { toast.success('Recurring invoice created'); goBack(); }
-      else toast.error('Failed to create');
+      if (result) {
+        await logActivity('recurring', result.id, 'created', `Recurring template created for ${clientName} (${frequency})`);
+        toast.success('Recurring invoice created');
+        goBack();
+      } else {
+        toast.error('Failed to create');
+      }
     }
   };
 
