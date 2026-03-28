@@ -1343,7 +1343,7 @@ export type Database = {
       unblock_user: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "staff" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1471,7 +1471,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "staff", "viewer"],
     },
   },
 } as const
