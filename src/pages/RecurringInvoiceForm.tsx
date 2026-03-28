@@ -8,6 +8,7 @@ import { useCompanies } from '@/hooks/useInvoiceStore';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
+import { useActivityLog } from '@/hooks/useActivityLog';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { ArrowLeft, AlertTriangle } from 'lucide-react';
