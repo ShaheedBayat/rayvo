@@ -202,7 +202,6 @@ export default function InvoiceView() {
         return data?.status === 'voided';
       },
       successMessage: 'Invoice voided',
-      successMessage: 'Invoice voided',
     });
     if (success) {
       await reverseVatEntries(invoice);
