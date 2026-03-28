@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useAllPayments } from '@/hooks/usePayments';
+import { useExpenses } from '@/hooks/useExpenses';
 import { formatCurrency, calculateSmartTotals, currencySymbols } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
