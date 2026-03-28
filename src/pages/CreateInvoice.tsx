@@ -171,6 +171,7 @@ export default function CreateInvoice() {
   const canSave = clientName.trim() !== '' && hasLineItems && !(creditLimitExceeded && selectedCustomer?.blockOnCreditLimit);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!companyId) {
       toast.error('Please add a company first in the Companies section.');
       return;
@@ -181,6 +182,7 @@ export default function CreateInvoice() {
         return;
       }
     }
+    setSaving(true);
     const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
     const invoice: Invoice = {
       id: uuidv4(),
@@ -209,13 +211,14 @@ export default function CreateInvoice() {
           .maybeSingle();
         return !!data;
       },
-      successMessage: `Invoice ${invoice.invoiceNumber || 'draft'} created successfully`,
+      successMessage: `Invoice created successfully`,
       onSuccess: async (created) => {
         await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
         toast.success(`Invoice ${created.invoiceNumber} created successfully`);
         navigate(`/invoices/${created.id}`);
       },
     });
+    setSaving(false);
   };
 
   if (!permissions.loading && !permissions.canCreateInvoice) {
