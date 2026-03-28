@@ -146,6 +146,7 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
 
 export default function Invoices() {
   const { invoices, softDeleteInvoice, voidInvoice, fetchDeletedInvoices, loading, refetch: refetchInvoices } = useInvoices();
+  const permissions = usePermissions();
   const { getCompany } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const [searchParams, setSearchParams] = useSearchParams();
