@@ -132,7 +132,7 @@ function RecurringTab({ refetchInvoices }: { refetchInvoices: () => Promise<void
 }
 
 export default function Invoices() {
-  const { invoices, softDeleteInvoice, voidInvoice, fetchDeletedInvoices, loading } = useInvoices();
+  const { invoices, softDeleteInvoice, voidInvoice, fetchDeletedInvoices, loading, refetch: refetchInvoices } = useInvoices();
   const { getCompany } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const [searchParams, setSearchParams] = useSearchParams();
