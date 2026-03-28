@@ -18,6 +18,7 @@ export default function Overview() {
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const { paidForInvoice, payments: allPayments } = useAllPayments();
+  const { expenses } = useExpenses();
 
   const invoices = activeCompanyId
     ? allInvoices.filter(i => i.companyId === activeCompanyId)
