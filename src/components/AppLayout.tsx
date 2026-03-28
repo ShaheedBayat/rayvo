@@ -178,11 +178,14 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const permissions = usePermissions();
   const { theme, toggleTheme } = useTheme();
   const { activeCompany, companies, switchCompany } = useActiveCompany();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   useRecurringProcessor();
+
+  const { salesNav, manageNav } = getNavItems(permissions.canAccessSettings, permissions.canManageCompanies);
 
   const cachedName = localStorage.getItem('activeCompanyName');
   const cachedLogo = localStorage.getItem('activeCompanyLogo');
