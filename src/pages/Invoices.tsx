@@ -34,7 +34,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 function RecurringTab() {
-  const { recurring: allRecurring, updateRecurring, deleteRecurring } = useRecurringInvoices();
+  const { recurring: allRecurring, updateRecurring, deleteRecurring, refetch: refetchRecurring } = useRecurringInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const recurring = activeCompanyId ? allRecurring.filter(r => r.companyId === activeCompanyId) : allRecurring;
