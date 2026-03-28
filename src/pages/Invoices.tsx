@@ -115,20 +115,24 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
                     </Badge>
                   </td>
                   <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Edit">
-                        <Link to={`/invoices/recurring/new?edit=${r.id}`}><Pencil className="h-4 w-4" /></Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={() => handleGenerate(r)}>
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>
-                        {r.isActive ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4" />}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => { await deleteRecurring(r.id); toast.success('Deleted'); }}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {canManage ? (
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Edit">
+                          <Link to={`/invoices/recurring/new?edit=${r.id}`}><Pencil className="h-4 w-4" /></Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Generate invoice now" onClick={() => handleGenerate(r)}>
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(r.id, r.isActive)}>
+                          {r.isActive ? <ToggleRight className="h-4 w-4 text-success" /> : <ToggleLeft className="h-4 w-4" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => { await deleteRecurring(r.id); toast.success('Deleted'); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">View only</span>
+                    )}
                   </td>
                 </tr>
               ))}
