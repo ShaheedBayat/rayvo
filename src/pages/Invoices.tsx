@@ -5,6 +5,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
+import { useActivityLog } from '@/hooks/useActivityLog';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
