@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useVatLedger } from '@/hooks/useVatLedger';
+import { useCreditNotes, type CreditNote } from '@/hooks/useCreditNotes';
 import { usePayments } from '@/hooks/usePayments';
 import { useActivityLog, type ActivityEntry } from '@/hooks/useActivityLog';
 import { useAttachments } from '@/hooks/useAttachments';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
+import type { InvoiceItem } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import InvoiceDocument from '@/components/invoice/InvoiceDocument';
 import FileUpload from '@/components/FileUpload';
@@ -18,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, Edit, Ban, CreditCard, Clock, Activity, Paperclip, Mail, FileText, Image } from 'lucide-react';
+import { ArrowLeft, Download, Share2, CheckCircle, Send, MoreHorizontal, Trash2, Copy, Edit, Ban, CreditCard, Clock, Activity, Paperclip, Mail, FileText, Image, Receipt } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -41,6 +43,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   paid: { label: 'Paid', className: 'bg-success/10 text-success border-success/20' },
   voided: { label: 'Voided', className: 'bg-destructive/10 text-destructive border-destructive/20' },
   partially_paid: { label: 'Partially Paid', className: 'bg-warning/10 text-warning border-warning/20' },
+  credited: { label: 'Credited', className: 'bg-info/10 text-info border-info/20' },
 };
 
 export default function InvoiceView() {
@@ -52,6 +55,7 @@ export default function InvoiceView() {
   const { settings } = useGlobalSettings();
   const { payments, addPayment, deletePayment, totalPaid } = usePayments(id);
   const { createVatEntries, reverseVatEntries } = useVatLedger();
+  const { creditNotes } = useCreditNotes();
   const { logActivity, fetchLogs } = useActivityLog();
   const { attachments, uploadAttachment, deleteAttachment, getPublicUrl } = useAttachments('invoice', id || '');
   const docRef = useRef<HTMLDivElement>(null);
@@ -112,8 +116,16 @@ export default function InvoiceView() {
   const canVoid = permissions.canVoidInvoice && (invoice.status === 'approved' || isSent || isPartiallyPaid);
   const canRecordPayment = permissions.canRecordPayment && (isSent || isPartiallyPaid);
   const canDelete = permissions.canDeleteInvoice && isDraft;
-  const isLocked = isPaid;
-  const amountDue = total - totalPaid;
+  const isLocked = isPaid || invoice.status === 'credited';
+
+  // Calculate total credits from credit notes linked to this invoice
+  const invoiceCreditNotes = creditNotes.filter(cn => cn.invoiceId === invoice.id);
+  const totalCredits = invoiceCreditNotes.reduce((sum, cn) => {
+    const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+    return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+  }, 0);
+
+  const amountDue = total - totalPaid - totalCredits;
 
   const handleExportPdf = async () => {
     const element = document.getElementById('invoice-document');
@@ -254,15 +266,30 @@ export default function InvoiceView() {
       return false;
     }
     const dbTotalPaid = (dbPayments || []).reduce((sum, p) => sum + Number(p.amount), 0);
-    console.log('[Payment] DB total paid:', dbTotalPaid, 'Invoice total:', invoiceTotal);
+
+    // Refetch credit notes from DB
+    const { data: dbCreditNotes } = await supabase
+      .from('credit_notes')
+      .select('items, tax_rate')
+      .eq('invoice_id', invoice.id)
+      .is('deleted_at', null);
+    const dbTotalCredits = (dbCreditNotes || []).reduce((sum, cn) => {
+      const cnItems = ((cn.items as unknown) as InvoiceItem[]) || [];
+      const cnCo = company;
+      return sum + calculateSmartTotals(cnItems, Number(cn.tax_rate), cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+    }, 0);
+
+    const remaining = invoiceTotal - dbTotalPaid - dbTotalCredits;
 
     let newStatus: string;
-    if (dbTotalPaid <= 0) {
-      newStatus = 'sent';
-    } else if (dbTotalPaid >= invoiceTotal) {
+    if (remaining <= 0.01 && dbTotalCredits > 0 && dbTotalPaid <= 0) {
+      newStatus = 'credited';
+    } else if (remaining <= 0.01) {
       newStatus = 'paid';
-    } else {
+    } else if (dbTotalPaid > 0 || dbTotalCredits > 0) {
       newStatus = 'partially_paid';
+    } else {
+      newStatus = 'sent';
     }
 
     // Update invoice status
@@ -654,6 +681,12 @@ export default function InvoiceView() {
                     <span className="mono font-medium text-success">− {formatCurrency(totalPaid, invoice.currency)}</span>
                   </div>
                 )}
+                {totalCredits > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-info font-medium">Credit Notes</span>
+                    <span className="mono font-medium text-info">− {formatCurrency(totalCredits, invoice.currency)}</span>
+                  </div>
+                )}
                 <div className={`flex justify-between border-t pt-2 ${
                   isPaid ? 'text-success' : isOverdue ? 'text-destructive' : isPartial ? 'text-warning' : ''
                 }`}>
@@ -695,6 +728,41 @@ export default function InvoiceView() {
         )}
         {!isVoided && <FileUpload onUpload={uploadAttachment} />}
       </div>
+
+      {/* Credit Notes */}
+      {invoiceCreditNotes.length > 0 && (
+        <div className="mt-8 max-w-[800px] mx-auto">
+          <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Receipt className="h-4 w-4" /> Credit Notes
+          </h2>
+          <div className="rounded-lg border bg-card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/20">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Number</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoiceCreditNotes.map(cn => {
+                  const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+                  const cnTotal = calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+                  return (
+                    <tr key={cn.id} className="border-b last:border-0">
+                      <td className="px-4 py-2.5 mono font-medium">{cn.creditNoteNumber}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground">{formatDate(cn.createdAt)}</td>
+                      <td className="px-4 py-2.5 capitalize text-muted-foreground">{cn.status}</td>
+                      <td className="px-4 py-2.5 text-right mono font-medium text-info">− {formatCurrency(cnTotal, cn.currency)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Payment History */}
       {payments.length > 0 && (
