@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
