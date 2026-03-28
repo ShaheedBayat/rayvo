@@ -21,7 +21,8 @@ import InvoiceLineItems from '@/components/invoice/InvoiceLineItems';
 import InvoiceSummary from '@/components/invoice/InvoiceSummary';
 import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
-
+import { supabase } from '@/integrations/supabase/client';
+import { safeExecuteAction } from '@/lib/safeExecuteAction';
 export default function EditInvoice() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -130,9 +131,21 @@ export default function EditInvoice() {
       notes,
       dueDate,
     };
-    await updateInvoice(updated);
-    toast.success('Invoice updated!');
-    navigate(`/invoices/${invoice.id}`);
+
+    await safeExecuteAction({
+      actionName: 'Update invoice',
+      actionFn: () => updateInvoice(updated),
+      verifyFn: async (result) => {
+        const { data } = await supabase
+          .from('invoices')
+          .select('id, updated_at')
+          .eq('id', result.id)
+          .maybeSingle();
+        return !!data;
+      },
+      successMessage: 'Invoice updated!',
+      onSuccess: () => navigate(`/invoices/${invoice.id}`),
+    });
   };
 
   return (

@@ -32,6 +32,7 @@ import {
 import { toast } from 'sonner';
 import { useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { safeExecuteAction, safeDeleteAction } from '@/lib/safeExecuteAction';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
@@ -172,38 +173,55 @@ export default function InvoiceView() {
   };
 
   const markApproveAndSend = async () => {
-    await updateInvoice({ ...invoice, status: 'sent' });
-    // Create VAT ledger entries when invoice is sent
-    await createVatEntries(invoice);
-    await logActivity('invoice', invoice.id, 'approved_and_sent', `Invoice ${invoice.invoiceNumber} approved & sent`);
-    toast.success('Invoice approved & sent');
-    fetchLogs('invoice', invoice.id).then(setActivityLogs);
+    const result = await safeExecuteAction({
+      actionName: 'Approve & send invoice',
+      actionFn: () => updateInvoice({ ...invoice, status: 'sent' }),
+      verifyFn: async (updated) => {
+        const { data } = await supabase.from('invoices').select('id, status').eq('id', updated.id).maybeSingle();
+        return data?.status === 'sent';
+      },
+      silentSuccess: true,
+    });
+    if (result) {
+      await createVatEntries(invoice);
+      await logActivity('invoice', invoice.id, 'approved_and_sent', `Invoice ${invoice.invoiceNumber} approved & sent`);
+      toast.success('Invoice approved & sent');
+      fetchLogs('invoice', invoice.id).then(setActivityLogs);
+    }
   };
 
   const handleVoid = async () => {
-    const success = await voidInvoice(invoice.id);
+    const success = await safeDeleteAction({
+      actionName: 'Void invoice',
+      actionFn: async () => {
+        const ok = await voidInvoice(invoice.id);
+        return ok ? { error: null } : { error: 'Failed to void invoice' };
+      },
+      verifyFn: async () => {
+        const { data } = await supabase.from('invoices').select('id, status').eq('id', invoice.id).maybeSingle();
+        return data?.status === 'voided';
+      },
+      successMessage: 'Invoice voided',
+    });
     if (success) {
-      // Reverse VAT ledger entries when voided
       await reverseVatEntries(invoice);
       await logActivity('invoice', invoice.id, 'voided', `Invoice ${invoice.invoiceNumber} voided`);
-      toast.success('Invoice voided');
       fetchLogs('invoice', invoice.id).then(setActivityLogs);
-    } else {
-      toast.error('Failed to void invoice');
     }
     setVoidOpen(false);
   };
 
   const handleDelete = async () => {
-    const result = await softDeleteInvoice(invoice.id);
-    if (result.blocked) {
-      toast.error(result.error);
-    } else if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success('Invoice moved to deleted');
-      navigate('/invoices');
-    }
+    await safeDeleteAction({
+      actionName: 'Delete invoice',
+      actionFn: () => softDeleteInvoice(invoice.id),
+      verifyFn: async () => {
+        const { data } = await supabase.from('invoices').select('id, deleted_at').eq('id', invoice.id).maybeSingle();
+        return !!data?.deleted_at;
+      },
+      successMessage: 'Invoice moved to deleted',
+      onSuccess: () => navigate('/invoices'),
+    });
   };
 
   const handleDuplicate = () => {
@@ -225,29 +243,37 @@ export default function InvoiceView() {
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0) { toast.error('Enter a valid amount'); return; }
     if (amount > amountDue + 0.01) { toast.error(`Amount exceeds balance due of ${formatCurrency(amountDue, invoice.currency)}`); return; }
-    const result = await addPayment({
-      invoiceId: invoice.id,
-      amount,
-      paymentDate: payDate,
-      method: payMethod,
-      reference: payRef,
-      notes: payNotes,
+
+    const result = await safeExecuteAction({
+      actionName: 'Record payment',
+      actionFn: () => addPayment({
+        invoiceId: invoice.id,
+        amount,
+        paymentDate: payDate,
+        method: payMethod,
+        reference: payRef,
+        notes: payNotes,
+      }),
+      verifyFn: async (payment) => {
+        const { data } = await supabase.from('payments').select('id').eq('id', payment.id).maybeSingle();
+        return !!data;
+      },
+      silentSuccess: true,
     });
+
     if (result) {
       const newTotalPaid = totalPaid + amount;
       if (newTotalPaid >= total) {
-        updateInvoice({ ...invoice, status: 'paid' });
+        await updateInvoice({ ...invoice, status: 'paid' });
         await logActivity('invoice', invoice.id, 'paid', `Full payment received. Total: ${formatCurrency(newTotalPaid, invoice.currency)}`);
       } else {
-        updateInvoice({ ...invoice, status: 'partially_paid' });
+        await updateInvoice({ ...invoice, status: 'partially_paid' });
         await logActivity('invoice', invoice.id, 'partial_payment', `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(total - newTotalPaid, invoice.currency)}`);
       }
       toast.success('Payment recorded');
       setPaymentOpen(false);
       setPayAmount(''); setPayRef(''); setPayNotes('');
       fetchLogs('invoice', invoice.id).then(setActivityLogs);
-    } else {
-      toast.error('Failed to record payment');
     }
   };
 

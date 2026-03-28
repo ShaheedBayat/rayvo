@@ -84,8 +84,8 @@ export function useInvoices() {
     return null;
   }, [user]);
 
-  const updateInvoice = useCallback(async (invoice: Invoice) => {
-    const { error } = await supabase.from('invoices').update({
+  const updateInvoice = useCallback(async (invoice: Invoice): Promise<Invoice | null> => {
+    const { data, error } = await supabase.from('invoices').update({
       invoice_number: invoice.invoiceNumber,
       company_id: invoice.companyId || null,
       client_name: invoice.clientName,
@@ -98,8 +98,13 @@ export function useInvoices() {
       status: invoice.status,
       due_date: invoice.dueDate,
       share_token: invoice.shareToken || null,
-    }).eq('id', invoice.id);
-    if (!error) setInvoices(prev => prev.map(i => i.id === invoice.id ? invoice : i));
+    }).eq('id', invoice.id).select().single();
+    if (!error && data) {
+      const updated = mapInvoice(data);
+      setInvoices(prev => prev.map(i => i.id === invoice.id ? updated : i));
+      return updated;
+    }
+    return null;
   }, []);
 
   const softDeleteInvoice = useCallback(async (id: string) => {
