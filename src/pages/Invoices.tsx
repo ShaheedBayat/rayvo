@@ -34,6 +34,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   overdue: { label: 'Overdue', className: 'bg-overdue/10 text-overdue border-overdue/20' },
   voided: { label: 'Voided', className: 'bg-destructive/10 text-destructive border-destructive/20' },
   partially_paid: { label: 'Partially Paid', className: 'bg-info/10 text-info border-info/20' },
+  credited: { label: 'Credited', className: 'bg-info/10 text-info border-info/20' },
 };
 
 function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => Promise<void>; canManage: boolean }) {
