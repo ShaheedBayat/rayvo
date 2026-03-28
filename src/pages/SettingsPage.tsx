@@ -182,7 +182,8 @@ export default function SettingsPage() {
               <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="viewer">Viewer</SelectItem>
               </SelectContent>
             </Select>
             <Button size="sm" onClick={handleInvite}><Plus className="mr-1 h-3 w-3" /> Invite</Button>
