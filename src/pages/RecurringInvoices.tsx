@@ -226,8 +226,7 @@ export default function RecurringInvoices() {
     setPaymentTerms(''); setSelectedCustomer(null); setOutstandingBalance(0);
     setFrequency('monthly'); setDayOfMonth(1);
     setItems([makeDefaultItem()]);
-    const d = new Date(); d.setMonth(d.getMonth() + 1); d.setDate(1);
-    setNextRunDate(d.toISOString().split('T')[0]);
+    setNextRunDate(computeNextRunDate('monthly', 1));
     const dd = new Date(); dd.setDate(dd.getDate() + 30);
     setDueDate(dd.toISOString().split('T')[0]);
   };
