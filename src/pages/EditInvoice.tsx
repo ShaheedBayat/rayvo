@@ -154,9 +154,21 @@ export default function EditInvoice() {
       notes,
       dueDate,
     };
-    await updateInvoice(updated);
-    toast.success('Invoice updated!');
-    navigate(`/invoices/${invoice.id}`);
+
+    await safeExecuteAction({
+      actionName: 'Update invoice',
+      actionFn: () => updateInvoice(updated),
+      verifyFn: async (result) => {
+        const { data } = await supabase
+          .from('invoices')
+          .select('id, updated_at')
+          .eq('id', result.id)
+          .maybeSingle();
+        return !!data;
+      },
+      successMessage: 'Invoice updated!',
+      onSuccess: () => navigate(`/invoices/${invoice.id}`),
+    });
   };
 
   return (

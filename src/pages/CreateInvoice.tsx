@@ -172,14 +172,12 @@ export default function CreateInvoice() {
       toast.error('Please add a company first in the Companies section.');
       return;
     }
-    // Credit limit enforcement
     if (selectedCustomer && selectedCustomer.creditLimit > 0 && creditLimitExceeded) {
       if (selectedCustomer.blockOnCreditLimit) {
         toast.error('Customer has exceeded credit limit. Cannot create invoice.');
         return;
       }
     }
-    // Force 0% tax if not VAT registered
     const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
     const invoice: Invoice = {
       id: uuidv4(),
@@ -196,13 +194,21 @@ export default function CreateInvoice() {
       createdAt: new Date().toISOString(),
       dueDate,
     };
-    const created = await addInvoice(invoice);
-    if (created) {
-      toast.success('Invoice created!');
-      navigate(`/invoices/${created.id}`);
-    } else {
-      toast.error('Failed to create invoice');
-    }
+
+    await safeExecuteAction({
+      actionName: 'Create invoice',
+      actionFn: () => addInvoice(invoice),
+      verifyFn: async (created) => {
+        const { data } = await supabase
+          .from('invoices')
+          .select('id')
+          .eq('id', created.id)
+          .maybeSingle();
+        return !!data;
+      },
+      successMessage: 'Invoice created!',
+      onSuccess: (created) => navigate(`/invoices/${created.id}`),
+    });
   };
 
   if (!permissions.loading && !permissions.canCreateInvoice) {
