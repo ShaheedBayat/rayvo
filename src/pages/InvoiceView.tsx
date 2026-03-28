@@ -41,6 +41,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   paid: { label: 'Paid', className: 'bg-success/10 text-success border-success/20' },
   voided: { label: 'Voided', className: 'bg-destructive/10 text-destructive border-destructive/20' },
   partially_paid: { label: 'Partially Paid', className: 'bg-warning/10 text-warning border-warning/20' },
+  credited: { label: 'Credited', className: 'bg-info/10 text-info border-info/20' },
 };
 
 export default function InvoiceView() {
