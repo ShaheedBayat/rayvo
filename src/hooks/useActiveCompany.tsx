@@ -69,31 +69,14 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
     const superAdmin = profile?.is_super_admin ?? false;
     setIsSuperAdmin(superAdmin);
 
-    let companyData: any[] = [];
+    // RLS on companies now enforces has_company_access, so a simple select
+    // returns only companies the user belongs to (or all for super admins).
+    const { data } = await supabase
+      .from('companies')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    if (superAdmin) {
-      // Super admins see all companies
-      const { data } = await supabase.from('companies').select('*').order('created_at', { ascending: false });
-      companyData = data || [];
-    } else {
-      // Regular users: only companies they belong to via company_users
-      const { data: memberships } = await supabase
-        .from('company_users')
-        .select('company_id')
-        .eq('user_id', user.id);
-
-      if (memberships && memberships.length > 0) {
-        const companyIds = memberships.map(m => m.company_id);
-        const { data } = await supabase
-          .from('companies')
-          .select('*')
-          .in('id', companyIds)
-          .order('created_at', { ascending: false });
-        companyData = data || [];
-      }
-    }
-
-    setCompanies(companyData.map(mapCompany));
+    setCompanies((data || []).map(mapCompany));
     setLoading(false);
   }, [user]);
 
