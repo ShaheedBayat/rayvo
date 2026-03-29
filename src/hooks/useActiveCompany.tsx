@@ -134,6 +134,7 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
     <ActiveCompanyContext.Provider value={{
       activeCompany, activeCompanyId, companies, switchCompany,
       refetchCompanies: fetchCompanies, loading, isSuperAdmin, companyRole,
+      dataReady: !loading,
     }}>
       {children}
     </ActiveCompanyContext.Provider>
