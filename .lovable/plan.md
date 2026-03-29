@@ -1,47 +1,27 @@
 
 
-# Generate ChatGPT Context Prompt for RayVo Project
+## Problem
 
-## What this does
-Creates a comprehensive text document that captures every aspect of the RayVo invoicing application — architecture, database schema, business logic, RBAC, edge functions, UI structure, and design decisions — so ChatGPT can serve as a "second brain" for the project.
+You restored the frontend code to yesterday's commit, but **database migrations are permanent** — they don't revert with code. Today's migrations changed the RLS policies on the `companies` table. The current `companies_select` policy uses `is_super_admin(auth.uid())`, which checks `profiles.is_super_admin`. If your superuser profiles don't have `is_super_admin = true`, the SELECT returns zero companies, so the dropdown is empty and you see nothing.
 
-## Deliverable
-A markdown file at `/mnt/documents/rayvo-chatgpt-context.md` containing:
+## Root Cause
 
-1. **Project Overview** — App name, tech stack (React + Vite + TypeScript + Tailwind + Supabase), purpose (South African invoicing SaaS)
+The `is_super_admin` flag is set by a trigger (`check_super_admin_on_profile`) that fires on INSERT. But your profiles were created **before** this trigger existed, so `is_super_admin` is `false`.
 
-2. **Complete Database Schema** — All 20+ tables with columns, types, defaults, RLS policies, and relationships
+## Fix (1 database migration, no frontend changes)
 
-3. **Database Functions & Triggers** — `generate_invoice_number()`, `generate_quote_number()`, `generate_credit_note_number()`, `has_role()`, `handle_new_user()`, `soft_delete_invoice()`, `unblock_user()`, `update_updated_at_column()`
+**Single migration** to backfill the `is_super_admin` flag for the three superuser accounts:
 
-4. **Authentication & RBAC** — Three roles (admin/staff/viewer), permission matrix, `usePermissions` hook logic, default role assignment on signup
+```sql
+UPDATE public.profiles
+SET is_super_admin = true
+WHERE user_id IN (
+  SELECT id FROM auth.users
+  WHERE email IN ('shaheedbayat1@gmail.com', 'mo@rayn.co.za', 'owencrowie@gmail.com')
+);
+```
 
-5. **Core Business Logic**:
-   - Invoice lifecycle (draft → approved → sent → paid/voided)
-   - Smart totals calculation (`calculateSmartTotals`) with VAT inclusive/exclusive modes
-   - Invoice numbering (company-scoped counters, INV-00001 format)
-   - Soft deletion with rate-limiting (3 deletes in 5 min = account block)
-   - Payment tracking with overpayment warnings and status auto-recalculation
+This ensures the `is_super_admin()` function returns `true` for superusers, which makes the `companies_select` RLS policy grant access to all companies. The company dropdown and all data will then appear correctly.
 
-6. **Recurring Invoices** — Template-only model, edge function generation, next_run_date calculation, duplicate prevention
-
-7. **Edge Functions** — All 6 functions with their full logic: `process-recurring-invoices`, `send-invoice-email`, `send-overdue-reminders`, `invite-team-member`, `payfast-checkout`, `payfast-notify`
-
-8. **Frontend Architecture**:
-   - All routes and page components
-   - AppLayout with collapsible sidebar, mobile drawer, company switcher
-   - Key hooks: `useAuth`, `useActiveCompany`, `useInvoices`, `useCustomers`, `useProducts`, `usePayments`, `useExpenses`, `useRecurringInvoices`, `useTaxRates`, `usePermissions`, `useGlobalSettings`, `useTeam`, `useReminderSettings`, `useBrandingThemes`, `useCreditNotes`, `useQuotes`, `useVatLedger`, `useAttachments`
-
-9. **VAT System** — Registration toggle, inclusive/exclusive pricing, per-line tax rates, VAT ledger entries, VAT report page
-
-10. **Features Inventory** — Customers (with contacts, billing/delivery addresses), Products & Services, Quotes, Credit Notes, Expenses with categories, Customer Statements, Branding Themes, File Attachments, Online Payments (PayFast), Team Invites, Overdue Reminders, Reports (P&L, cash flow, CSV export)
-
-11. **Type Definitions** — Complete `Invoice`, `Company`, `InvoiceItem`, `Currency` types
-
-12. **Secrets & Configuration** — Available secrets (RESEND_API_KEY, etc.), storage buckets (attachments), Supabase config
-
-## Technical approach
-- Read remaining key files to capture all details
-- Compile into a single structured markdown document
-- Write to `/mnt/documents/rayvo-chatgpt-context.md`
+No frontend code changes are needed — the restored code already has the company switcher and superuser logic.
 
