@@ -33,6 +33,7 @@ import Expenses from "./pages/Expenses";
 import VatReport from "./pages/VatReport";
 import RecurringInvoiceForm from "./pages/RecurringInvoiceForm";
 import ActivityLog from "./pages/ActivityLog";
+import Onboarding from "./pages/Onboarding";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
