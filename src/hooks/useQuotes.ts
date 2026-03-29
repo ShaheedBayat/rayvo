@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 import type { InvoiceItem, Currency } from '@/types/invoice';
 
 export interface Quote {
