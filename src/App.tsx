@@ -33,6 +33,7 @@ import Expenses from "./pages/Expenses";
 import VatReport from "./pages/VatReport";
 import RecurringInvoiceForm from "./pages/RecurringInvoiceForm";
 import ActivityLog from "./pages/ActivityLog";
+import Onboarding from "./pages/Onboarding";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
@@ -45,21 +46,14 @@ const ProtectedRoute = React.forwardRef<HTMLDivElement, { children: React.ReactN
 });
 ProtectedRoute.displayName = 'ProtectedRoute';
 
-/** Guard that ensures user has company access */
+/** Guard that ensures user has company access — redirects to onboarding if none */
 function CompanyRequired({ children }: { children: React.ReactNode }) {
-  const { companies, loading, isSuperAdmin, companyRole } = useActiveCompany();
+  const { companies, loading, isSuperAdmin } = useActiveCompany();
   
   if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
   
   if (!isSuperAdmin && companies.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center space-y-2">
-          <p className="text-lg font-semibold text-destructive">No Company Access</p>
-          <p className="text-muted-foreground text-sm">You are not assigned to any company. Contact an administrator.</p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/onboarding" replace />;
   }
   
   return <>{children}</>;
@@ -116,6 +110,7 @@ const App = () => (
             <ActiveCompanyProvider>
             <Routes>
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/public/invoice/:id" element={<PublicInvoice />} />
               <Route path="/" element={<ProtectedRoute><CompanyRequired><Overview /></CompanyRequired></ProtectedRoute>} />
               <Route path="/invoices" element={<ProtectedRoute><CompanyRequired><Invoices /></CompanyRequired></ProtectedRoute>} />
