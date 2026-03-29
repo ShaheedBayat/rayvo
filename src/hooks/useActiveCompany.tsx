@@ -33,6 +33,7 @@ const ActiveCompanyContext = createContext<ActiveCompanyContextType>({
   loading: true,
   isSuperAdmin: false,
   companyRole: null,
+  dataReady: false,
 });
 
 function mapCompany(row: any): Company {
