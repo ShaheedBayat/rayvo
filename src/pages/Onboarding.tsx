@@ -34,7 +34,9 @@ export default function Onboarding() {
 
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.from('companies').insert({
+      // Step 1: Create company
+      console.log('[Onboarding] Creating company…');
+      const { data: company, error: companyError } = await supabase.from('companies').insert({
         name: name.trim(),
         email: email.trim() || user.email || '',
         address: '',
@@ -46,20 +48,49 @@ export default function Onboarding() {
         pricing_mode: isVatRegistered ? 'exclusive' : 'inclusive',
       }).select('id').single();
 
-      if (error) throw error;
+      if (companyError || !company) {
+        console.error('[Onboarding] Company creation failed:', companyError);
+        toast.error(companyError?.message || 'Failed to create company');
+        return;
+      }
+      console.log('[Onboarding] Company created:', company.id);
 
-      // Link user as admin
-      await supabase.from('company_users').insert({
-        company_id: data.id,
+      // Step 2: Link user as admin
+      const { error: linkError } = await supabase.from('company_users').insert({
+        company_id: company.id,
         user_id: user.id,
         role: 'admin',
       });
 
-      localStorage.setItem('activeCompanyId', data.id);
+      if (linkError) {
+        console.error('[Onboarding] User linking failed:', linkError);
+        toast.error('Failed to assign user to company');
+        return;
+      }
+      console.log('[Onboarding] User linked as admin');
+
+      // Step 3: Verify the link exists
+      const { data: membership } = await supabase
+        .from('company_users')
+        .select('id')
+        .eq('company_id', company.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!membership) {
+        console.error('[Onboarding] Verification failed — membership not found');
+        toast.error('Company setup incomplete. Please try again.');
+        return;
+      }
+      console.log('[Onboarding] Verified membership:', membership.id);
+
+      // Step 4: Set context and redirect
+      localStorage.setItem('activeCompanyId', company.id);
       await refetchCompanies();
       toast.success('Company created successfully');
       navigate('/', { replace: true });
     } catch (err: any) {
+      console.error('[Onboarding] Unexpected error:', err);
       toast.error(err.message || 'Failed to create company');
     } finally {
       setSubmitting(false);
