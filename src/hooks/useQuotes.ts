@@ -40,18 +40,21 @@ function mapQuote(row: any): Quote {
 
 export function useQuotes() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchQuotes = useCallback(async () => {
     if (!user) { setQuotes([]); setLoading(false); return; }
-    const { data, error } = await supabase
+    let query = supabase
       .from('quotes')
       .select('*')
       .order('created_at', { ascending: false });
+    if (activeCompanyId) query = query.eq('company_id', activeCompanyId);
+    const { data, error } = await query;
     if (!error && data) setQuotes(data.map(mapQuote));
     setLoading(false);
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   useEffect(() => { fetchQuotes(); }, [fetchQuotes]);
 

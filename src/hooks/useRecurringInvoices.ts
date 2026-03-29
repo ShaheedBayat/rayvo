@@ -46,18 +46,21 @@ function mapRecurring(row: any): RecurringInvoice {
 
 export function useRecurringInvoices() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [recurring, setRecurring] = useState<RecurringInvoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     if (!user) { setRecurring([]); setLoading(false); return; }
-    const { data, error } = await supabase
+    let query = supabase
       .from('recurring_invoices')
       .select('*')
       .order('created_at', { ascending: false });
+    if (activeCompanyId) query = query.eq('company_id', activeCompanyId);
+    const { data, error } = await query;
     if (!error && data) setRecurring(data.map(mapRecurring));
     setLoading(false);
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 

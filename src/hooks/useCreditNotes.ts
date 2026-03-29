@@ -42,19 +42,22 @@ function mapCreditNote(row: any): CreditNote {
 
 export function useCreditNotes() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchCreditNotes = useCallback(async () => {
     if (!user) { setCreditNotes([]); setLoading(false); return; }
-    const { data, error } = await supabase
+    let query = supabase
       .from('credit_notes')
       .select('*')
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
+    if (activeCompanyId) query = query.eq('company_id', activeCompanyId);
+    const { data, error } = await query;
     if (!error && data) setCreditNotes(data.map(mapCreditNote));
     setLoading(false);
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   useEffect(() => { fetchCreditNotes(); }, [fetchCreditNotes]);
 
