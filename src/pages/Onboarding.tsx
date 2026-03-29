@@ -170,6 +170,17 @@ export default function Onboarding() {
               {submitting ? 'Creating…' : 'Create Company'}
               {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
+
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate('/auth', { replace: true });
+              }}
+            >
+              ← Back to Sign In
+            </Button>
           </CardContent>
         </Card>
       </div>
