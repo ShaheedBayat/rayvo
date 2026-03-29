@@ -46,13 +46,23 @@ const ProtectedRoute = React.forwardRef<HTMLDivElement, { children: React.ReactN
 });
 ProtectedRoute.displayName = 'ProtectedRoute';
 
-/** Guard that ensures user has company access — redirects to onboarding if none */
+/** Guard that ensures user has company access — redirects to onboarding only after data is fully loaded */
 function CompanyRequired({ children }: { children: React.ReactNode }) {
-  const { companies, loading, isSuperAdmin } = useActiveCompany();
+  const { companies, loading, isSuperAdmin, dataReady } = useActiveCompany();
   
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
+  // CRITICAL: Do NOT route until async fetch is complete
+  if (loading || !dataReady) {
+    return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
+  }
   
-  if (!isSuperAdmin && companies.length === 0) {
+  // Superusers bypass company requirement
+  if (isSuperAdmin) {
+    return <>{children}</>;
+  }
+  
+  // Only redirect to onboarding if data is loaded AND user truly has no companies
+  if (companies.length === 0) {
+    console.log('[CompanyRequired] No companies found after data loaded, redirecting to onboarding');
     return <Navigate to="/onboarding" replace />;
   }
   
