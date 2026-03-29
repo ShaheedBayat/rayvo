@@ -46,21 +46,14 @@ const ProtectedRoute = React.forwardRef<HTMLDivElement, { children: React.ReactN
 });
 ProtectedRoute.displayName = 'ProtectedRoute';
 
-/** Guard that ensures user has company access */
+/** Guard that ensures user has company access — redirects to onboarding if none */
 function CompanyRequired({ children }: { children: React.ReactNode }) {
-  const { companies, loading, isSuperAdmin, companyRole } = useActiveCompany();
+  const { companies, loading, isSuperAdmin } = useActiveCompany();
   
   if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
   
   if (!isSuperAdmin && companies.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center space-y-2">
-          <p className="text-lg font-semibold text-destructive">No Company Access</p>
-          <p className="text-muted-foreground text-sm">You are not assigned to any company. Contact an administrator.</p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/onboarding" replace />;
   }
   
   return <>{children}</>;
