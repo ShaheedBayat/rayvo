@@ -67,24 +67,30 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   const fetchCompanies = useCallback(async () => {
     if (!user) { setCompanies([]); setLoading(false); return; }
 
-    // Check if super admin
+    // Step 1: Check superuser by email (frontend-only, fast)
+    const emailIsSuperuser = SUPERUSER_EMAILS.includes(user.email?.toLowerCase() || '');
+    console.log('[ActiveCompany] user loaded:', user.email);
+    console.log('[ActiveCompany] is superuser:', emailIsSuperuser);
+
+    // Also check DB flag
     const { data: profile } = await supabase
       .from('profiles')
       .select('is_super_admin')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const superAdmin = profile?.is_super_admin ?? false;
+    const superAdmin = emailIsSuperuser || (profile?.is_super_admin ?? false);
     setIsSuperAdmin(superAdmin);
 
-    // RLS on companies now enforces has_company_access, so a simple select
-    // returns only companies the user belongs to (or all for super admins).
+    // Fetch companies (RLS returns only accessible ones)
     const { data } = await supabase
       .from('companies')
       .select('*')
       .order('created_at', { ascending: false });
 
-    setCompanies((data || []).map(mapCompany));
+    const mapped = (data || []).map(mapCompany);
+    setCompanies(mapped);
+    console.log('[ActiveCompany] company found:', mapped.length > 0, '| count:', mapped.length);
     setLoading(false);
   }, [user]);
 
