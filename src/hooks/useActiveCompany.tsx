@@ -4,6 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import type { Company } from '@/types/invoice';
 
+const SUPERUSER_EMAILS = [
+  'shaheedbayat1@gmail.com',
+  'mo@rayn.co.za',
+  'owencrowie@gmail.com',
+];
+
 type CompanyRole = 'admin' | 'staff' | 'viewer' | null;
 
 interface ActiveCompanyContextType {
@@ -15,6 +21,7 @@ interface ActiveCompanyContextType {
   loading: boolean;
   isSuperAdmin: boolean;
   companyRole: CompanyRole;
+  dataReady: boolean;
 }
 
 const ActiveCompanyContext = createContext<ActiveCompanyContextType>({
