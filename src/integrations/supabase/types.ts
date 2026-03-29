@@ -1386,7 +1386,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_company_admin: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_superuser_email: { Args: never; Returns: boolean }
       soft_delete_invoice: { Args: { p_invoice_id: string }; Returns: Json }
       unblock_user: { Args: { p_user_id: string }; Returns: boolean }
     }
