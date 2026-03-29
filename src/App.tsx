@@ -38,44 +38,95 @@ import { toast } from "sonner";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ children }, _ref) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
-  if (!user) return <Navigate to="/auth" replace />;
-  return <>{children}</>;
-});
-ProtectedRoute.displayName = 'ProtectedRoute';
+const LoadingScreen = () => (
+  <div className="flex min-h-screen items-center justify-center">
+    <p className="text-muted-foreground">Loading...</p>
+  </div>
+);
 
-/** Guard that ensures user has company access — redirects to onboarding only after data is fully loaded */
-function CompanyRequired({ children }: { children: React.ReactNode }) {
-  const { companies, loading, isSuperAdmin, dataReady } = useActiveCompany();
-  
-  // CRITICAL: Do NOT route until async fetch is complete
-  if (loading || !dataReady) {
-    return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
-  }
-  
-  // Superusers bypass company requirement
-  if (isSuperAdmin) {
-    return <>{children}</>;
-  }
-  
-  // Only redirect to onboarding if data is loaded AND user truly has no companies
-  if (companies.length === 0) {
-    console.log('[CompanyRequired] No companies found after data loaded, redirecting to onboarding');
-    return <Navigate to="/onboarding" replace />;
-  }
-  
+/**
+ * ProtectedRoute — requires authenticated user.
+ * Waits for auth to load before making any decision.
+ */
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
 
-const AuthRoute = React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(({ children }, _ref) => {
+/**
+ * CompanyRequired — ensures user belongs to a company.
+ * RULES:
+ *   1. Wait for ALL data (auth + companies) before routing
+ *   2. Superusers ALWAYS bypass — never see onboarding
+ *   3. If user has ≥1 company → proceed
+ *   4. If user has 0 companies → redirect to onboarding
+ */
+function CompanyRequired({ children }: { children: React.ReactNode }) {
+  const { companies, loading, isSuperAdmin, dataReady } = useActiveCompany();
+
+  // WAIT — do not route until company data is fully loaded
+  if (loading || !dataReady) {
+    return <LoadingScreen />;
+  }
+
+  // SUPERUSER — always into app, no onboarding ever
+  if (isSuperAdmin) {
+    console.log('[CompanyRequired] Superuser — bypassing company check');
+    return <>{children}</>;
+  }
+
+  // HAS COMPANIES — proceed into app
+  if (companies.length > 0) {
+    return <>{children}</>;
+  }
+
+  // NO COMPANIES — redirect to onboarding
+  console.log('[CompanyRequired] No companies found, redirecting to onboarding');
+  return <Navigate to="/onboarding" replace />;
+}
+
+/**
+ * OnboardingGuard — prevents access to onboarding if user already has companies.
+ * RULES:
+ *   1. Wait for data before deciding
+ *   2. Superusers → redirect to app (never see onboarding)
+ *   3. Has companies → redirect to app
+ *   4. No companies → show onboarding
+ */
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
+  const { companies, loading, isSuperAdmin, dataReady } = useActiveCompany();
+
+  if (loading || !dataReady) {
+    return <LoadingScreen />;
+  }
+
+  // Superusers never see onboarding
+  if (isSuperAdmin) {
+    console.log('[OnboardingGuard] Superuser — redirecting to app');
+    return <Navigate to="/" replace />;
+  }
+
+  // User already has companies — no onboarding
+  if (companies.length > 0) {
+    console.log('[OnboardingGuard] User has companies — redirecting to app');
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+/**
+ * AuthRoute — shown only to unauthenticated users.
+ * If already logged in → redirect to app.
+ */
+function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
+  if (loading) return <LoadingScreen />;
   if (user) return <Navigate to="/" replace />;
   return <>{children}</>;
-});
-AuthRoute.displayName = 'AuthRoute';
+}
 
 /** Admin-only route guard */
 function AdminRoute({ children }: { children: React.ReactNode }) {
