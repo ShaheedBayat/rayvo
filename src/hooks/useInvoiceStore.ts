@@ -43,19 +43,22 @@ function mapInvoice(row: any): Invoice {
 
 export function useInvoices() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchInvoices = useCallback(async () => {
     if (!user) { setInvoices([]); setLoading(false); return; }
-    const { data, error } = await supabase
+    let query = supabase
       .from('invoices')
       .select('*')
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
+    if (activeCompanyId) query = query.eq('company_id', activeCompanyId);
+    const { data, error } = await query;
     if (!error && data) setInvoices(data.map(mapInvoice));
     setLoading(false);
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
