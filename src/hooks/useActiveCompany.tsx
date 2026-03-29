@@ -17,7 +17,7 @@ interface ActiveCompanyContextType {
   activeCompanyId: string | null;
   companies: Company[];
   switchCompany: (id: string) => void;
-  refetchCompanies: () => void;
+  refetchCompanies: () => Promise<void>;
   loading: boolean;
   isSuperAdmin: boolean;
   companyRole: CompanyRole;
@@ -29,7 +29,7 @@ const ActiveCompanyContext = createContext<ActiveCompanyContextType>({
   activeCompanyId: null,
   companies: [],
   switchCompany: () => {},
-  refetchCompanies: () => {},
+  refetchCompanies: async () => {},
   loading: true,
   isSuperAdmin: false,
   companyRole: null,
@@ -67,36 +67,41 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   const fetchCompanies = useCallback(async () => {
     if (!user) { setCompanies([]); setLoading(false); return; }
 
-    // Step 1: Check superuser by email (frontend-only, fast)
     const emailIsSuperuser = SUPERUSER_EMAILS.includes(user.email?.toLowerCase() || '');
-    console.log('[ActiveCompany] user loaded:', user.email);
-    console.log('[ActiveCompany] is superuser:', emailIsSuperuser);
+    setIsSuperAdmin(emailIsSuperuser);
 
-    // Also check DB flag
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_super_admin')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    const superAdmin = emailIsSuperuser || (profile?.is_super_admin ?? false);
-    setIsSuperAdmin(superAdmin);
-
-    // Fetch companies (RLS returns only accessible ones)
-    const { data } = await supabase
+    // Fetch companies (RLS handles visibility)
+    const { data, error } = await supabase
       .from('companies')
       .select('*')
       .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error('[ActiveCompany] fetch error:', error.message);
+    }
+
     const mapped = (data || []).map(mapCompany);
     setCompanies(mapped);
-    console.log('[ActiveCompany] company found:', mapped.length > 0, '| count:', mapped.length);
+
+    // Validate activeCompanyId against fetched list
+    const storedId = localStorage.getItem('activeCompanyId');
+    const validId = mapped.find(c => c.id === storedId)?.id || mapped[0]?.id || null;
+    
+    if (validId !== storedId) {
+      if (validId) {
+        localStorage.setItem('activeCompanyId', validId);
+      } else {
+        localStorage.removeItem('activeCompanyId');
+      }
+    }
+    setActiveCompanyId(validId);
+
     setLoading(false);
   }, [user]);
 
   useEffect(() => { fetchCompanies(); }, [fetchCompanies]);
 
-  const activeCompany = companies.find(c => c.id === activeCompanyId) || companies[0] || null;
+  const activeCompany = companies.find(c => c.id === activeCompanyId) || null;
 
   // Fetch the user's role for the active company
   useEffect(() => {
@@ -113,14 +118,6 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
         setCompanyRole((data?.role as CompanyRole) || null);
       });
   }, [user, activeCompany?.id, isSuperAdmin]);
-
-  // Sync localStorage when activeCompany resolves
-  useEffect(() => {
-    if (!loading && activeCompany && activeCompanyId !== activeCompany.id) {
-      setActiveCompanyId(activeCompany.id);
-      localStorage.setItem('activeCompanyId', activeCompany.id);
-    }
-  }, [loading, activeCompany, activeCompanyId]);
 
   const switchCompany = (id: string) => {
     if (id !== activeCompanyId) {
