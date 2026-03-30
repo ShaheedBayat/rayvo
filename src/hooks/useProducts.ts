@@ -79,7 +79,13 @@ export function useProducts() {
       sell_tax_rate: product.sellTaxRate,
       status: product.status,
     }).select().single();
-    if (!error && data) {
+    if (error) {
+      if (error.code === '23505' && error.message?.includes('products_company_code_unique')) {
+        throw new Error(`A product with code "${product.code}" already exists`);
+      }
+      throw error;
+    }
+    if (data) {
       const mapped = mapProduct(data);
       setProducts(prev => [mapped, ...prev]);
       return mapped;

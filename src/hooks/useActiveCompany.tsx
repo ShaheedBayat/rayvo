@@ -127,11 +127,14 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // dataReady means auth is settled AND companies have been fetched
+  const dataReady = !loading && !!user;
+
   return (
     <ActiveCompanyContext.Provider value={{
       activeCompany, activeCompanyId, companies, switchCompany,
       refetchCompanies: fetchCompanies, loading, isSuperAdmin, companyRole,
-      dataReady: !loading,
+      dataReady,
     }}>
       {children}
     </ActiveCompanyContext.Provider>
