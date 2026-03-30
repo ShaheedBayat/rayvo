@@ -17,6 +17,7 @@ export type Database = {
       activity_log: {
         Row: {
           action: string
+          company_id: string | null
           created_at: string
           details: string | null
           entity_id: string
@@ -26,6 +27,7 @@ export type Database = {
         }
         Insert: {
           action: string
+          company_id?: string | null
           created_at?: string
           details?: string | null
           entity_id: string
@@ -35,6 +37,7 @@ export type Database = {
         }
         Update: {
           action?: string
+          company_id?: string | null
           created_at?: string
           details?: string | null
           entity_id?: string
@@ -42,7 +45,15 @@ export type Database = {
           id?: string
           owner_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       attachments: {
         Row: {
