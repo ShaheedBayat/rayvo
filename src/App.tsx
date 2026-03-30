@@ -63,10 +63,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
  *   4. If user has 0 companies → redirect to onboarding
  */
 function CompanyRequired({ children }: { children: React.ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
   const { companies, loading, isSuperAdmin, dataReady } = useActiveCompany();
 
-  // WAIT — do not route until company data is fully loaded
-  if (loading || !dataReady) {
+  // WAIT — do not route until BOTH auth and company data are fully loaded
+  if (authLoading || loading || !dataReady || !user) {
     return <LoadingScreen />;
   }
 
