@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { format, parseISO } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
 import { Activity, FileText, CreditCard, RefreshCw, Filter } from 'lucide-react';
@@ -41,16 +42,22 @@ const actionColors: Record<string, string> = {
 export default function ActivityLog() {
   const { user } = useAuth();
   const permissions = usePermissions();
+  const { activeCompanyId } = useActiveCompany();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [entityFilter, setEntityFilter] = useState<string>('all');
 
   const fetchLogs = useCallback(async () => {
-    if (!user) return;
+    if (!user || !activeCompanyId) {
+      setLogs([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     let query = supabase
       .from('activity_log')
       .select('*')
+      .eq('company_id', activeCompanyId)
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -60,7 +67,6 @@ export default function ActivityLog() {
 
     const { data, error } = await query;
     if (!error && data) {
-      // Fetch unique owner_ids to get display names
       const ownerIds = [...new Set(data.map(r => r.owner_id))];
       const { data: profiles } = await supabase
         .from('profiles')
@@ -80,7 +86,7 @@ export default function ActivityLog() {
       })));
     }
     setLoading(false);
-  }, [user, entityFilter]);
+  }, [user, activeCompanyId, entityFilter]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
