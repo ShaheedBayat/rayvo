@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveCompany } from '@/hooks/useActiveCompany';
 
 export interface ActivityEntry {
   id: string;
@@ -24,29 +25,32 @@ function mapEntry(row: any): ActivityEntry {
 
 export function useActivityLog() {
   const { user } = useAuth();
+  const { activeCompanyId } = useActiveCompany();
 
   const logActivity = useCallback(async (entityType: string, entityId: string, action: string, details?: string) => {
-    if (!user) return;
+    if (!user || !activeCompanyId) return;
     await supabase.from('activity_log').insert({
       owner_id: user.id,
+      company_id: activeCompanyId,
       entity_type: entityType,
       entity_id: entityId,
       action,
       details: details || '',
     });
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   const fetchLogs = useCallback(async (entityType: string, entityId: string): Promise<ActivityEntry[]> => {
-    if (!user) return [];
+    if (!user || !activeCompanyId) return [];
     const { data, error } = await supabase
       .from('activity_log')
       .select('*')
       .eq('entity_type', entityType)
       .eq('entity_id', entityId)
+      .eq('company_id', activeCompanyId)
       .order('created_at', { ascending: false });
     if (!error && data) return data.map(mapEntry);
     return [];
-  }, [user]);
+  }, [user, activeCompanyId]);
 
   return { logActivity, fetchLogs };
 }
