@@ -381,7 +381,7 @@ export default function Companies() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-3">
           {filtered.map(c => {
             const isExpanded = expandedId === c.id;
             return (
