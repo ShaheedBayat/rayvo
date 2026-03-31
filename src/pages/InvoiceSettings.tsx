@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useBrandingThemes, type BrandingTheme, getDefaultTheme } from '@/hooks/useBrandingThemes';
 import BrandingThemeEditor from '@/components/branding/BrandingThemeEditor';
+import TemplateLibrary from '@/components/branding/TemplateLibrary';
+import TemplateExportImport from '@/components/branding/TemplateExportImport';
+import AILayoutSuggestions from '@/components/branding/AILayoutSuggestions';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, MoreHorizontal, Pencil, Copy, Star, Trash2, ArrowLeft,
-  FileText, CreditCard, Bell, Settings2,
+  FileText, CreditCard, Bell, Settings2, LayoutGrid, Sparkles, ArrowUpDown,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -14,10 +17,13 @@ import {
 import { toast } from 'sonner';
 
 const tabs = [
-  { id: 'themes', label: 'Branding Themes', icon: FileText },
+  { id: 'themes', label: 'My Themes', icon: FileText },
+  { id: 'library', label: 'Template Library', icon: LayoutGrid },
+  { id: 'ai', label: 'AI Assistant', icon: Sparkles },
+  { id: 'export', label: 'Import / Export', icon: ArrowUpDown },
   { id: 'defaults', label: 'Default Settings', icon: Settings2 },
   { id: 'payments', label: 'Payment Services', icon: CreditCard },
-  { id: 'reminders', label: 'Invoice Reminders', icon: Bell },
+  { id: 'reminders', label: 'Reminders', icon: Bell },
 ];
 
 function ThemeCard({ theme, onEdit, onDuplicate, onSetDefault, onDelete }: {
@@ -69,7 +75,6 @@ function ThemeCard({ theme, onEdit, onDuplicate, onSetDefault, onDelete }: {
         </DropdownMenu>
       </div>
 
-      {/* Preview strip */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
         <div className="flex justify-between">
           <span>Page</span><span className="font-medium text-foreground">{theme.pageSize}</span>
@@ -83,15 +88,8 @@ function ThemeCard({ theme, onEdit, onDuplicate, onSetDefault, onDelete }: {
         <div className="flex justify-between">
           <span>Payment</span><span className="font-medium text-foreground capitalize">{theme.paymentService === 'none' ? '—' : theme.paymentService}</span>
         </div>
-        <div className="flex justify-between col-span-2">
-          <span>Titles</span>
-          <span className="font-medium text-foreground truncate ml-2">
-            {theme.documentTitles.draft_invoice}, {theme.documentTitles.credit_note}…
-          </span>
-        </div>
       </div>
 
-      {/* Color + Logo strip */}
       <div className="mt-4 flex items-center gap-2">
         <div className="flex gap-1.5">
           <div className="h-5 w-5 rounded-full border" style={{ backgroundColor: theme.primaryColor }} title="Primary" />
@@ -111,6 +109,41 @@ export default function InvoiceSettings() {
   const [activeTab, setActiveTab] = useState('themes');
   const [editingTheme, setEditingTheme] = useState<BrandingTheme | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleApplyPreset = async (themeData: Partial<BrandingTheme>) => {
+    const result = await addTheme(themeData);
+    if (result) {
+      toast.success(`Template "${themeData.name}" added to your themes`);
+      setActiveTab('themes');
+    } else {
+      toast.error('Failed to create theme from template');
+    }
+  };
+
+  const handleImport = async (themeData: Partial<BrandingTheme>) => {
+    const result = await addTheme(themeData);
+    if (result) {
+      toast.success(`Imported "${themeData.name}"`);
+      setActiveTab('themes');
+    } else {
+      toast.error('Failed to import theme');
+    }
+  };
+
+  const handleAISuggestion = async (updates: Partial<BrandingTheme>) => {
+    // Apply to the default theme or first theme
+    const target = themes.find(t => t.isDefault) || themes[0];
+    if (!target) {
+      toast.error('Create a theme first before applying AI suggestions');
+      return;
+    }
+    const ok = await updateTheme(target.id, updates);
+    if (ok) {
+      toast.success(`Applied AI suggestions to "${target.name}"`);
+    } else {
+      toast.error('Failed to apply suggestions');
+    }
+  };
 
   // Full-screen editor mode
   if (editingTheme || isCreating) {
@@ -142,16 +175,19 @@ export default function InvoiceSettings() {
           <ArrowLeft className="h-4 w-4" /> Settings
         </a>
         <span className="text-muted-foreground/40">/</span>
-        <h1 className="text-xl font-semibold">Invoice Settings</h1>
+        <h1 className="text-xl font-semibold">Document Builder</h1>
+        <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+          Super Template Builder
+        </Badge>
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex items-center gap-1 border-b border-border/50">
+      <div className="mb-6 flex items-center gap-1 border-b border-border/50 overflow-x-auto">
         {tabs.map(t => (
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === t.id ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -164,13 +200,11 @@ export default function InvoiceSettings() {
       {activeTab === 'themes' && (
         <>
           <div className="mb-6 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {themes.length} branding theme{themes.length !== 1 ? 's' : ''}. Each theme controls how your documents look in PDF and online views.
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {themes.length} theme{themes.length !== 1 ? 's' : ''}. Each controls how your documents render in PDF and online views.
+            </p>
             <Button size="sm" className="gap-1.5 rounded-lg" onClick={() => setIsCreating(true)}>
-              <Plus className="h-4 w-4" /> New Branding Theme
+              <Plus className="h-4 w-4" /> New Theme
             </Button>
           </div>
 
@@ -179,11 +213,16 @@ export default function InvoiceSettings() {
               <FileText className="h-10 w-10 text-muted-foreground/30" />
               <h3 className="mt-4 text-lg font-medium">No branding themes yet</h3>
               <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">
-                Create your first branding theme to control how your invoices, quotes, and statements look.
+                Create your first theme or pick one from the Template Library.
               </p>
-              <Button className="mt-6 gap-1.5" onClick={() => setIsCreating(true)}>
-                <Plus className="h-4 w-4" /> Create your first theme
-              </Button>
+              <div className="mt-6 flex gap-2">
+                <Button className="gap-1.5" onClick={() => setIsCreating(true)}>
+                  <Plus className="h-4 w-4" /> Create Theme
+                </Button>
+                <Button variant="outline" className="gap-1.5" onClick={() => setActiveTab('library')}>
+                  <LayoutGrid className="h-4 w-4" /> Browse Library
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -212,6 +251,25 @@ export default function InvoiceSettings() {
             </div>
           )}
         </>
+      )}
+
+      {activeTab === 'library' && (
+        <TemplateLibrary onApplyPreset={handleApplyPreset} />
+      )}
+
+      {activeTab === 'ai' && (
+        <div className="max-w-2xl">
+          <AILayoutSuggestions
+            currentTheme={themes.find(t => t.isDefault) || themes[0] || null}
+            onApplySuggestion={handleAISuggestion}
+          />
+        </div>
+      )}
+
+      {activeTab === 'export' && (
+        <div className="max-w-2xl">
+          <TemplateExportImport themes={themes} onImport={handleImport} />
+        </div>
       )}
 
       {activeTab === 'defaults' && (
