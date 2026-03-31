@@ -381,7 +381,7 @@ export default function Companies() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-3">
           {filtered.map(c => {
             const isExpanded = expandedId === c.id;
             return (
@@ -389,32 +389,31 @@ export default function Companies() {
                 key={c.id}
                 className={cn(
                   "rounded-lg border bg-card overflow-hidden transition-all",
-                  isExpanded && "ring-1 ring-primary/20"
+                  isExpanded && "md:col-span-3 ring-1 ring-primary/20"
                 )}
               >
-                {/* Collapsed header - clickable */}
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/30 transition-colors"
+                  className="flex items-center justify-between px-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-colors"
                   onClick={() => toggleExpand(c.id)}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     {c.logo ? (
-                      <img src={c.logo} alt={c.name} className="h-10 w-10 rounded object-contain" />
+                      <img src={c.logo} alt={c.name} className="h-8 w-8 rounded object-contain shrink-0" />
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded bg-accent">
-                        <Building2 className="h-5 w-5 text-accent-foreground" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded bg-accent shrink-0">
+                        <Building2 className="h-4 w-4 text-accent-foreground" />
                       </div>
                     )}
-                    <div>
-                      <h3 className="font-medium">{c.name}</h3>
-                      <p className="text-xs text-muted-foreground">{c.email}</p>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-medium truncate">{c.name}</h3>
+                      <p className="text-[11px] text-muted-foreground truncate">{c.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
                         deleteCompany(c.id);
@@ -430,7 +429,6 @@ export default function Companies() {
                   </div>
                 </div>
 
-                {/* Expanded edit form */}
                 {isExpanded && (
                   <div className="border-t bg-muted/20">
                     <CompanyEditPanel
