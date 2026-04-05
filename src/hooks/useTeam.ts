@@ -97,6 +97,12 @@ export function useTeam() {
     return !error;
   }, []);
 
+  const revokeInvite = useCallback(async (id: string) => {
+    const { error } = await supabase.from('team_invites').update({ status: 'revoked' }).eq('id', id);
+    if (!error) setInvites(prev => prev.map(i => i.id === id ? { ...i, status: 'revoked' } : i));
+    return !error;
+  }, []);
+
   const updateMemberRole = useCallback(async (userId: string, newRole: string) => {
     if (!activeCompanyId) return false;
     const { error } = await supabase
@@ -125,5 +131,5 @@ export function useTeam() {
     return false;
   }, [activeCompanyId]);
 
-  return { invites, members, loading, sendInvite, deleteInvite, updateMemberRole, removeMember, refetch: fetchTeam };
+  return { invites, members, loading, sendInvite, deleteInvite, revokeInvite, updateMemberRole, removeMember, refetch: fetchTeam };
 }
