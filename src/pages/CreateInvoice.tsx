@@ -67,6 +67,47 @@ export default function CreateInvoice() {
     return d.toISOString().split('T')[0];
   });
   const [taxRate, setTaxRate] = useState(dupState?.taxRate ?? defaultRate);
+
+  // Recurring toggle state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
+  const [dayOfMonth, setDayOfMonth] = useState(1);
+
+  const computeNextRunDate = (freq: string, dom: number): string => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (freq === 'weekly') {
+      const d = new Date(today);
+      d.setDate(d.getDate() + 7);
+      return d.toISOString().split('T')[0];
+    }
+    if (freq === 'yearly') {
+      const d = new Date(today);
+      d.setFullYear(d.getFullYear() + 1);
+      return d.toISOString().split('T')[0];
+    }
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const maxDayThis = new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1, 0).getDate();
+    const targetDayThis = Math.min(dom, maxDayThis);
+    const candidateThis = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), targetDayThis);
+    if (candidateThis > today) return candidateThis.toISOString().split('T')[0];
+    const nextMonth = new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1, 1);
+    const maxDayNext = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+    const targetDayNext = Math.min(dom, maxDayNext);
+    return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), targetDayNext).toISOString().split('T')[0];
+  };
+
+  const [nextRunDate, setNextRunDate] = useState(() => computeNextRunDate('monthly', 1));
+
+  const handleFrequencyChange = (newFreq: 'monthly' | 'weekly' | 'yearly') => {
+    setFrequency(newFreq);
+    setNextRunDate(computeNextRunDate(newFreq, dayOfMonth));
+  };
+  const handleDayOfMonthChange = (newDay: number) => {
+    setDayOfMonth(newDay);
+    setNextRunDate(computeNextRunDate(frequency, newDay));
+  };
+
   const [notes, setNotes] = useState(dupState?.notes || '');
   const makeDefaultItem = (): InvoiceItem => {
     const item: InvoiceItem = { id: uuidv4(), description: '', quantity: 0, unitPrice: 0 };
