@@ -13,6 +13,7 @@ export interface Permissions {
   canEditInvoice: (status: string) => boolean;
   canDeleteInvoice: boolean;
   canVoidInvoice: boolean;
+  canSendInvoice: boolean;
   canRecordPayment: boolean;
 
   // Recurring
@@ -67,6 +68,7 @@ export function usePermissions(): Permissions {
     },
     canDeleteInvoice: isAdmin,
     canVoidInvoice: isAdmin,
+    canSendInvoice: isAdmin,
     canRecordPayment: isAdmin || isStaff,
 
     // Recurring
