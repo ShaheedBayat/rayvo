@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check, Users, Bell, Plus, Trash2 } from 'lucide-react';
+import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check, Users, Bell, Plus, Trash2, UserMinus } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import AppLayout from '@/components/AppLayout';
 import { useTheme, colorThemes } from '@/hooks/useTheme';
@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/formatDate';
 
@@ -21,7 +23,8 @@ export default function SettingsPage() {
   const permissions = usePermissions();
   const { theme, toggleTheme, colorTheme, setColorTheme } = useTheme();
   const { settings, saveSettings } = useGlobalSettings();
-  const { invites, members, sendInvite, deleteInvite } = useTeam();
+  const { invites, members, sendInvite, deleteInvite, updateMemberRole, removeMember } = useTeam();
+  const { user } = useAuth();
   const { settings: reminderSettings, saveSettings: saveReminders } = useReminderSettings();
   const [banking, setBanking] = useState('');
   const [terms, setTerms] = useState('');
