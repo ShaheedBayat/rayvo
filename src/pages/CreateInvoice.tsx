@@ -386,7 +386,45 @@ export default function CreateInvoice() {
               </div>
             </div>
 
-            <div className="rounded-lg border bg-card p-6 invoice-shadow" style={{ overflow: 'visible' }}>
+            {isRecurring && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-6 invoice-shadow">
+                <h2 className="text-sm font-medium uppercase tracking-wider text-primary mb-4 flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" /> Recurring Settings
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Frequency</Label>
+                    <Select value={frequency} onValueChange={v => handleFrequencyChange(v as any)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {frequency === 'monthly' && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Day of Month</Label>
+                      <Input type="number" min={1} max={28} value={dayOfMonth} onChange={e => handleDayOfMonthChange(parseInt(e.target.value) || 1)} className="h-9" />
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Start Date (Next Run)</Label>
+                    <Input type="date" value={nextRunDate} onChange={e => setNextRunDate(e.target.value)} className="h-9" />
+                    {nextRunDate && (() => {
+                      const days = Math.ceil((new Date(nextRunDate).getTime() - Date.now()) / 86400000);
+                      return days > 0 ? (
+                        <p className="text-xs text-muted-foreground mt-1">First invoice in {days} day{days !== 1 ? 's' : ''}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">Will run immediately</p>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            )}
+
               <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Line Items</h2>
               <InvoiceLineItems
                 items={items}
