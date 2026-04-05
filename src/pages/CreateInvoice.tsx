@@ -35,6 +35,7 @@ export default function CreateInvoice() {
   const location = useLocation();
   const permissions = usePermissions();
   const { addInvoice } = useInvoices();
+  const { addRecurring } = useRecurringInvoices();
   const { logActivity } = useActivityLog();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
