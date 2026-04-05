@@ -261,19 +261,9 @@ export default function Overview() {
                           {formatCurrency(total, inv.currency)}
                         </span>
                         <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${
-                            inv.status === 'paid'
-                              ? 'bg-success/10 text-success'
-                              : isOverdue
-                              ? 'bg-overdue/10 text-overdue'
-                              : inv.status === 'sent'
-                              ? 'bg-warning/10 text-warning'
-                              : inv.status === 'partially_paid'
-                              ? 'bg-info/10 text-info'
-                              : 'bg-muted text-muted-foreground'
-                          }`}
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium capitalize`}
                         >
-                          {isOverdue ? 'Overdue' : inv.status === 'sent' ? 'Awaiting' : inv.status === 'partially_paid' ? 'Partial' : inv.status}
+                          <StatusBadge status={isOverdue ? 'overdue' : inv.status === 'partially_paid' ? 'partially_paid' : inv.status} />
                         </span>
                       </div>
                     </Link>

@@ -397,7 +397,7 @@ export default function CreditNotes() {
                     <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{new Date(cn.createdAt).toLocaleDateString()}</td>
                     <td className="px-4 py-3.5 text-right mono font-medium">{formatCurrency(total, cn.currency)}</td>
                     <td className="px-4 py-3.5 text-center">
-                      <Badge variant="outline" className={`${cfg.className} text-[11px]`}>{cfg.label}</Badge>
+                      <StatusBadge status={cn.status} />
                     </td>
                     <td className="px-4 py-3.5">
                       <DropdownMenu>
