@@ -261,11 +261,7 @@ export default function Overview() {
                         <span className="mono text-sm font-medium">
                           {formatCurrency(total, inv.currency)}
                         </span>
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium capitalize`}
-                        >
-                          <StatusBadge status={isOverdue ? 'overdue' : inv.status === 'partially_paid' ? 'partially_paid' : inv.status} />
-                        </span>
+                        <StatusBadge status={isOverdue ? 'overdue' : inv.status} />
                       </div>
                     </Link>
                   );
