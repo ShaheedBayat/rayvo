@@ -7,14 +7,16 @@ import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
+import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import AppLayout from '@/components/AppLayout';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -33,6 +35,7 @@ export default function CreateInvoice() {
   const location = useLocation();
   const permissions = usePermissions();
   const { addInvoice } = useInvoices();
+  const { addRecurring } = useRecurringInvoices();
   const { logActivity } = useActivityLog();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
@@ -64,6 +67,47 @@ export default function CreateInvoice() {
     return d.toISOString().split('T')[0];
   });
   const [taxRate, setTaxRate] = useState(dupState?.taxRate ?? defaultRate);
+
+  // Recurring toggle state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
+  const [dayOfMonth, setDayOfMonth] = useState(1);
+
+  const computeNextRunDate = (freq: string, dom: number): string => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (freq === 'weekly') {
+      const d = new Date(today);
+      d.setDate(d.getDate() + 7);
+      return d.toISOString().split('T')[0];
+    }
+    if (freq === 'yearly') {
+      const d = new Date(today);
+      d.setFullYear(d.getFullYear() + 1);
+      return d.toISOString().split('T')[0];
+    }
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const maxDayThis = new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1, 0).getDate();
+    const targetDayThis = Math.min(dom, maxDayThis);
+    const candidateThis = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), targetDayThis);
+    if (candidateThis > today) return candidateThis.toISOString().split('T')[0];
+    const nextMonth = new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1, 1);
+    const maxDayNext = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+    const targetDayNext = Math.min(dom, maxDayNext);
+    return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), targetDayNext).toISOString().split('T')[0];
+  };
+
+  const [nextRunDate, setNextRunDate] = useState(() => computeNextRunDate('monthly', 1));
+
+  const handleFrequencyChange = (newFreq: 'monthly' | 'weekly' | 'yearly') => {
+    setFrequency(newFreq);
+    setNextRunDate(computeNextRunDate(newFreq, dayOfMonth));
+  };
+  const handleDayOfMonthChange = (newDay: number) => {
+    setDayOfMonth(newDay);
+    setNextRunDate(computeNextRunDate(frequency, newDay));
+  };
+
   const [notes, setNotes] = useState(dupState?.notes || '');
   const makeDefaultItem = (): InvoiceItem => {
     const item: InvoiceItem = { id: uuidv4(), description: '', quantity: 0, unitPrice: 0 };
@@ -183,41 +227,68 @@ export default function CreateInvoice() {
       }
     }
     setSaving(true);
-    const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
-    const invoice: Invoice = {
-      id: uuidv4(),
-      invoiceNumber: '',
-      companyId,
-      clientName,
-      clientEmail,
-      clientAddress,
-      currency,
-      items: finalItems,
-      taxRate: isVatRegistered ? taxRate : 0,
-      notes,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      dueDate,
-    };
 
-    await safeExecuteAction({
-      actionName: 'Create invoice',
-      actionFn: () => addInvoice(invoice),
-      verifyFn: async (created) => {
-        const { data } = await supabase
-          .from('invoices')
-          .select('id')
-          .eq('id', created.id)
-          .maybeSingle();
-        return !!data;
-      },
-      successMessage: `Invoice created successfully`,
-      onSuccess: async (created) => {
-        await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
-        toast.success(`Invoice ${created.invoiceNumber} created successfully`);
-        navigate(`/invoices/${created.id}`);
-      },
-    });
+    if (!isRecurring) {
+      const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
+      const invoice: Invoice = {
+        id: uuidv4(),
+        invoiceNumber: '',
+        companyId,
+        clientName,
+        clientEmail,
+        clientAddress,
+        currency,
+        items: finalItems,
+        taxRate: isVatRegistered ? taxRate : 0,
+        notes,
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        dueDate,
+      };
+
+      await safeExecuteAction({
+        actionName: 'Create invoice',
+        actionFn: () => addInvoice(invoice),
+        verifyFn: async (created) => {
+          const { data } = await supabase
+            .from('invoices')
+            .select('id')
+            .eq('id', created.id)
+            .maybeSingle();
+          return !!data;
+        },
+        successMessage: `Invoice created successfully`,
+        onSuccess: async (created) => {
+          await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
+          toast.success(`Invoice ${created.invoiceNumber} created successfully`);
+          navigate(`/invoices/${created.id}`);
+        },
+      });
+    } else {
+      const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
+      const result = await addRecurring({
+        companyId,
+        clientName,
+        clientEmail,
+        clientAddress,
+        currency,
+        items: finalItems,
+        taxRate: isVatRegistered ? taxRate : 0,
+        notes,
+        frequency,
+        dayOfMonth,
+        nextRunDate,
+        endDate: null,
+        isActive: true,
+      });
+      if (result) {
+        await logActivity('recurring', result.id, 'created', `Recurring template created for ${clientName} (${frequency})`);
+        toast.success('Recurring invoice template created');
+        navigate('/invoices?tab=recurring');
+      } else {
+        toast.error('Failed to create recurring invoice');
+      }
+    }
     setSaving(false);
   };
 
@@ -243,15 +314,26 @@ export default function CreateInvoice() {
       <form onSubmit={handleSubmit}>
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-semibold">New Invoice</h1>
+            <h1 className="text-2xl font-semibold">{isRecurring ? 'New Recurring Invoice' : 'New Invoice'}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : 'Fill in the details below to create a new invoice.'}
+              {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : isRecurring ? 'Set up automatic invoicing for this customer.' : 'Fill in the details below to create a new invoice.'}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 mr-2">
+              <Switch
+                id="recurring-toggle"
+                checked={isRecurring}
+                onCheckedChange={setIsRecurring}
+              />
+              <Label htmlFor="recurring-toggle" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Recurring
+              </Label>
+            </div>
             <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
             <Button type="submit" disabled={!canSave || saving}>
-              {saving ? 'Saving...' : 'Save as Draft'}
+              {saving ? 'Saving...' : isRecurring ? 'Create Recurring' : 'Save as Draft'}
             </Button>
           </div>
         </div>
@@ -303,6 +385,45 @@ export default function CreateInvoice() {
                 </div>
               </div>
             </div>
+
+            {isRecurring && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-6 invoice-shadow">
+                <h2 className="text-sm font-medium uppercase tracking-wider text-primary mb-4 flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" /> Recurring Settings
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Frequency</Label>
+                    <Select value={frequency} onValueChange={v => handleFrequencyChange(v as any)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {frequency === 'monthly' && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Day of Month</Label>
+                      <Input type="number" min={1} max={28} value={dayOfMonth} onChange={e => handleDayOfMonthChange(parseInt(e.target.value) || 1)} className="h-9" />
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Start Date (Next Run)</Label>
+                    <Input type="date" value={nextRunDate} onChange={e => setNextRunDate(e.target.value)} className="h-9" />
+                    {nextRunDate && (() => {
+                      const days = Math.ceil((new Date(nextRunDate).getTime() - Date.now()) / 86400000);
+                      return days > 0 ? (
+                        <p className="text-xs text-muted-foreground mt-1">First invoice in {days} day{days !== 1 ? 's' : ''}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">Will run immediately</p>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow" style={{ overflow: 'visible' }}>
               <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Line Items</h2>
