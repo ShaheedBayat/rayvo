@@ -398,7 +398,7 @@ export default function InvoiceView() {
                 <Edit className="mr-1.5 h-4 w-4" /> Edit
               </Button>
             )}
-            {(invoice.status === 'draft' || invoice.status === 'approved') && (
+            {permissions.canSendInvoice && (invoice.status === 'draft' || invoice.status === 'approved') && (
               <Button variant="outline" size="sm" onClick={() => setSendConfirmOpen(true)} className="text-info border-info/30 hover:bg-info/10">
                 <Send className="mr-1.5 h-4 w-4" /> Approve & Send
               </Button>
