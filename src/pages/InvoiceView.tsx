@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction, safeDeleteAction } from '@/lib/safeExecuteAction';
+import StatusBadge from '@/components/StatusBadge';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
@@ -382,7 +383,7 @@ export default function InvoiceView() {
           </button>
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold mono">{invoice.invoiceNumber}</h1>
-            <Badge variant="outline" className={`${config.className} text-[11px]`}>{config.label}</Badge>
+            <StatusBadge status={invoice.status} />
             {isLocked && (
               <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[11px] gap-1">
                 🔒 Finalized
