@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/AppLayout';
 
 export default function Overview() {
+  const [overdueDismissed, setOverdueDismissed] = useState(() => sessionStorage.getItem('overdue-dismissed') === 'true');
   const { invoices: allInvoices, loading } = useInvoices();
   const { companies } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
