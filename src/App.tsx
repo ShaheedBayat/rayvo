@@ -32,6 +32,7 @@ import Expenses from "./pages/Expenses";
 import VatReport from "./pages/VatReport";
 import RecurringInvoiceForm from "./pages/RecurringInvoiceForm";
 import ActivityLog from "./pages/ActivityLog";
+import Team from "./pages/Team";
 import Onboarding from "./pages/Onboarding";
 import { toast } from "sonner";
 
@@ -197,6 +198,7 @@ const App = () => (
               <Route path="/vat-report" element={<ProtectedRoute><CompanyRequired><VatReport /></CompanyRequired></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><CompanyRequired><AdminRoute><SettingsPage /></AdminRoute></CompanyRequired></ProtectedRoute>} />
               <Route path="/activity" element={<ProtectedRoute><CompanyRequired><AdminRoute><ActivityLog /></AdminRoute></CompanyRequired></ProtectedRoute>} />
+              <Route path="/team" element={<ProtectedRoute><CompanyRequired><AdminRoute><Team /></AdminRoute></CompanyRequired></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ActiveCompanyProvider>

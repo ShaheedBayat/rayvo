@@ -43,10 +43,17 @@ serve(async (req) => {
     }
 
     const { email, role } = await req.json();
+
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return new Response(JSON.stringify({ error: "Invalid email" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const resend = new Resend(RESEND_API_KEY);
 
     const { error } = await resend.emails.send({
-      from: "RayVo <invoices@resend.dev>",
+      from: "RayVo <noreply@notify.hivepayadmin.com>",
       to: [email],
       subject: "You've been invited to join RayVo",
       html: `
