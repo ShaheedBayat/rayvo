@@ -149,6 +149,42 @@ export default function Overview() {
         </p>
       </div>
 
+      {/* Overdue Alert Banner */}
+      {!overdueDismissed && overdue.length > 0 && (
+        <div
+          className="mb-6 flex items-center justify-between gap-4 rounded-xl px-5 py-4 animate-fade-in"
+          style={{ background: 'hsl(0 72% 51% / 0.08)', border: '1px solid hsl(0 72% 51% / 0.2)' }}
+        >
+          <div className="flex items-center gap-3">
+            <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:'hsl(0 72% 51%)', flexShrink:0 }} />
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'hsl(0 72% 35%)' }}>
+                {overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue
+              </p>
+              <p className="text-xs" style={{ color: 'hsl(0 72% 45%)' }}>
+                {formatMultiCurrency(overdueByCurrency)} outstanding past due date
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/invoices?status=overdue"
+              className="text-xs font-medium underline"
+              style={{ color: 'hsl(0 72% 35%)' }}
+            >
+              View overdue invoices
+            </Link>
+            <button
+              onClick={() => { setOverdueDismissed(true); sessionStorage.setItem('overdue-dismissed', 'true'); }}
+              className="text-sm leading-none"
+              style={{ color: 'hsl(0 72% 45%)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* KPI Stats */}
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
