@@ -9,7 +9,7 @@
      THEME 1: OCEAN — Clean & Professional (Default + Fallback)
      ============================================================ */
   :root {
-    --background: 192 30% 97%;
+    --background: 192 20% 94%;
     --foreground: 200 30% 8%;
     --card: 0 0% 100%;
     --card-foreground: 200 30% 8%;
@@ -49,8 +49,8 @@
     --theme-font: 'Inter', system-ui, sans-serif;
     --theme-heading-font: 'Inter', system-ui, sans-serif;
     --theme-card-radius: 0.5rem;
-    --theme-shadow: 0 1px 3px 0 hsl(192 30% 30% / 0.06), 0 1px 2px -1px hsl(192 30% 30% / 0.04);
-    --theme-shadow-lg: 0 10px 25px -3px hsl(192 30% 30% / 0.08), 0 4px 6px -4px hsl(192 30% 30% / 0.04);
+    --theme-shadow: 0 1px 4px 0 hsl(192 30% 20% / 0.10), 0 1px 2px -1px hsl(192 30% 20% / 0.06);
+    --theme-shadow-lg: 0 10px 25px -3px hsl(192 30% 20% / 0.12), 0 4px 6px -4px hsl(192 30% 20% / 0.07);
     --theme-heading-weight: 600;
     --theme-heading-tracking: -0.025em;
   }
