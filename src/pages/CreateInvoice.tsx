@@ -227,43 +227,44 @@ export default function CreateInvoice() {
       }
     }
     setSaving(true);
-    const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
-    const invoice: Invoice = {
-      id: uuidv4(),
-      invoiceNumber: '',
-      companyId,
-      clientName,
-      clientEmail,
-      clientAddress,
-      currency,
-      items: finalItems,
-      taxRate: isVatRegistered ? taxRate : 0,
-      notes,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      dueDate,
-    };
 
-    await safeExecuteAction({
-      actionName: 'Create invoice',
-      actionFn: () => addInvoice(invoice),
-      verifyFn: async (created) => {
-        const { data } = await supabase
-          .from('invoices')
-          .select('id')
-          .eq('id', created.id)
-          .maybeSingle();
-        return !!data;
-      },
-      successMessage: `Invoice created successfully`,
-      onSuccess: async (created) => {
-        await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
-        toast.success(`Invoice ${created.invoiceNumber} created successfully`);
-        navigate(`/invoices/${created.id}`);
-      },
-    });
+    if (!isRecurring) {
+      const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
+      const invoice: Invoice = {
+        id: uuidv4(),
+        invoiceNumber: '',
+        companyId,
+        clientName,
+        clientEmail,
+        clientAddress,
+        currency,
+        items: finalItems,
+        taxRate: isVatRegistered ? taxRate : 0,
+        notes,
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        dueDate,
+      };
+
+      await safeExecuteAction({
+        actionName: 'Create invoice',
+        actionFn: () => addInvoice(invoice),
+        verifyFn: async (created) => {
+          const { data } = await supabase
+            .from('invoices')
+            .select('id')
+            .eq('id', created.id)
+            .maybeSingle();
+          return !!data;
+        },
+        successMessage: `Invoice created successfully`,
+        onSuccess: async (created) => {
+          await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
+          toast.success(`Invoice ${created.invoiceNumber} created successfully`);
+          navigate(`/invoices/${created.id}`);
+        },
+      });
     } else {
-      // Save as recurring invoice
       const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
       const result = await addRecurring({
         companyId,
