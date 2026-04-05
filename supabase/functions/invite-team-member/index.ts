@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,18 +8,15 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
-      return new Response(JSON.stringify({ error: "API keys not configured" }), {
+    if (!RESEND_API_KEY) {
+      return new Response(JSON.stringify({ error: "RESEND_API_KEY not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -46,33 +44,31 @@ serve(async (req) => {
 
     const { email, role } = await req.json();
 
-    const response = await fetch(`${GATEWAY_URL}/emails`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": RESEND_API_KEY,
-      },
-      body: JSON.stringify({
-        from: "RayVo <noreply@notify.hivepayadmin.com>",
-        to: [email],
-        subject: "You've been invited to join RayVo",
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-            <h1 style="font-size: 22px; color: #1a1a1a;">Team Invitation</h1>
-            <p style="color: #444; line-height: 1.6;">You've been invited to join RayVo as a <strong>${role}</strong>.</p>
-            <p style="color: #444; line-height: 1.6;">Sign up or log in to accept the invitation.</p>
-            <p style="color: #999; font-size: 12px; margin-top: 30px;">Sent via RayVo</p>
-          </div>
-        `,
-      }),
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return new Response(JSON.stringify({ error: "Invalid email" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const resend = new Resend(RESEND_API_KEY);
+
+    const { error } = await resend.emails.send({
+      from: "RayVo <noreply@notify.hivepayadmin.com>",
+      to: [email],
+      subject: "You've been invited to join RayVo",
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
+          <h1 style="font-size: 22px; color: #1a1a1a;">Team Invitation</h1>
+          <p style="color: #444; line-height: 1.6;">You've been invited to join RayVo as a <strong>${role}</strong>.</p>
+          <p style="color: #444; line-height: 1.6;">Sign up or log in to accept the invitation.</p>
+          <p style="color: #999; font-size: 12px; margin-top: 30px;">Sent via RayVo</p>
+        </div>
+      `,
     });
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error("Email send error:", result);
-      return new Response(JSON.stringify({ error: result.message || "Failed to send email" }), {
+    if (error) {
+      console.error("Resend error:", error);
+      return new Response(JSON.stringify({ error: error.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
