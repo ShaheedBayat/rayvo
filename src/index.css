@@ -382,6 +382,10 @@
     letter-spacing: var(--theme-heading-tracking, -0.025em);
     font-family: var(--theme-heading-font, var(--theme-font, 'Inter', system-ui, sans-serif));
   }
+
+  h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em; line-height: 1.2; }
+  h2 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; }
+  h3 { font-size: 1rem; font-weight: 600; }
 }
 
 @layer utilities {

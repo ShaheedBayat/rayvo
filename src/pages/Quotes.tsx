@@ -113,8 +113,8 @@ export default function Quotes() {
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Quotes</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Create quotes and convert them to invoices.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Quotes</h1>
+          <p className="text-sm text-muted-foreground mt-1">Create quotes and convert them to invoices.</p>
         </div>
         <Button className="gap-1.5 rounded-lg" onClick={() => navigate('/quotes/new')}>
           <Plus className="h-4 w-4" /> New Quote

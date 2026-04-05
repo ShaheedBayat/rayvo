@@ -59,8 +59,8 @@ export default function Customers() {
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Customers</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage customer profiles, contacts, and sales defaults.
           </p>
         </div>
@@ -132,11 +132,11 @@ export default function Customers() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
-                  <th className="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Type</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Account #</th>
-                  <th className="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
+                   <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account #</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                   <th className="py-3 px-4 w-24" />
                 </tr>
               </thead>
