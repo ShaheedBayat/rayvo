@@ -42,7 +42,7 @@ export function useTeam() {
     
     const [inviteRes, membersRes] = await Promise.all([
       supabase.from('team_invites').select('*').order('invited_at', { ascending: false }),
-      supabase.from('company_users').select('user_id, role').eq('company_id', activeCompanyId),
+      supabase.from('company_users').select('user_id, role, created_at').eq('company_id', activeCompanyId),
     ]);
     
     if (inviteRes.data) setInvites(inviteRes.data.map(mapInvite));
@@ -59,6 +59,7 @@ export function useTeam() {
         userId: r.user_id,
         displayName: profileMap.get(r.user_id) || 'Unknown',
         role: r.role,
+        createdAt: r.created_at,
       })));
     } else {
       setMembers([]);
