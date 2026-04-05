@@ -262,6 +262,32 @@ export default function CreateInvoice() {
         navigate(`/invoices/${created.id}`);
       },
     });
+    } else {
+      // Save as recurring invoice
+      const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
+      const result = await addRecurring({
+        companyId,
+        clientName,
+        clientEmail,
+        clientAddress,
+        currency,
+        items: finalItems,
+        taxRate: isVatRegistered ? taxRate : 0,
+        notes,
+        frequency,
+        dayOfMonth,
+        nextRunDate,
+        endDate: null,
+        isActive: true,
+      });
+      if (result) {
+        await logActivity('recurring', result.id, 'created', `Recurring template created for ${clientName} (${frequency})`);
+        toast.success('Recurring invoice template created');
+        navigate('/invoices?tab=recurring');
+      } else {
+        toast.error('Failed to create recurring invoice');
+      }
+    }
     setSaving(false);
   };
 
@@ -287,15 +313,26 @@ export default function CreateInvoice() {
       <form onSubmit={handleSubmit}>
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-semibold">New Invoice</h1>
+            <h1 className="text-2xl font-semibold">{isRecurring ? 'New Recurring Invoice' : 'New Invoice'}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : 'Fill in the details below to create a new invoice.'}
+              {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : isRecurring ? 'Set up automatic invoicing for this customer.' : 'Fill in the details below to create a new invoice.'}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 mr-2">
+              <Switch
+                id="recurring-toggle"
+                checked={isRecurring}
+                onCheckedChange={setIsRecurring}
+              />
+              <Label htmlFor="recurring-toggle" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Recurring
+              </Label>
+            </div>
             <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
             <Button type="submit" disabled={!canSave || saving}>
-              {saving ? 'Saving...' : 'Save as Draft'}
+              {saving ? 'Saving...' : isRecurring ? 'Create Recurring' : 'Save as Draft'}
             </Button>
           </div>
         </div>
