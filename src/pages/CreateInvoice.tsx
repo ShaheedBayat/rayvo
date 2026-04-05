@@ -425,6 +425,7 @@ export default function CreateInvoice() {
               </div>
             )}
 
+            <div className="rounded-lg border bg-card p-6 invoice-shadow" style={{ overflow: 'visible' }}>
               <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Line Items</h2>
               <InvoiceLineItems
                 items={items}
