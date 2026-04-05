@@ -22,7 +22,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import AppLayout from '@/components/AppLayout';
-import StatusBadge from '@/components/StatusBadge';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 20;
@@ -153,7 +152,9 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
                   <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{formatDate(r.nextRunDate)}</td>
                   <td className="px-4 py-3.5 text-muted-foreground hidden md:table-cell">{r.lastGeneratedAt ? formatDate(r.lastGeneratedAt) : '—'}</td>
                   <td className="px-4 py-3.5 text-center">
-                    <StatusBadge status={r.isActive ? 'paid' : 'draft'} label={r.isActive ? 'Active' : 'Inactive'} />
+                    <Badge variant="outline" className={r.isActive ? 'bg-success/10 text-success border-success/20' : 'bg-muted text-muted-foreground'}>
+                      {r.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
                   </td>
                   <td className="px-4 py-3.5">
                     {canManage ? (
@@ -399,7 +400,9 @@ export default function Invoices() {
                               <span className={`mono font-medium ${inv.status === 'voided' ? 'line-through text-muted-foreground' : ''}`}>{formatCurrency((() => { const co = getCompany(inv.companyId); return calculateSmartTotals(inv.items, inv.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total; })(), inv.currency)}</span>
                             </td>
                             <td className="px-4 py-3.5 text-center">
-                              <StatusBadge status={isOverdue ? 'overdue' : inv.status} />
+                              <Badge variant="outline" className={`${config.className} text-[11px] capitalize`}>
+                                {isOverdue ? 'Overdue' : config.label}
+                              </Badge>
                             </td>
                             <td className="px-4 py-3.5">
                               <DropdownMenu>
@@ -459,7 +462,9 @@ export default function Invoices() {
                     <Link key={inv.id} to={`/invoices/${inv.id}`} className="block rounded-lg border bg-card p-4 invoice-shadow hover:bg-secondary/30 transition-colors">
                       <div className="flex items-center justify-between mb-2">
                         <span className="mono text-sm font-medium">{inv.invoiceNumber}</span>
-                        <StatusBadge status={isOverdue ? 'overdue' : inv.status} />
+                        <Badge variant="outline" className={`${config.className} text-[10px]`}>
+                          {isOverdue ? 'Overdue' : config.label}
+                        </Badge>
                       </div>
                       <div className="text-sm">{inv.clientName}</div>
                       <div className="flex items-center justify-between mt-2">

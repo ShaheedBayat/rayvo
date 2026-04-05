@@ -20,7 +20,6 @@ import type { Currency, InvoiceItem } from '@/types/invoice';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
-import StatusBadge from '@/components/StatusBadge';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
@@ -398,7 +397,7 @@ export default function CreditNotes() {
                     <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{new Date(cn.createdAt).toLocaleDateString()}</td>
                     <td className="px-4 py-3.5 text-right mono font-medium">{formatCurrency(total, cn.currency)}</td>
                     <td className="px-4 py-3.5 text-center">
-                      <StatusBadge status={cn.status} />
+                      <Badge variant="outline" className={`${cfg.className} text-[11px]`}>{cfg.label}</Badge>
                     </td>
                     <td className="px-4 py-3.5">
                       <DropdownMenu>

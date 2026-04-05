@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/AppLayout';
-import StatusBadge from '@/components/StatusBadge';
 
 export default function Overview() {
   const { invoices: allInvoices, loading } = useInvoices();
@@ -261,7 +260,21 @@ export default function Overview() {
                         <span className="mono text-sm font-medium">
                           {formatCurrency(total, inv.currency)}
                         </span>
-                        <StatusBadge status={isOverdue ? 'overdue' : inv.status} />
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${
+                            inv.status === 'paid'
+                              ? 'bg-success/10 text-success'
+                              : isOverdue
+                              ? 'bg-overdue/10 text-overdue'
+                              : inv.status === 'sent'
+                              ? 'bg-warning/10 text-warning'
+                              : inv.status === 'partially_paid'
+                              ? 'bg-info/10 text-info'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {isOverdue ? 'Overdue' : inv.status === 'sent' ? 'Awaiting' : inv.status === 'partially_paid' ? 'Partial' : inv.status}
+                        </span>
                       </div>
                     </Link>
                   );
