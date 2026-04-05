@@ -99,6 +99,14 @@ export default function Overview() {
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5);
 
+  const statBorders = [
+    '3px solid hsl(192 18% 75%)',
+    '3px solid hsl(38 92% 50%)',
+    '3px solid hsl(0 72% 51%)',
+    '3px solid hsl(152 56% 42%)',
+    '3px solid hsl(192 75% 36%)',
+  ];
+
   const stats = [
     { label: 'Draft', value: draft.length, icon: FileText, color: 'text-muted-foreground', bg: 'bg-muted' },
     { label: 'Awaiting Payment', value: sent.length, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
@@ -133,7 +141,7 @@ export default function Overview() {
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold">Sales Overview</h1>
+        <h1 className="text-3xl font-bold">Sales Overview</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           A snapshot of your invoicing activity.
         </p>
@@ -152,15 +160,15 @@ export default function Overview() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
-          {stats.map((s) => (
-            <div key={s.label} className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow hover:invoice-shadow-lg transition-shadow">
+          {stats.map((s, idx) => (
+            <div key={s.label} className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow" style={{ borderLeft: statBorders[idx] }}>
               <div className="flex items-center justify-between mb-2">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-md ${s.bg}`}>
-                  <s.icon className={`h-3.5 w-3.5 ${s.color}`} />
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.bg}`}>
+                  <s.icon className={`h-5 w-5 ${s.color}`} />
                 </div>
                 <ArrowUpRight className="h-3 w-3 text-muted-foreground/40" />
               </div>
-              <p className="text-xl font-semibold">{s.value}</p>
+              <p className="text-3xl font-bold">{s.value}</p>
               <p className="text-[11px] text-muted-foreground">{s.label}</p>
             </div>
           ))}
@@ -169,45 +177,45 @@ export default function Overview() {
 
       {/* Money summary */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow">
+        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow" style={{ borderLeft: '3px solid hsl(38 92% 50%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <Send className="h-3.5 w-3.5 text-warning" />
             <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
           </div>
-          <p className="text-lg font-semibold mono text-warning">
+          <p className="text-2xl font-bold mono text-warning">
             {formatMultiCurrency(outstandingByCurrency)}
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow">
+        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow" style={{ borderLeft: '3px solid hsl(152 56% 42%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             <p className="text-xs font-medium text-muted-foreground">Received</p>
           </div>
-          <p className="text-lg font-semibold mono text-success">
+          <p className="text-2xl font-bold mono text-success">
             {formatMultiCurrency(paidByCurrency)}
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow">
+        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <AlertCircle className="h-3.5 w-3.5 text-overdue" />
             <p className="text-xs font-medium text-muted-foreground">Overdue</p>
           </div>
-          <p className="text-lg font-semibold mono text-overdue">
+          <p className="text-2xl font-bold mono text-overdue">
             {formatMultiCurrency(overdueByCurrency)}
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
         </div>
-        <div className="rounded-xl border border-border/50 bg-card px-4 py-3 invoice-shadow">
+        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <Receipt className="h-3.5 w-3.5 text-destructive" />
             <p className="text-xs font-medium text-muted-foreground">Total Expenses</p>
           </div>
-          <p className="text-lg font-semibold mono text-destructive">
+          <p className="text-2xl font-bold mono text-destructive">
             {formatCurrency(expenses.reduce((sum, e) => sum + e.amount, 0), primaryCurrency)}
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{expenses.length} expense{expenses.length !== 1 ? 's' : ''} recorded</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{expenses.length} expense{expenses.length !== 1 ? 's' : ''} recorded</p>
         </div>
       </div>
 
@@ -231,7 +239,7 @@ export default function Overview() {
           ) : (
             <div className="rounded-xl border border-border/50 bg-card invoice-shadow">
               <div className="flex items-center justify-between p-5 pb-0">
-                <h2 className="text-sm font-semibold">Recent Invoices</h2>
+                <h2 className="text-base font-semibold">Recent Invoices</h2>
                 <Link to="/invoices" className="text-xs text-primary hover:underline">View all</Link>
               </div>
               <div className="p-3">
@@ -279,7 +287,7 @@ export default function Overview() {
         {/* Customers Owing Most */}
         <div className="lg:col-span-2">
           <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
-            <h2 className="text-sm font-semibold mb-4">Customers Owing Most</h2>
+            <h2 className="text-base font-semibold mb-4">Customers Owing Most</h2>
             {topOwing.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">No outstanding balances</p>
             ) : (
@@ -294,7 +302,7 @@ export default function Overview() {
                           {formatCurrency(customer.amount, customer.currency)}
                         </span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full bg-warning/70 transition-all duration-500"
                           style={{ width: `${percent}%` }}
