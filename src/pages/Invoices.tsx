@@ -22,6 +22,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import AppLayout from '@/components/AppLayout';
+import StatusBadge from '@/components/StatusBadge';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 20;

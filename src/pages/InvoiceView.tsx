@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction, safeDeleteAction } from '@/lib/safeExecuteAction';
+import StatusBadge from '@/components/StatusBadge';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },

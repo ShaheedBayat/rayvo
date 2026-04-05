@@ -20,6 +20,7 @@ import type { Currency, InvoiceItem } from '@/types/invoice';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
+import StatusBadge from '@/components/StatusBadge';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },

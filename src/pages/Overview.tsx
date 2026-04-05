@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/AppLayout';
+import StatusBadge from '@/components/StatusBadge';
 
 export default function Overview() {
   const { invoices: allInvoices, loading } = useInvoices();
