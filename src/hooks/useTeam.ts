@@ -16,6 +16,7 @@ export interface TeamMember {
   userId: string;
   displayName: string;
   role: string;
+  createdAt: string;
 }
 
 function mapInvite(row: any): TeamInvite {
