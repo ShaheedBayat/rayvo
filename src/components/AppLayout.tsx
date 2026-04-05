@@ -4,7 +4,7 @@ import raynLogo from '@/assets/rayn-logo.png';
 import {
   LayoutDashboard, FileText, Users, Package, Building2, BarChart3, Settings,
   Plus, LogOut, Sun, Moon, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
-  CreditCard, Receipt, FileCheck, Menu, X, Wallet, Activity,
+  CreditCard, Receipt, FileCheck, Menu, X, Wallet, Activity, UsersRound,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -121,6 +121,7 @@ function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean, ca
     ...(canManageCompanies ? [{ to: '/companies', label: 'Companies', icon: Building2 }] : []),
     { to: '/reports', label: 'Reports', icon: BarChart3 },
     { to: '/vat-report', label: 'VAT Report', icon: Receipt },
+    ...(canAccessSettings ? [{ to: '/team', label: 'Team', icon: UsersRound }] : []),
     ...(canAccessSettings ? [{ to: '/activity', label: 'Activity Log', icon: Activity }] : []),
     ...(canAccessSettings ? [{ to: '/settings', label: 'Settings', icon: Settings }] : []),
   ];
