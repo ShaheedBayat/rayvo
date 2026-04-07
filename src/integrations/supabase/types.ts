@@ -1289,6 +1289,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permission_overrides: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          overridden_by: string
+          permission_key: string
+          user_id: string
+          value: boolean
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          overridden_by: string
+          permission_key: string
+          user_id: string
+          value: boolean
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          overridden_by?: string
+          permission_key?: string
+          user_id?: string
+          value?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permission_overrides_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
