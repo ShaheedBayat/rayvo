@@ -11,7 +11,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Users, Trash2, Mail, Plus, Send, RefreshCw } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Users, Trash2, Mail, Plus, Send, RefreshCw, ChevronRight, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -21,6 +22,12 @@ const roleBadgeStyle = (role: string): React.CSSProperties => {
   return { background: 'hsl(0 0% 50% / 0.08)', color: 'hsl(0 0% 35%)', border: '1px solid hsl(0 0% 50% / 0.2)' };
 };
 
+const ownerBadgeStyle: React.CSSProperties = {
+  background: 'hsl(192 75% 36% / 0.08)',
+  color: 'hsl(192 75% 28%)',
+  border: '1px solid hsl(192 75% 36% / 0.2)',
+};
+
 const badgeBase: React.CSSProperties = { fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', textTransform: 'capitalize' as const };
 
 const getInitials = (name: string) => {
@@ -28,12 +35,39 @@ const getInitials = (name: string) => {
   return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
 };
 
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  admin: 'Full access, can manage team and settings',
+  staff: 'Can create invoices and record payments',
+  viewer: 'Read-only access to reports and data',
+};
+
+const permissionRows = [
+  ['Create invoices', true, true, false],
+  ['Send invoices', true, false, false],
+  ['Edit draft invoices', true, true, false],
+  ['Edit sent invoices', true, false, false],
+  ['Delete invoices', true, false, false],
+  ['Void invoices', true, false, false],
+  ['Record payments', true, true, false],
+  ['Create quotes', true, true, false],
+  ['Create credit notes', true, true, false],
+  ['Create customers', true, true, false],
+  ['Delete customers', true, false, false],
+  ['Create products', true, true, false],
+  ['Create expenses', true, true, false],
+  ['View reports', true, true, true],
+  ['Manage team members', true, false, false],
+  ['Change settings', true, false, false],
+  ['Manage companies', true, false, false],
+] as const;
+
 export default function Team() {
   const { user } = useAuth();
   const permissions = usePermissions();
   const { members, invites, loading, sendInvite, revokeInvite, updateMemberRole, removeMember } = useTeam();
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('staff');
+  const [matrixOpen, setMatrixOpen] = useState(false);
 
   const pendingInvites = invites.filter(i => i.status === 'pending');
 
@@ -46,7 +80,7 @@ export default function Team() {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     const ok = await updateMemberRole(userId, newRole);
-    if (ok) toast.success('Role updated');
+    if (ok) toast.success(`Role updated to ${newRole}`);
     else toast.error('Failed to update role');
   };
 
@@ -117,7 +151,12 @@ export default function Team() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium truncate">{m.displayName}</span>
-                          {isCurrentUser && <span className="text-xs text-muted-foreground">(You)</span>}
+                          {isCurrentUser && (
+                            <>
+                              <span className="text-xs text-muted-foreground">(You)</span>
+                              <span style={{ ...ownerBadgeStyle, ...badgeBase }}>Owner</span>
+                            </>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">Joined {formatDate(m.createdAt)}</p>
                       </div>
@@ -127,11 +166,16 @@ export default function Team() {
                       {!isCurrentUser && (
                         <>
                           <Select value={m.role} onValueChange={(val) => handleRoleChange(m.userId, val)}>
-                            <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="staff">Staff</SelectItem>
-                              <SelectItem value="viewer">Viewer</SelectItem>
+                              {Object.entries(ROLE_DESCRIPTIONS).map(([role, desc]) => (
+                                <SelectItem key={role} value={role}>
+                                  <div>
+                                    <span className="font-medium capitalize">{role}</span>
+                                    <p className="text-[11px] text-muted-foreground">{desc}</p>
+                                  </div>
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <AlertDialog>
@@ -222,6 +266,51 @@ export default function Team() {
         </div>
       </div>
 
+      {/* SECTION 2.5 — Role Permissions (collapsible) */}
+      <div className="rounded-xl border border-border/50 bg-card invoice-shadow mb-6 stagger-2">
+        <Collapsible open={matrixOpen} onOpenChange={setMatrixOpen}>
+          <CollapsibleTrigger className="flex items-center gap-3 p-5 w-full text-left hover:bg-secondary/30 rounded-xl transition-colors">
+            <Shield className="h-4 w-4 text-muted-foreground" />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base font-semibold">Role Permissions</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Not sure which role to assign? See what each role can do →</p>
+            </div>
+            <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${matrixOpen ? 'rotate-90' : ''}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-5 pb-5">
+              <div className="rounded-xl border border-border/50 overflow-hidden">
+                <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr className="bg-muted/30">
+                      <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Action</th>
+                      <th className="text-center px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin</th>
+                      <th className="text-center px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Staff</th>
+                      <th className="text-center px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Viewer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {permissionRows.map(([action, admin, staff, viewer], idx) => (
+                      <tr key={action as string} className={idx % 2 === 1 ? 'bg-muted/10' : ''}>
+                        <td className="px-4 py-2 text-sm">{action as string}</td>
+                        {[admin, staff, viewer].map((val, ci) => (
+                          <td key={ci} className="text-center px-4 py-2">
+                            {val
+                              ? <span style={{ color: 'hsl(152 56% 42%)' }} className="font-medium">✓</span>
+                              : <span style={{ color: 'hsl(200 15% 35%)', opacity: 0.4 }}>—</span>
+                            }
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+
       {/* SECTION 3 — Invite Form */}
       <div className="rounded-xl border border-border/50 bg-card invoice-shadow stagger-3">
         <div className="flex items-center gap-3 p-5 pb-0">
@@ -245,24 +334,14 @@ export default function Team() {
               <Select value={inviteRole} onValueChange={setInviteRole}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">
-                    <div>
-                      <span className="font-medium">Admin</span>
-                      <p className="text-[11px] text-muted-foreground">Full access, can manage team and settings</p>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="staff">
-                    <div>
-                      <span className="font-medium">Staff</span>
-                      <p className="text-[11px] text-muted-foreground">Can create invoices and record payments</p>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="viewer">
-                    <div>
-                      <span className="font-medium">Viewer</span>
-                      <p className="text-[11px] text-muted-foreground">Read-only access to all data</p>
-                    </div>
-                  </SelectItem>
+                  {Object.entries(ROLE_DESCRIPTIONS).map(([role, desc]) => (
+                    <SelectItem key={role} value={role}>
+                      <div>
+                        <span className="font-medium capitalize">{role}</span>
+                        <p className="text-[11px] text-muted-foreground">{desc}</p>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
