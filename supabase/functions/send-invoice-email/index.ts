@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { prepareTransactionalRecipient } from "../_shared/prepare-transactional-recipient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,6 +64,29 @@ serve(async (req) => {
     const errors: string[] = [];
     for (const email of emails) {
       const messageId = crypto.randomUUID();
+      const preparation = await prepareTransactionalRecipient(adminSupabase, email);
+
+      if (preparation.error) {
+        await adminSupabase.from("email_send_log").insert({
+          message_id: messageId,
+          template_name: "invoice-email",
+          recipient_email: email,
+          status: "failed",
+          error_message: preparation.error,
+        });
+        errors.push(email);
+        continue;
+      }
+
+      if (preparation.suppressed || !preparation.unsubscribeToken) {
+        await adminSupabase.from("email_send_log").insert({
+          message_id: messageId,
+          template_name: "invoice-email",
+          recipient_email: email,
+          status: "suppressed",
+        });
+        continue;
+      }
 
       await adminSupabase.from("email_send_log").insert({
         message_id: messageId,
@@ -84,6 +108,7 @@ serve(async (req) => {
           purpose: "transactional",
           label: "invoice-email",
           idempotency_key: `invoice-${invoiceNumber}-${email}`,
+          unsubscribe_token: preparation.unsubscribeToken,
           queued_at: new Date().toISOString(),
         },
       });
