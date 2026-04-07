@@ -308,61 +308,6 @@ export default function SettingsPage() {
       })(),
     },
     {
-      icon: Shield,
-      title: 'Permission Matrix',
-      description: 'What each role can do',
-      content: (() => {
-        const rows = [
-          ['Create invoices', true, true, false],
-          ['Send invoices', true, false, false],
-          ['Edit draft invoices', true, true, false],
-          ['Edit sent invoices', true, false, false],
-          ['Delete invoices', true, false, false],
-          ['Void invoices', true, false, false],
-          ['Record payments', true, true, false],
-          ['Create quotes', true, true, false],
-          ['Create credit notes', true, true, false],
-          ['Create customers', true, true, false],
-          ['Delete customers', true, false, false],
-          ['Create products', true, true, false],
-          ['Create expenses', true, true, false],
-          ['View reports', true, true, true],
-          ['Manage team members', true, false, false],
-          ['Change settings', true, false, false],
-          ['Manage companies', true, false, false],
-        ] as const;
-        return (
-          <div className="rounded-xl border border-border/50 overflow-hidden">
-            <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
-              <thead>
-                <tr className="bg-muted/30">
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Action</th>
-                  <th className="text-center px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin</th>
-                  <th className="text-center px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Staff</th>
-                  <th className="text-center px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Viewer</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(([action, admin, staff, viewer], idx) => (
-                  <tr key={action} className={idx % 2 === 1 ? 'bg-muted/10' : ''}>
-                    <td className="px-4 py-2 text-sm">{action}</td>
-                    {[admin, staff, viewer].map((val, ci) => (
-                      <td key={ci} className="text-center px-4 py-2">
-                        {val
-                          ? <span style={{ color: 'hsl(152 56% 42%)' }} className="font-medium">✓</span>
-                          : <span style={{ color: 'hsl(200 15% 35%)', opacity: 0.4 }}>—</span>
-                        }
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      })(),
-    },
-    {
       icon: Bell,
       title: 'Overdue Reminders',
       description: 'Automatically send email reminders when invoices are past due.',
