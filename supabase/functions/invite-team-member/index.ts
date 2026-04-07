@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { prepareTransactionalRecipient } from "../_shared/prepare-transactional-recipient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,6 +83,34 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const preparation = await prepareTransactionalRecipient(adminSupabase, email);
+    if (preparation.error) {
+      await adminSupabase.from("email_send_log").insert({
+        message_id: messageId,
+        template_name: "team-invite",
+        recipient_email: email,
+        status: "failed",
+        error_message: preparation.error,
+      });
+
+      return new Response(JSON.stringify({ error: "Failed to prepare invite email" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (preparation.suppressed || !preparation.unsubscribeToken) {
+      await adminSupabase.from("email_send_log").insert({
+        message_id: messageId,
+        template_name: "team-invite",
+        recipient_email: email,
+        status: "suppressed",
+      });
+
+      return new Response(JSON.stringify({ success: false, reason: "email_suppressed" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Log pending
     await adminSupabase.from("email_send_log").insert({
       message_id: messageId,
@@ -104,6 +133,7 @@ serve(async (req) => {
         purpose: "transactional",
         label: "team-invite",
         idempotency_key: idempotencyKey,
+        unsubscribe_token: preparation.unsubscribeToken,
         queued_at: new Date().toISOString(),
       },
     });
