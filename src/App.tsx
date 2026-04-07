@@ -34,6 +34,7 @@ import RecurringInvoiceForm from "./pages/RecurringInvoiceForm";
 import ActivityLog from "./pages/ActivityLog";
 import Team from "./pages/Team";
 import Onboarding from "./pages/Onboarding";
+import Unsubscribe from "./pages/Unsubscribe";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
@@ -199,6 +200,7 @@ const App = () => (
               <Route path="/settings" element={<ProtectedRoute><CompanyRequired><AdminRoute><SettingsPage /></AdminRoute></CompanyRequired></ProtectedRoute>} />
               <Route path="/activity" element={<ProtectedRoute><CompanyRequired><AdminRoute><ActivityLog /></AdminRoute></CompanyRequired></ProtectedRoute>} />
               <Route path="/team" element={<ProtectedRoute><CompanyRequired><AdminRoute><Team /></AdminRoute></CompanyRequired></ProtectedRoute>} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             </ActiveCompanyProvider>
