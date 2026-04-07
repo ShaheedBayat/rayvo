@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { useTeam } from '@/hooks/useTeam';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
+import { usePermissionOverrides } from '@/hooks/usePermissionOverrides';
 import { formatDate } from '@/lib/formatDate';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Users, Trash2, Mail, Plus, Send, RefreshCw, ChevronRight, Shield } from 'lucide-react';
+import { Users, Trash2, Mail, Plus, Send, RefreshCw, ChevronRight, ChevronDown, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -61,6 +63,175 @@ const permissionRows = [
   ['Manage companies', true, false, false],
 ] as const;
 
+// Permission groups for the override panel
+const PERMISSION_GROUPS = [
+  {
+    label: 'Invoices',
+    items: [
+      { key: 'canCreateInvoice', label: 'Create invoices' },
+      { key: 'canSendInvoice', label: 'Send & approve invoices' },
+      { key: 'canDeleteInvoice', label: 'Delete invoices' },
+      { key: 'canVoidInvoice', label: 'Void invoices' },
+      { key: 'canRecordPayment', label: 'Record payments' },
+    ],
+  },
+  {
+    label: 'Customers & Products',
+    items: [
+      { key: 'canCreateCustomer', label: 'Create customers' },
+      { key: 'canEditCustomer', label: 'Edit customers' },
+      { key: 'canDeleteCustomer', label: 'Delete customers' },
+      { key: 'canCreateProduct', label: 'Create products' },
+      { key: 'canEditProduct', label: 'Edit products' },
+      { key: 'canDeleteProduct', label: 'Delete products' },
+    ],
+  },
+  {
+    label: 'Expenses',
+    items: [
+      { key: 'canCreateExpense', label: 'Create expenses' },
+      { key: 'canEditExpense', label: 'Edit expenses' },
+      { key: 'canDeleteExpense', label: 'Delete expenses' },
+    ],
+  },
+  {
+    label: 'Reports & Settings',
+    items: [
+      { key: 'canViewReports', label: 'View reports' },
+      { key: 'canAccessSettings', label: 'Access settings' },
+      { key: 'canManageUsers', label: 'Manage team members' },
+      { key: 'canChangeVat', label: 'Change VAT settings' },
+    ],
+  },
+];
+
+function getRoleDefault(role: string, key: string): boolean {
+  const isAdmin = role === 'admin';
+  const isStaff = role === 'staff';
+  const defaults: Record<string, boolean> = {
+    canCreateInvoice: isAdmin || isStaff,
+    canSendInvoice: isAdmin,
+    canDeleteInvoice: isAdmin,
+    canVoidInvoice: isAdmin,
+    canRecordPayment: isAdmin || isStaff,
+    canCreateCustomer: isAdmin || isStaff,
+    canEditCustomer: isAdmin || isStaff,
+    canDeleteCustomer: isAdmin,
+    canCreateProduct: isAdmin || isStaff,
+    canEditProduct: isAdmin || isStaff,
+    canDeleteProduct: isAdmin,
+    canCreateExpense: isAdmin || isStaff,
+    canEditExpense: isAdmin || isStaff,
+    canDeleteExpense: isAdmin,
+    canViewReports: true,
+    canAccessSettings: isAdmin,
+    canManageUsers: isAdmin,
+    canChangeVat: isAdmin,
+  };
+  return defaults[key] ?? false;
+}
+
+function PermissionOverridePanel({
+  member,
+}: {
+  member: { userId: string; displayName: string; role: string };
+}) {
+  const { overrides, setOverride, resetOverrides } = usePermissionOverrides(member.userId);
+
+  const overrideMap: Record<string, boolean> = {};
+  overrides.forEach(o => { overrideMap[o.permissionKey] = o.value; });
+
+  const getValue = (key: string) =>
+    key in overrideMap ? overrideMap[key] : getRoleDefault(member.role, key);
+
+  const isOverridden = (key: string) =>
+    key in overrideMap && overrideMap[key] !== getRoleDefault(member.role, key);
+
+  const handleToggle = async (key: string, label: string, newVal: boolean) => {
+    const ok = await setOverride(member.userId, key, newVal);
+    if (ok) toast.success(`${label} ${newVal ? 'enabled' : 'disabled'} for ${member.displayName}`);
+    else toast.error('Failed to update permission');
+  };
+
+  const handleReset = async () => {
+    const ok = await resetOverrides(member.userId);
+    if (ok) toast.success(`Permissions reset to ${member.role} defaults for ${member.displayName}`);
+    else toast.error('Failed to reset permissions');
+  };
+
+  return (
+    <div
+      style={{
+        background: 'hsl(192 30% 97%)',
+        border: '1px solid hsl(192 18% 88%)',
+        borderRadius: '12px',
+        padding: '16px 20px',
+        marginTop: '8px',
+      }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold">{member.displayName}&apos;s permissions</h3>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 text-xs">
+              Reset to role defaults
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset permission overrides</AlertDialogTitle>
+              <AlertDialogDescription>
+                Reset all permission overrides for {member.displayName}? They will revert to standard {member.role} permissions.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleReset}>Reset</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      <div className="space-y-5">
+        {PERMISSION_GROUPS.map(group => (
+          <div key={group.label}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{group.label}</p>
+            <div className="space-y-1.5">
+              {group.items.map(item => {
+                const roleDefault = getRoleDefault(member.role, item.key);
+                const currentVal = getValue(item.key);
+                const overridden = isOverridden(item.key);
+
+                return (
+                  <div key={item.key} className="flex items-center justify-between py-1.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm">{item.label}</span>
+                      {overridden && (
+                        <span style={{
+                          width: '6px', height: '6px', borderRadius: '50%',
+                          background: 'hsl(38 92% 50%)', display: 'inline-block', marginLeft: '6px',
+                        }} />
+                      )}
+                      <span className="text-[11px] text-muted-foreground ml-2">
+                        (role default: {roleDefault ? 'ON' : 'OFF'})
+                      </span>
+                    </div>
+                    <Switch
+                      checked={currentVal}
+                      onCheckedChange={(val) => handleToggle(item.key, item.label, val)}
+                      className={overridden ? '[&[data-state=checked]]:bg-[hsl(192_75%_36%)]' : ''}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Team() {
   const { user } = useAuth();
   const permissions = usePermissions();
@@ -68,6 +239,7 @@ export default function Team() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('staff');
   const [matrixOpen, setMatrixOpen] = useState(false);
+  const [expandedMember, setExpandedMember] = useState<string | null>(null);
 
   const pendingInvites = invites.filter(i => i.status === 'pending');
 
@@ -100,6 +272,10 @@ export default function Team() {
     const result = await sendInvite(email, role);
     if (result) toast.success(`Invite resent to ${email}`);
     else toast.error('Failed to resend invite');
+  };
+
+  const toggleExpandMember = (userId: string) => {
+    setExpandedMember(prev => prev === userId ? null : userId);
   };
 
   return (
@@ -139,72 +315,89 @@ export default function Team() {
             <div className="space-y-1">
               {members.map(m => {
                 const isCurrentUser = user?.id === m.userId;
+                const isExpanded = expandedMember === m.userId;
                 return (
-                  <div key={m.userId} className="flex items-center justify-between rounded-lg px-3 py-3 hover:bg-secondary/40 transition-colors">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold"
-                        style={{ background: 'hsl(192 75% 36% / 0.1)', color: 'hsl(192 75% 36%)' }}
-                      >
-                        {getInitials(m.displayName)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate">{m.displayName}</span>
-                          {isCurrentUser && (
-                            <>
-                              <span className="text-xs text-muted-foreground">(You)</span>
-                              <span style={{ ...ownerBadgeStyle, ...badgeBase }}>Owner</span>
-                            </>
-                          )}
+                  <div key={m.userId}>
+                    <div
+                      className={`flex items-center justify-between rounded-lg px-3 py-3 transition-colors ${!isCurrentUser ? 'cursor-pointer hover:bg-secondary/40' : 'hover:bg-secondary/40'}`}
+                      onClick={!isCurrentUser ? () => toggleExpandMember(m.userId) : undefined}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {!isCurrentUser && (
+                          isExpanded
+                            ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                            : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        )}
+                        <div
+                          className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold"
+                          style={{ background: 'hsl(192 75% 36% / 0.1)', color: 'hsl(192 75% 36%)' }}
+                        >
+                          {getInitials(m.displayName)}
                         </div>
-                        <p className="text-xs text-muted-foreground">Joined {formatDate(m.createdAt)}</p>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium truncate">{m.displayName}</span>
+                            {isCurrentUser && (
+                              <>
+                                <span className="text-xs text-muted-foreground">(You)</span>
+                                <span style={{ ...ownerBadgeStyle, ...badgeBase }}>Owner</span>
+                              </>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Joined {formatDate(m.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5 shrink-0" onClick={e => e.stopPropagation()}>
+                        <span style={{ ...roleBadgeStyle(m.role), ...badgeBase }}>{m.role}</span>
+                        {!isCurrentUser && (
+                          <>
+                            <Select value={m.role} onValueChange={(val) => handleRoleChange(m.userId, val)}>
+                              <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(ROLE_DESCRIPTIONS).map(([role, desc]) => (
+                                  <SelectItem key={role} value={role}>
+                                    <div>
+                                      <span className="font-medium capitalize">{role}</span>
+                                      <p className="text-[11px] text-muted-foreground">{desc}</p>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove team member</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Remove <strong>{m.displayName}</strong> from this company? They will lose access immediately.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleRemove(m.userId, m.displayName)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <span style={{ ...roleBadgeStyle(m.role), ...badgeBase }}>{m.role}</span>
-                      {!isCurrentUser && (
-                        <>
-                          <Select value={m.role} onValueChange={(val) => handleRoleChange(m.userId, val)}>
-                            <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(ROLE_DESCRIPTIONS).map(([role, desc]) => (
-                                <SelectItem key={role} value={role}>
-                                  <div>
-                                    <span className="font-medium capitalize">{role}</span>
-                                    <p className="text-[11px] text-muted-foreground">{desc}</p>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Remove team member</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Remove <strong>{m.displayName}</strong> from this company? They will lose access immediately.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleRemove(m.userId, m.displayName)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Remove
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
-                      )}
-                    </div>
+                    {/* Expanded Permission Override Panel */}
+                    {!isCurrentUser && isExpanded && (
+                      <div className="px-3 pb-2">
+                        <PermissionOverridePanel member={{ userId: m.userId, displayName: m.displayName, role: m.role }} />
+                      </div>
+                    )}
                   </div>
                 );
               })}

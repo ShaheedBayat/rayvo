@@ -1,5 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export type CompanyRole = 'admin' | 'staff' | 'viewer';
 
@@ -8,7 +10,6 @@ export interface Permissions {
   loading: boolean;
   isSuperAdmin: boolean;
 
-  // Invoices
   canCreateInvoice: boolean;
   canEditInvoice: (status: string) => boolean;
   canDeleteInvoice: boolean;
@@ -16,10 +17,8 @@ export interface Permissions {
   canSendInvoice: boolean;
   canRecordPayment: boolean;
 
-  // Recurring
   canManageRecurring: boolean;
 
-  // Customers & Products
   canCreateCustomer: boolean;
   canEditCustomer: boolean;
   canDeleteCustomer: boolean;
@@ -27,75 +26,88 @@ export interface Permissions {
   canEditProduct: boolean;
   canDeleteProduct: boolean;
 
-  // Settings & Users
   canAccessSettings: boolean;
   canManageUsers: boolean;
   canChangeVat: boolean;
 
-  // Reports
   canViewReports: boolean;
 
-  // Companies
   canManageCompanies: boolean;
 
-  // Expenses
   canCreateExpense: boolean;
   canEditExpense: boolean;
   canDeleteExpense: boolean;
 }
 
 export function usePermissions(): Permissions {
-  const { companyRole, loading, isSuperAdmin } = useActiveCompany();
+  const { companyRole, loading, isSuperAdmin, activeCompanyId } = useActiveCompany();
+  const { user } = useAuth();
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!user?.id || !activeCompanyId) {
+      setOverrides({});
+      return;
+    }
+    const fetchOverrides = async () => {
+      const { data } = await supabase
+        .from('user_permission_overrides' as any)
+        .select('permission_key, value')
+        .eq('user_id', user.id)
+        .eq('company_id', activeCompanyId);
+      if (data) {
+        const map: Record<string, boolean> = {};
+        (data as any[]).forEach((r: any) => { map[r.permission_key] = r.value; });
+        setOverrides(map);
+      }
+    };
+    fetchOverrides();
+  }, [user?.id, activeCompanyId]);
 
   const role: CompanyRole = (companyRole as CompanyRole) || 'viewer';
-
   const isAdmin = isSuperAdmin || role === 'admin';
   const isStaff = role === 'staff';
+
+  const override = (key: string, defaultValue: boolean) =>
+    key in overrides ? overrides[key] : defaultValue;
 
   return useMemo(() => ({
     role,
     loading,
     isSuperAdmin,
 
-    // Invoices
-    canCreateInvoice: isAdmin || isStaff,
+    canCreateInvoice: override('canCreateInvoice', isAdmin || isStaff),
     canEditInvoice: (status: string) => {
       if (status === 'paid' || status === 'voided') return false;
       if (status === 'partially_paid') return false;
-      if (isAdmin) return status === 'draft' || status === 'approved' || status === 'sent';
-      if (isStaff) return status === 'draft';
+      if (isAdmin) return override('canEditInvoice_' + status, status === 'draft' || status === 'approved' || status === 'sent');
+      if (isStaff) return override('canEditInvoice_' + status, status === 'draft');
       return false;
     },
-    canDeleteInvoice: isAdmin,
-    canVoidInvoice: isAdmin,
-    canSendInvoice: isAdmin,
-    canRecordPayment: isAdmin || isStaff,
+    canDeleteInvoice: override('canDeleteInvoice', isAdmin),
+    canVoidInvoice: override('canVoidInvoice', isAdmin),
+    canSendInvoice: override('canSendInvoice', isAdmin),
+    canRecordPayment: override('canRecordPayment', isAdmin || isStaff),
 
-    // Recurring
-    canManageRecurring: isAdmin,
+    canManageRecurring: override('canManageRecurring', isAdmin),
 
-    // Customers & Products
-    canCreateCustomer: isAdmin || isStaff,
-    canEditCustomer: isAdmin || isStaff,
-    canDeleteCustomer: isAdmin,
-    canCreateProduct: isAdmin || isStaff,
-    canEditProduct: isAdmin || isStaff,
-    canDeleteProduct: isAdmin,
+    canCreateCustomer: override('canCreateCustomer', isAdmin || isStaff),
+    canEditCustomer: override('canEditCustomer', isAdmin || isStaff),
+    canDeleteCustomer: override('canDeleteCustomer', isAdmin),
+    canCreateProduct: override('canCreateProduct', isAdmin || isStaff),
+    canEditProduct: override('canEditProduct', isAdmin || isStaff),
+    canDeleteProduct: override('canDeleteProduct', isAdmin),
 
-    // Settings & Users
-    canAccessSettings: isAdmin,
-    canManageUsers: isAdmin,
-    canChangeVat: isAdmin,
+    canAccessSettings: override('canAccessSettings', isAdmin),
+    canManageUsers: override('canManageUsers', isAdmin),
+    canChangeVat: override('canChangeVat', isAdmin),
 
-    // Reports
-    canViewReports: true,
+    canViewReports: override('canViewReports', true),
 
-    // Companies — only super admins can manage all companies
-    canManageCompanies: isSuperAdmin || isAdmin,
+    canManageCompanies: override('canManageCompanies', isSuperAdmin || isAdmin),
 
-    // Expenses
-    canCreateExpense: isAdmin || isStaff,
-    canEditExpense: isAdmin || isStaff,
-    canDeleteExpense: isAdmin,
-  }), [role, loading, isSuperAdmin, isAdmin, isStaff]);
+    canCreateExpense: override('canCreateExpense', isAdmin || isStaff),
+    canEditExpense: override('canEditExpense', isAdmin || isStaff),
+    canDeleteExpense: override('canDeleteExpense', isAdmin),
+  }), [role, loading, isSuperAdmin, isAdmin, isStaff, overrides]);
 }
