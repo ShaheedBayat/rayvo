@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,15 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      return new Response(JSON.stringify({ error: "RESEND_API_KEY not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const resend = new Resend(RESEND_API_KEY);
-    const { emails, invoiceNumber, clientName, amount, currency, dueDate, publicUrl, companyName, senderEmail } = await req.json();
+    const { emails, invoiceNumber, clientName, amount, currency, dueDate, publicUrl, companyName } = await req.json();
 
     if (!emails || !Array.isArray(emails) || emails.length === 0) {
       return new Response(JSON.stringify({ error: "No email addresses provided" }), {
@@ -29,48 +21,43 @@ serve(async (req) => {
       });
     }
 
-    const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #1a1a1a; font-size: 24px; margin: 0;">${companyName || 'Invoice'}</h1>
-        </div>
-        <div style="background: #f8f9fa; border-radius: 12px; padding: 30px; margin-bottom: 24px;">
-          <p style="color: #666; font-size: 14px; margin: 0 0 8px;">Invoice <strong style="color: #1a1a1a;">${invoiceNumber}</strong></p>
-          <p style="color: #1a1a1a; font-size: 32px; font-weight: 700; margin: 0 0 8px;">${currency} ${amount}</p>
-          <p style="color: #666; font-size: 14px; margin: 0;">Due: ${dueDate}</p>
-        </div>
-        <p style="color: #444; font-size: 15px; line-height: 1.6;">
-          Hi ${clientName},<br/><br/>
-          Please find your invoice from <strong>${companyName}</strong> attached below. You can view the full invoice and download a PDF by clicking the button.
-        </p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${publicUrl}" style="display: inline-block; background: #0f766e; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
-            View Invoice
-          </a>
-        </div>
-        <p style="color: #999; font-size: 12px; text-align: center; margin-top: 40px;">
-          Sent via RayVo
-        </p>
-      </div>
-    `;
+    const serviceSupabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    const fromEmail = senderEmail || "invoices@resend.dev";
-    
-    const { error } = await resend.emails.send({
-      from: `${companyName || 'RayVo'} <${fromEmail}>`,
-      to: emails,
-      subject: `Invoice ${invoiceNumber} from ${companyName || 'RayVo'} — ${currency} ${amount}`,
-      html,
-    });
+    // Send to each recipient via the transactional email system
+    const errors: string[] = [];
+    for (const email of emails) {
+      const { error } = await serviceSupabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "invoice-email",
+          recipientEmail: email,
+          idempotencyKey: `invoice-${invoiceNumber}-${email}`,
+          templateData: {
+            invoiceNumber,
+            clientName,
+            amount,
+            currency,
+            dueDate,
+            publicUrl,
+            companyName: companyName || "RayVo",
+          },
+        },
+      });
+      if (error) {
+        console.error(`Failed to send to ${email}:`, error);
+        errors.push(email);
+      }
+    }
 
-    if (error) {
-      console.error("Resend error:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
+    if (errors.length === emails.length) {
+      return new Response(JSON.stringify({ error: "Failed to send all emails" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, failedRecipients: errors }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {

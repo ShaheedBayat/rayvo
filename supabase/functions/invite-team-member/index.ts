@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -14,13 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) {
-      return new Response(JSON.stringify({ error: "RESEND_API_KEY not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -34,15 +26,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { email, role } = await req.json();
+    const { email, role, inviteId, companyId } = await req.json();
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       return new Response(JSON.stringify({ error: "Invalid email" }), {
@@ -50,24 +34,34 @@ serve(async (req) => {
       });
     }
 
-    const resend = new Resend(RESEND_API_KEY);
+    // Look up company name for the email
+    let companyName = "RayVo";
+    if (companyId) {
+      const { data: company } = await supabase
+        .from("companies")
+        .select("name")
+        .eq("id", companyId)
+        .maybeSingle();
+      if (company?.name) companyName = company.name;
+    }
 
-    const { error } = await resend.emails.send({
-      from: "RayVo <noreply@notify.hivepayadmin.com>",
-      to: [email],
-      subject: "You've been invited to join RayVo",
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-          <h1 style="font-size: 22px; color: #1a1a1a;">Team Invitation</h1>
-          <p style="color: #444; line-height: 1.6;">You've been invited to join RayVo as a <strong>${role}</strong>.</p>
-          <p style="color: #444; line-height: 1.6;">Sign up or log in to accept the invitation.</p>
-          <p style="color: #999; font-size: 12px; margin-top: 30px;">Sent via RayVo</p>
-        </div>
-      `,
+    // Use the transactional email system
+    const serviceSupabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const { error } = await serviceSupabase.functions.invoke("send-transactional-email", {
+      body: {
+        templateName: "team-invite",
+        recipientEmail: email,
+        idempotencyKey: `team-invite-${inviteId || email}-${Date.now()}`,
+        templateData: { role, companyName },
+      },
     });
 
     if (error) {
-      console.error("Resend error:", error);
+      console.error("Send error:", error);
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
