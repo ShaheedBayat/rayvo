@@ -128,7 +128,7 @@ function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean, ca
   return { salesNav, manageNav };
 }
 
-function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void; salesNav: any[]; manageNav: any[] }) {
+function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav, badges }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void; salesNav: any[]; manageNav: any[]; badges?: Record<string, number> }) {
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
       <div>
@@ -138,7 +138,7 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }
           </p>
         )}
         <div className="space-y-0.5">
-          {salesNav.map((item) => (
+          {salesNav.map((item: any) => (
             <NavItem
               key={item.to + item.label}
               to={item.to}
@@ -146,7 +146,7 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }
               icon={item.icon}
               active={isActive(item.to)}
               collapsed={collapsed}
-              children={'children' in item ? item.children : undefined}
+              badge={badges?.[item.to]}
               onNavigate={onNavigate}
             />
           ))}
@@ -159,7 +159,7 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }
           </p>
         )}
         <div className="space-y-0.5">
-          {manageNav.map((item) => (
+          {manageNav.map((item: any) => (
             <NavItem
               key={item.to}
               to={item.to}
@@ -167,6 +167,7 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }
               icon={item.icon}
               active={isActive(item.to)}
               collapsed={collapsed}
+              badge={badges?.[item.to]}
               onNavigate={onNavigate}
             />
           ))}
@@ -181,12 +182,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { signOut, user } = useAuth();
   const permissions = usePermissions();
   const { theme, toggleTheme } = useTheme();
-  const { activeCompany, companies, switchCompany } = useActiveCompany();
+  const { activeCompany, companies, switchCompany, activeCompanyId } = useActiveCompany();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   useRecurringProcessor();
 
   const { salesNav, manageNav } = getNavItems(permissions.canAccessSettings, permissions.canManageCompanies, permissions.canCreateInvoice);
+
+  // Badge counts for sidebar - we import useInvoices lazily to avoid circular deps
+  const { useInvoices: useInvoicesHook } = require('@/hooks/useInvoiceStore');
+  const { invoices: allInvoices } = useInvoicesHook();
+  const companyInvoices = activeCompanyId ? allInvoices.filter((i: any) => i.companyId === activeCompanyId) : allInvoices;
+  const activeInvoices = companyInvoices.filter((i: any) => i.status !== 'voided');
+  const overdueCount = activeInvoices.filter((i: any) => (i.status === 'sent' || i.status === 'partially_paid') && new Date(i.dueDate) < new Date()).length;
+  const draftCount = activeInvoices.filter((i: any) => i.status === 'draft').length;
+  const badges: Record<string, number> = {
+    '/invoices': overdueCount + draftCount,
+  };
 
   const cachedName = localStorage.getItem('activeCompanyName');
   const cachedLogo = localStorage.getItem('activeCompanyLogo');
