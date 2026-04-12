@@ -15,7 +15,10 @@ export interface Permissions {
   canDeleteInvoice: boolean;
   canVoidInvoice: boolean;
   canSendInvoice: boolean;
+  canApproveInvoice: boolean;
   canRecordPayment: boolean;
+  canViewOwnInvoicesOnly: boolean;
+  canViewAllInvoices: boolean;
 
   canManageRecurring: boolean;
 
@@ -28,6 +31,7 @@ export interface Permissions {
 
   canAccessSettings: boolean;
   canManageUsers: boolean;
+  canManageTeam: boolean;
   canChangeVat: boolean;
 
   canViewReports: boolean;
@@ -80,6 +84,7 @@ export function usePermissions(): Permissions {
     canEditInvoice: (status: string) => {
       if (status === 'paid' || status === 'voided') return false;
       if (status === 'partially_paid') return false;
+      if (status === 'awaiting_approval') return false;
       if (isAdmin) return override('canEditInvoice_' + status, status === 'draft' || status === 'approved' || status === 'sent');
       if (isStaff) return override('canEditInvoice_' + status, status === 'draft');
       return false;
@@ -87,7 +92,10 @@ export function usePermissions(): Permissions {
     canDeleteInvoice: override('canDeleteInvoice', isAdmin),
     canVoidInvoice: override('canVoidInvoice', isAdmin),
     canSendInvoice: override('canSendInvoice', isAdmin),
+    canApproveInvoice: override('canApproveInvoice', isAdmin),
     canRecordPayment: override('canRecordPayment', isAdmin || isStaff),
+    canViewOwnInvoicesOnly: override('canViewOwnInvoicesOnly', isStaff),
+    canViewAllInvoices: override('canViewAllInvoices', isAdmin),
 
     canManageRecurring: override('canManageRecurring', isAdmin),
 
@@ -100,6 +108,7 @@ export function usePermissions(): Permissions {
 
     canAccessSettings: override('canAccessSettings', isAdmin),
     canManageUsers: override('canManageUsers', isAdmin),
+    canManageTeam: override('canManageTeam', isAdmin),
     canChangeVat: override('canChangeVat', isAdmin),
 
     canViewReports: override('canViewReports', true),

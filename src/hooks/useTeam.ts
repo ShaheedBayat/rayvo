@@ -10,6 +10,7 @@ export interface TeamInvite {
   status: string;
   invitedAt: string;
   acceptedAt: string | null;
+  expiresAt: string | null;
 }
 
 export interface TeamMember {
@@ -27,6 +28,7 @@ function mapInvite(row: any): TeamInvite {
     status: row.status,
     invitedAt: row.invited_at,
     acceptedAt: row.accepted_at,
+    expiresAt: row.expires_at || null,
   };
 }
 
@@ -71,12 +73,14 @@ export function useTeam() {
 
   const sendInvite = useCallback(async (email: string, role: string) => {
     if (!user || !activeCompanyId) return null;
+    const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
     const { data, error } = await supabase.from('team_invites').insert({
       owner_id: user.id,
       company_id: activeCompanyId,
       email,
       role,
-    }).select().single();
+      expires_at: expiresAt,
+    } as any).select().single();
     if (!error && data) {
       const mapped = mapInvite(data);
       setInvites(prev => [mapped, ...prev]);
@@ -103,6 +107,26 @@ export function useTeam() {
     if (!error) setInvites(prev => prev.map(i => i.id === id ? { ...i, status: 'revoked' } : i));
     return !error;
   }, []);
+
+  const resendInvite = useCallback(async (id: string, email: string, role: string) => {
+    if (!activeCompanyId) return false;
+    const newExpiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase.from('team_invites').update({
+      status: 'pending',
+      expires_at: newExpiresAt,
+      invited_at: new Date().toISOString(),
+    } as any).eq('id', id);
+    if (error) return false;
+    setInvites(prev => prev.map(i => i.id === id ? { ...i, status: 'pending', expiresAt: newExpiresAt, invitedAt: new Date().toISOString() } : i));
+    try {
+      await supabase.functions.invoke('invite-team-member', {
+        body: { email, role, inviteId: id, companyId: activeCompanyId },
+      });
+    } catch (e) {
+      console.error('Failed to resend invite email:', e);
+    }
+    return true;
+  }, [activeCompanyId]);
 
   const updateMemberRole = useCallback(async (userId: string, newRole: string) => {
     if (!activeCompanyId) return false;
@@ -132,5 +156,5 @@ export function useTeam() {
     return false;
   }, [activeCompanyId]);
 
-  return { invites, members, loading, sendInvite, deleteInvite, revokeInvite, updateMemberRole, removeMember, refetch: fetchTeam };
+  return { invites, members, loading, sendInvite, deleteInvite, revokeInvite, resendInvite, updateMemberRole, removeMember, refetch: fetchTeam };
 }

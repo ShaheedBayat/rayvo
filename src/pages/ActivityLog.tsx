@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useTeam } from '@/hooks/useTeam';
 import { format, parseISO } from 'date-fns';
 import AppLayout from '@/components/AppLayout';
-import { Activity, FileText, CreditCard, RefreshCw, Filter } from 'lucide-react';
+import { Activity, FileText, CreditCard, RefreshCw, Filter, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,6 +19,7 @@ interface LogEntry {
   details: string;
   createdAt: string;
   userName: string;
+  ownerId: string;
 }
 
 const entityIcons: Record<string, React.ElementType> = {
@@ -32,6 +34,7 @@ const actionColors: Record<string, string> = {
   deleted: 'bg-destructive/10 text-destructive border-destructive/20',
   voided: 'bg-destructive/10 text-destructive border-destructive/20',
   approved_and_sent: 'bg-info/10 text-info border-info/20',
+  submitted_for_approval: 'bg-warning/10 text-warning border-warning/20',
   emailed: 'bg-info/10 text-info border-info/20',
   paid: 'bg-success/10 text-success border-success/20',
   partial_payment: 'bg-warning/10 text-warning border-warning/20',
@@ -43,9 +46,11 @@ export default function ActivityLog() {
   const { user } = useAuth();
   const permissions = usePermissions();
   const { activeCompanyId } = useActiveCompany();
+  const { members } = useTeam();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [entityFilter, setEntityFilter] = useState<string>('all');
+  const [userFilter, setUserFilter] = useState<string>('all');
 
   const fetchLogs = useCallback(async () => {
     if (!user || !activeCompanyId) {
@@ -63,6 +68,9 @@ export default function ActivityLog() {
 
     if (entityFilter !== 'all') {
       query = query.eq('entity_type', entityFilter);
+    }
+    if (userFilter !== 'all') {
+      query = query.eq('owner_id', userFilter);
     }
 
     const { data, error } = await query;
@@ -83,10 +91,11 @@ export default function ActivityLog() {
         details: row.details || '',
         createdAt: row.created_at,
         userName: nameMap[row.owner_id] || 'Unknown',
+        ownerId: row.owner_id,
       })));
     }
     setLoading(false);
-  }, [user, activeCompanyId, entityFilter]);
+  }, [user, activeCompanyId, entityFilter, userFilter]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
@@ -107,7 +116,7 @@ export default function ActivityLog() {
           <Activity className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-semibold">Activity Log</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={entityFilter} onValueChange={setEntityFilter}>
             <SelectTrigger className="w-[160px] h-9">
@@ -118,6 +127,20 @@ export default function ActivityLog() {
               <SelectItem value="invoice">Invoices</SelectItem>
               <SelectItem value="payment">Payments</SelectItem>
               <SelectItem value="recurring">Recurring</SelectItem>
+              <SelectItem value="credit_note">Credit Notes</SelectItem>
+              <SelectItem value="permission">Permissions</SelectItem>
+            </SelectContent>
+          </Select>
+          <Users className="h-4 w-4 text-muted-foreground ml-2" />
+          <Select value={userFilter} onValueChange={setUserFilter}>
+            <SelectTrigger className="w-[180px] h-9">
+              <SelectValue placeholder="All users" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Users</SelectItem>
+              {members.map(m => (
+                <SelectItem key={m.userId} value={m.userId}>{m.displayName}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
@@ -28,6 +29,7 @@ const PAGE_SIZE = 20;
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
+  awaiting_approval: { label: 'Awaiting Approval', className: 'bg-warning/10 text-warning border-warning/20' },
   approved: { label: 'Approved', className: 'bg-info/10 text-info border-info/20' },
   sent: { label: 'Awaiting Payment', className: 'bg-warning/10 text-warning border-warning/20' },
   paid: { label: 'Paid', className: 'bg-success/10 text-success border-success/20' },
@@ -198,6 +200,7 @@ function RecurringTab({ refetchInvoices, canManage }: { refetchInvoices: () => P
 export default function Invoices() {
   const { invoices, softDeleteInvoice, voidInvoice, fetchDeletedInvoices, loading, refetch: refetchInvoices } = useInvoices();
   const permissions = usePermissions();
+  const { user } = useAuth();
   const { getCompany } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -236,9 +239,12 @@ export default function Invoices() {
 
   const displayInvoices = showDeleted ? deletedInvoices : invoices;
 
-  const companyFiltered = activeCompanyId
+  const companyFilteredRaw = activeCompanyId
     ? displayInvoices.filter(inv => inv.companyId === activeCompanyId)
     : displayInvoices;
+
+  // Staff with canViewOwnInvoicesOnly see only their own invoices (unless canViewAllInvoices override)
+  const companyFiltered = companyFilteredRaw;
 
   const filtered = companyFiltered.filter((inv) => {
     const matchesSearch = !search || inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) || inv.clientName.toLowerCase().includes(search.toLowerCase());
@@ -254,7 +260,7 @@ export default function Invoices() {
   const showFrom = filtered.length > 0 ? page * PAGE_SIZE + 1 : 0;
   const showTo = Math.min((page + 1) * PAGE_SIZE, filtered.length);
 
-  const statuses = ['draft', 'sent', 'paid', 'partially_paid', 'voided', 'overdue'];
+  const statuses = ['draft', 'awaiting_approval', 'sent', 'paid', 'partially_paid', 'voided', 'overdue'];
 
   return (
     <AppLayout>

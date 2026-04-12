@@ -8,13 +8,14 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Users, Trash2, Mail, Plus, Send, RefreshCw, ChevronRight, ChevronDown, Shield } from 'lucide-react';
+import { Users, Trash2, Mail, Plus, Send, RefreshCw, ChevronRight, ChevronDown, Shield, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -45,7 +46,10 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
 
 const permissionRows = [
   ['Create invoices', true, true, false],
-  ['Send invoices', true, false, false],
+  ['View all invoices', true, false, false],
+  ['View own invoices only', false, true, false],
+  ['Submit for approval', false, true, false],
+  ['Approve & send invoices', true, false, false],
   ['Edit draft invoices', true, true, false],
   ['Edit sent invoices', true, false, false],
   ['Delete invoices', true, false, false],
@@ -69,7 +73,10 @@ const PERMISSION_GROUPS = [
     label: 'Invoices',
     items: [
       { key: 'canCreateInvoice', label: 'Create invoices' },
-      { key: 'canSendInvoice', label: 'Send & approve invoices' },
+      { key: 'canViewAllInvoices', label: 'View all invoices' },
+      { key: 'canViewOwnInvoicesOnly', label: 'View own invoices only' },
+      { key: 'canApproveInvoice', label: 'Approve & send invoices' },
+      { key: 'canSendInvoice', label: 'Send invoices' },
       { key: 'canDeleteInvoice', label: 'Delete invoices' },
       { key: 'canVoidInvoice', label: 'Void invoices' },
       { key: 'canRecordPayment', label: 'Record payments' },
@@ -95,11 +102,12 @@ const PERMISSION_GROUPS = [
     ],
   },
   {
-    label: 'Reports & Settings',
+    label: 'Admin',
     items: [
       { key: 'canViewReports', label: 'View reports' },
       { key: 'canAccessSettings', label: 'Access settings' },
-      { key: 'canManageUsers', label: 'Manage team members' },
+      { key: 'canManageTeam', label: 'Manage team members' },
+      { key: 'canManageUsers', label: 'Manage user roles' },
       { key: 'canChangeVat', label: 'Change VAT settings' },
     ],
   },
@@ -110,6 +118,9 @@ function getRoleDefault(role: string, key: string): boolean {
   const isStaff = role === 'staff';
   const defaults: Record<string, boolean> = {
     canCreateInvoice: isAdmin || isStaff,
+    canViewAllInvoices: isAdmin,
+    canViewOwnInvoicesOnly: isStaff,
+    canApproveInvoice: isAdmin,
     canSendInvoice: isAdmin,
     canDeleteInvoice: isAdmin,
     canVoidInvoice: isAdmin,
@@ -125,6 +136,7 @@ function getRoleDefault(role: string, key: string): boolean {
     canDeleteExpense: isAdmin,
     canViewReports: true,
     canAccessSettings: isAdmin,
+    canManageTeam: isAdmin,
     canManageUsers: isAdmin,
     canChangeVat: isAdmin,
   };
@@ -232,16 +244,35 @@ function PermissionOverridePanel({
   );
 }
 
+function isInviteExpired(invite: { expiresAt: string | null; status: string }) {
+  if (invite.status !== 'pending') return false;
+  if (!invite.expiresAt) return false;
+  return new Date(invite.expiresAt) < new Date();
+}
+
 export default function Team() {
   const { user } = useAuth();
   const permissions = usePermissions();
-  const { members, invites, loading, sendInvite, revokeInvite, updateMemberRole, removeMember } = useTeam();
+  const { members, invites, loading, sendInvite, revokeInvite, resendInvite, updateMemberRole, removeMember } = useTeam();
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('staff');
   const [matrixOpen, setMatrixOpen] = useState(false);
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
 
+  // Guard: require canManageTeam or canManageUsers
+  if (!permissions.loading && !permissions.canManageTeam && !permissions.canManageUsers) {
+    return (
+      <AppLayout>
+        <div className="text-center py-20">
+          <p className="text-muted-foreground">You do not have permission to manage team members.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
   const pendingInvites = invites.filter(i => i.status === 'pending');
+  const expiredInvites = pendingInvites.filter(isInviteExpired);
+  const activePendingInvites = pendingInvites.filter(i => !isInviteExpired(i));
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) { toast.error('Enter an email address'); return; }
@@ -268,9 +299,9 @@ export default function Team() {
     else toast.error('Failed to revoke invite');
   };
 
-  const handleResend = async (email: string, role: string) => {
-    const result = await sendInvite(email, role);
-    if (result) toast.success(`Invite resent to ${email}`);
+  const handleResend = async (id: string, email: string, role: string) => {
+    const ok = await resendInvite(id, email, role);
+    if (ok) toast.success(`Invite resent to ${email}`);
     else toast.error('Failed to resend invite');
   };
 
@@ -410,10 +441,10 @@ export default function Team() {
       <div className="rounded-xl border border-border/50 bg-card invoice-shadow mb-6 stagger-2">
         <div className="flex items-center gap-3 p-5 pb-0">
           <Send className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-base font-semibold">Pending Invites</h2>
-          {pendingInvites.length > 0 && (
+          <h2 className="text-base font-semibold">Invites</h2>
+          {activePendingInvites.length > 0 && (
             <span className="inline-flex items-center justify-center rounded-full bg-warning/10 px-2.5 py-0.5 text-[11px] font-medium text-warning">
-              {pendingInvites.length}
+              {activePendingInvites.length} pending
             </span>
           )}
         </div>
@@ -422,38 +453,53 @@ export default function Team() {
             <p className="text-sm text-muted-foreground text-center py-6">No pending invites</p>
           ) : (
             <div className="space-y-1">
-              {pendingInvites.map(inv => (
-                <div key={inv.id} className="flex items-center justify-between rounded-lg px-3 py-3 hover:bg-secondary/40 transition-colors">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
+              {pendingInvites.map(inv => {
+                const expired = isInviteExpired(inv);
+                return (
+                  <div key={inv.id} className="flex items-center justify-between rounded-lg px-3 py-3 hover:bg-secondary/40 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate block">{inv.email}</span>
+                          {expired && (
+                            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] gap-1">
+                              <Clock className="h-3 w-3" /> Expired
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Invited {formatDate(inv.invitedAt)}
+                          {inv.expiresAt && !expired && (
+                            <span className="ml-1">· Expires {formatDate(inv.expiresAt)}</span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium truncate block">{inv.email}</span>
-                      <p className="text-xs text-muted-foreground">Invited {formatDate(inv.invitedAt)}</p>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <span style={{ ...roleBadgeStyle(inv.role), ...badgeBase }}>{inv.role}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => handleResend(inv.id, inv.email, inv.role)}
+                      >
+                        <RefreshCw className="h-3 w-3" /> Resend
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                        onClick={() => handleRevoke(inv.id)}
+                      >
+                        Revoke
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <span style={{ ...roleBadgeStyle(inv.role), ...badgeBase }}>{inv.role}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      onClick={() => handleResend(inv.email, inv.role)}
-                    >
-                      <RefreshCw className="h-3 w-3" /> Resend
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => handleRevoke(inv.id)}
-                    >
-                      Revoke
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
