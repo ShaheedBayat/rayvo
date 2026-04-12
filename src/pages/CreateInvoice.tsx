@@ -9,7 +9,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { useExpenses } from '@/hooks/useExpenses';
-import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
+import type { Invoice, InvoiceItem, Currency, InvoiceType, DepositType } from '@/types/invoice';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -77,6 +77,11 @@ export default function CreateInvoice() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
   const [dayOfMonth, setDayOfMonth] = useState(1);
+
+  // Deposit invoice state
+  const [invoiceType, setInvoiceType] = useState<InvoiceType>('standard');
+  const [depositType, setDepositType] = useState<DepositType>('percentage');
+  const [depositValue, setDepositValue] = useState(50);
 
   const computeNextRunDate = (freq: string, dom: number): string => {
     const now = new Date();
