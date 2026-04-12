@@ -1,35 +1,26 @@
 import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Palette, FileText, Shield, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check, Users, Bell, Plus, Trash2, UserMinus } from 'lucide-react';
+import { Palette, FileText, CreditCard, Landmark, Scale, Sun, Moon, ChevronRight, Check, Bell } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import AppLayout from '@/components/AppLayout';
 import { useTheme, colorThemes } from '@/hooks/useTheme';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { useTeam } from '@/hooks/useTeam';
 import { useReminderSettings } from '@/hooks/useReminderSettings';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useAuth } from '@/hooks/useAuth';
+
 import { toast } from 'sonner';
-import { formatDate } from '@/lib/formatDate';
 
 export default function SettingsPage() {
   const permissions = usePermissions();
   const { theme, toggleTheme, colorTheme, setColorTheme } = useTheme();
   const { settings, saveSettings } = useGlobalSettings();
-  const { invites, members, sendInvite, deleteInvite, updateMemberRole, removeMember } = useTeam();
-  const { user } = useAuth();
   const { settings: reminderSettings, saveSettings: saveReminders } = useReminderSettings();
   const [banking, setBanking] = useState('');
   const [terms, setTerms] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('user');
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [reminderDays, setReminderDays] = useState('1,7,14,30');
 
@@ -53,12 +44,6 @@ export default function SettingsPage() {
     else toast.error('Failed to save');
   };
 
-  const handleInvite = async () => {
-    if (!inviteEmail) { toast.error('Enter an email'); return; }
-    const result = await sendInvite(inviteEmail, inviteRole);
-    if (result) { toast.success(`Invite sent to ${inviteEmail}`); setInviteEmail(''); }
-    else toast.error('Failed to send invite');
-  };
 
   const handleSaveReminders = async () => {
     const days = reminderDays.split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d) && d > 0);
@@ -167,145 +152,6 @@ export default function SettingsPage() {
           Open Invoice Settings <ChevronRight className="h-4 w-4" />
         </Link>
       ),
-    },
-    {
-      icon: Users,
-      title: 'Team Members',
-      description: 'Invite team members by email, assign roles, and manage access.',
-      content: (() => {
-        const roleBadgeStyle = (role: string) => {
-          if (role === 'admin') return { background: 'hsl(192 75% 36% / 0.1)', color: 'hsl(192 75% 36%)', border: '1px solid hsl(192 75% 36% / 0.2)' };
-          if (role === 'staff') return { background: 'hsl(210 80% 52% / 0.1)', color: 'hsl(210 80% 52%)', border: '1px solid hsl(210 80% 52% / 0.2)' };
-          return { background: 'hsl(0 0% 50% / 0.1)', color: 'hsl(0 0% 40%)', border: '1px solid hsl(0 0% 50% / 0.2)' };
-        };
-        const getInitials = (name: string) => {
-          const parts = name.split(/[\s@]+/);
-          return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
-        };
-        const handleRoleChange = async (userId: string, newRole: string) => {
-          const ok = await updateMemberRole(userId, newRole);
-          if (ok) toast.success('Role updated');
-          else toast.error('Failed to update role');
-        };
-        const handleRemove = async (userId: string, name: string) => {
-          const ok = await removeMember(userId);
-          if (ok) toast.success(`${name} removed from team`);
-          else toast.error('Failed to remove member');
-        };
-        const pendingInvites = invites.filter(i => i.status === 'pending');
-
-        return (
-          <div className="space-y-6">
-            {/* Current Members */}
-            {members.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Current Members</Label>
-                  <span className="inline-flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{members.length}</span>
-                </div>
-                <div className="space-y-1.5">
-                  {members.map(m => {
-                    const isCurrentUser = user?.id === m.userId;
-                    return (
-                      <div key={m.userId} className="flex items-center justify-between rounded-lg border border-border/50 px-4 py-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0">
-                            {getInitials(m.displayName)}
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-sm font-medium truncate block">{m.displayName}</span>
-                            {isCurrentUser && <span className="text-xs text-muted-foreground">(You)</span>}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span style={{ ...roleBadgeStyle(m.role), fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '20px', display: 'inline-block' }} className="capitalize">
-                            {m.role}
-                          </span>
-                          <Select value={m.role} onValueChange={(val) => handleRoleChange(m.userId, val)} disabled={isCurrentUser}>
-                            <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="staff">Staff</SelectItem>
-                              <SelectItem value="viewer">Viewer</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" disabled={isCurrentUser}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Remove team member</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to remove <strong>{m.displayName}</strong> from this company? They will lose all access.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleRemove(m.userId, m.displayName)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Remove
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Pending Invites */}
-            {pendingInvites.length > 0 && (
-              <div>
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">Pending Invites</Label>
-                <div className="space-y-1.5">
-                  {pendingInvites.map(i => (
-                    <div key={i.id} className="flex items-center justify-between rounded-lg border border-dashed border-border/60 px-4 py-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-8 w-8 rounded-full bg-muted text-muted-foreground text-xs font-semibold flex items-center justify-center shrink-0">
-                          {getInitials(i.email)}
-                        </div>
-                        <span className="text-sm font-medium truncate">{i.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span style={{ ...roleBadgeStyle(i.role), fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '20px', display: 'inline-block' }} className="capitalize">
-                          {i.role}
-                        </span>
-                        <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => deleteInvite(i.id)}>
-                          Revoke
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Invite Form */}
-            <div className="flex gap-2 pt-2 border-t border-border/30">
-              <Input
-                placeholder="Email address"
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                className="h-9 flex-1"
-              />
-              <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="viewer">Viewer</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button size="sm" onClick={handleInvite}><Plus className="mr-1 h-3 w-3" /> Invite</Button>
-            </div>
-          </div>
-        );
-      })(),
     },
     {
       icon: Bell,
