@@ -269,6 +269,11 @@ export default function CreateInvoice() {
         },
         successMessage: `Invoice created successfully`,
         onSuccess: async (created) => {
+          // Mark billable expenses as billed
+          for (const expId of pendingBilledExpenseIds) {
+            await markExpenseAsBilled(expId, created.id);
+          }
+          if (pendingBilledExpenseIds.length > 0) await refetchExpenses();
           await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
           toast.success(`Invoice ${created.invoiceNumber} created successfully`);
           navigate(`/invoices/${created.id}`);
