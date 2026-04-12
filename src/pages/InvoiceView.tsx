@@ -38,6 +38,7 @@ import { safeExecuteAction, safeDeleteAction } from '@/lib/safeExecuteAction';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
+  awaiting_approval: { label: 'Awaiting Approval', className: 'bg-warning/10 text-warning border-warning/20' },
   approved: { label: 'Approved', className: 'bg-info/10 text-info border-info/20' },
   sent: { label: 'Awaiting Payment', className: 'bg-warning/10 text-warning border-warning/20' },
   paid: { label: 'Paid', className: 'bg-success/10 text-success border-success/20' },
