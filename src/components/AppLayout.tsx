@@ -29,7 +29,7 @@ interface NavItemProps {
   onNavigate?: () => void;
 }
 
-function NavItem({ to, label, icon: Icon, active, collapsed, children, onNavigate }: NavItemProps) {
+function NavItem({ to, label, icon: Icon, active, collapsed, badge, children, onNavigate }: NavItemProps) {
   const location = useLocation();
   const [open, setOpen] = useState(() => {
     if (!children) return false;
