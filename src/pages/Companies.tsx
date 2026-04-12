@@ -42,6 +42,7 @@ function CompanyEditPanel({
   const [isVatRegistered, setIsVatRegistered] = useState(initial.isVatRegistered ?? false);
   const [vatRate, setVatRate] = useState(initial.vatRate?.toString() ?? '15');
   const [pricingMode, setPricingMode] = useState<PricingMode>(initial.pricingMode || 'exclusive');
+  const [defaultCurrency, setDefaultCurrency] = useState<Currency>(initial.defaultCurrency || 'ZAR');
 
   const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -60,6 +61,7 @@ function CompanyEditPanel({
       isVatRegistered,
       vatRate: parseFloat(vatRate) || 15,
       pricingMode,
+      defaultCurrency,
     });
   };
 
