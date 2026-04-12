@@ -754,7 +754,7 @@ export default function InvoiceView() {
               This will approve the invoice and mark it as sent. You can also email it to the client and additional recipients.
             </p>
             <div className="space-y-1.5">
-              <Label className="text-xs">Email addresses (comma-separated, leave empty to skip emailing)</Label>
+              <Label className="text-xs">Email addresses (comma-separated) <span className="text-destructive">*</span></Label>
               <Textarea
                 value={approveEmailAddresses}
                 onChange={e => setApproveEmailAddresses(e.target.value)}
