@@ -489,6 +489,44 @@ export default function InvoiceView() {
       return false;
     }
 
+    // Auto-create balance invoice when a deposit invoice is fully paid
+    if (newStatus === 'paid' && invoice.invoiceType === 'deposit' && invoice.depositValue && invoice.depositValue > 0) {
+      const depositAmount = invoice.depositType === 'percentage'
+        ? invoiceTotal * (invoice.depositValue / 100)
+        : Math.min(invoice.depositValue, invoiceTotal);
+      const balanceAmount = invoiceTotal - depositAmount;
+
+      if (balanceAmount > 0.01) {
+        const balanceId = uuidv4();
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        const balanceInvoice = await addInvoice({
+          id: balanceId,
+          invoiceNumber: '',
+          companyId: invoice.companyId,
+          clientName: invoice.clientName,
+          clientEmail: invoice.clientEmail,
+          clientAddress: invoice.clientAddress,
+          currency: invoice.currency,
+          items: [{ id: uuidv4(), description: `Balance due — Deposit invoice ${invoice.invoiceNumber}`, quantity: 1, unitPrice: balanceAmount }],
+          taxRate: 0, // Tax was already on the original invoice
+          notes: `Balance invoice for deposit ${invoice.invoiceNumber}`,
+          status: 'draft',
+          createdAt: new Date().toISOString(),
+          dueDate: d.toISOString().split('T')[0],
+          invoiceType: 'balance',
+          parentInvoiceId: invoice.id,
+        });
+        if (balanceInvoice) {
+          await logActivity('invoice', balanceId, 'created', `Balance invoice ${balanceInvoice.invoiceNumber} auto-created from deposit ${invoice.invoiceNumber}`);
+          toast.success(`Balance invoice ${balanceInvoice.invoiceNumber} created for ${formatCurrency(balanceAmount, invoice.currency)}`, {
+            action: { label: 'View', onClick: () => navigate(`/invoices/${balanceId}`) },
+            duration: 8000,
+          });
+        }
+      }
+    }
+
     if (logContext) {
       await logActivity('invoice', invoice.id, logContext.action, logContext.details);
     }
