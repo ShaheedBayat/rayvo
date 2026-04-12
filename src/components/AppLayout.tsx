@@ -250,7 +250,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
     <CommandPalette />
-    <SmartHelp />
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside

@@ -172,7 +172,8 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <ActiveCompanyProvider>
-            <Routes>
+              <SmartHelp />
+              <Routes>
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
               <Route path="/onboarding" element={<ProtectedRoute><OnboardingGuard><Onboarding /></OnboardingGuard></ProtectedRoute>} />
               <Route path="/public/invoice/:id" element={<PublicInvoice />} />
