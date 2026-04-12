@@ -35,6 +35,8 @@ export default function EditInvoice() {
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
   const { products } = useProducts();
+  const { markExpenseAsBilled, refetch: refetchExpenses } = useExpenses();
+  const [pendingBilledExpenseIds, setPendingBilledExpenseIds] = useState<string[]>([]);
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const pricingMode = activeCompany?.pricingMode || 'exclusive';
   const { taxRates, ensureDefaults } = useTaxRates(activeCompany?.id);
