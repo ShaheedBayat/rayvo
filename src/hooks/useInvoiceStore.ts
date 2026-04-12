@@ -187,6 +187,7 @@ export function useCompanies() {
       is_vat_registered: company.isVatRegistered ?? false,
       vat_rate: company.vatRate ?? 15,
       pricing_mode: company.pricingMode || 'exclusive',
+      default_currency: company.defaultCurrency || 'ZAR',
     });
     if (error) return false;
     // Also add creator as admin in company_users
@@ -212,6 +213,7 @@ export function useCompanies() {
       is_vat_registered: company.isVatRegistered ?? false,
       vat_rate: company.vatRate ?? 15,
       pricing_mode: company.pricingMode || 'exclusive',
+      default_currency: company.defaultCurrency || 'ZAR',
     }).eq('id', company.id);
     if (!error) setCompanies(prev => prev.map(c => c.id === company.id ? company : c));
   }, []);
