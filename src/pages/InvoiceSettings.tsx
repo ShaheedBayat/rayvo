@@ -1,15 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBrandingThemes, type BrandingTheme, getDefaultTheme } from '@/hooks/useBrandingThemes';
+import { useGlobalSettings, type LateFeeSettings } from '@/hooks/useGlobalSettings';
 import BrandingThemeEditor from '@/components/branding/BrandingThemeEditor';
 import TemplateLibrary from '@/components/branding/TemplateLibrary';
 import TemplateExportImport from '@/components/branding/TemplateExportImport';
 import AILayoutSuggestions from '@/components/branding/AILayoutSuggestions';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, MoreHorizontal, Pencil, Copy, Star, Trash2, ArrowLeft,
-  FileText, CreditCard, Bell, Settings2, LayoutGrid, Sparkles, ArrowUpDown,
+  FileText, CreditCard, Bell, Settings2, LayoutGrid, Sparkles, ArrowUpDown, AlertTriangle,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
