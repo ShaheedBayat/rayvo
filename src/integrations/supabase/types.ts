@@ -854,6 +854,9 @@ export type Database = {
           created_at: string
           id: string
           is_vat_registered: boolean
+          late_fee_enabled: boolean
+          late_fee_type: string
+          late_fee_value: number
           owner_id: string
           terms_conditions: string | null
           updated_at: string
@@ -864,6 +867,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_vat_registered?: boolean
+          late_fee_enabled?: boolean
+          late_fee_type?: string
+          late_fee_value?: number
           owner_id: string
           terms_conditions?: string | null
           updated_at?: string
@@ -874,6 +880,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_vat_registered?: boolean
+          late_fee_enabled?: boolean
+          late_fee_type?: string
+          late_fee_value?: number
           owner_id?: string
           terms_conditions?: string | null
           updated_at?: string
