@@ -850,6 +850,12 @@ export default function InvoiceView() {
                   <span className="font-semibold">Remaining Balance</span>
                   <span className="mono font-bold text-lg">{formatCurrency(Math.max(0, amountDue), invoice.currency)}</span>
                 </div>
+                {customerCreditBalance > 0 && amountDue > 0.01 && (
+                  <div className="flex justify-between mt-1">
+                    <span className="text-info text-xs">Customer has available credit</span>
+                    <span className="mono text-xs text-info">{formatCurrency(customerCreditBalance, invoice.currency)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </>
