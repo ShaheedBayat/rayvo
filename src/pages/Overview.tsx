@@ -151,28 +151,12 @@ export default function Overview() {
     '3px solid hsl(192 75% 36%)',
   ];
 
-  const sparkColors = [
-    'hsl(192, 18%, 65%)',
-    'hsl(38, 92%, 50%)',
-    'hsl(0, 72%, 51%)',
-    'hsl(152, 56%, 42%)',
-    'hsl(192, 75%, 36%)',
-  ];
-
-  const sparkDataArrays = [
-    sparklineData.draft,
-    sparklineData.sent,
-    sparklineData.overdue,
-    sparklineData.paid,
-    sparklineData.total,
-  ];
-
   const stats = [
-    { label: 'Draft', value: draft.length, icon: FileText, color: 'text-muted-foreground', bg: 'bg-muted' },
-    { label: 'Awaiting Payment', value: sent.length, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
-    { label: 'Overdue', value: overdue.length, icon: AlertCircle, color: 'text-overdue', bg: 'bg-overdue/10' },
-    { label: 'Paid', value: paid.length, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
-    { label: 'Total Invoices', value: activeInvoices.length, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'Draft', value: draft.length, icon: FileText, color: 'text-muted-foreground', bg: 'bg-muted', link: '/invoices?status=draft' },
+    { label: 'Awaiting Payment', value: sent.length, icon: Clock, color: 'text-warning', bg: 'bg-warning/10', link: '/invoices?status=sent' },
+    { label: 'Overdue', value: overdue.length, icon: AlertCircle, color: 'text-overdue', bg: 'bg-overdue/10', link: '/invoices?status=overdue' },
+    { label: 'Paid', value: paid.length, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10', link: '/invoices?status=paid' },
+    { label: 'Total Invoices', value: activeInvoices.length, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10', link: '/invoices' },
   ];
 
   if (!loading && companies.length === 0) {
