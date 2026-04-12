@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
@@ -28,6 +29,7 @@ const PAGE_SIZE = 20;
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
+  awaiting_approval: { label: 'Awaiting Approval', className: 'bg-warning/10 text-warning border-warning/20' },
   approved: { label: 'Approved', className: 'bg-info/10 text-info border-info/20' },
   sent: { label: 'Awaiting Payment', className: 'bg-warning/10 text-warning border-warning/20' },
   paid: { label: 'Paid', className: 'bg-success/10 text-success border-success/20' },
