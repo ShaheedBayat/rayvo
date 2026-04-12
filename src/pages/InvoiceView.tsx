@@ -130,6 +130,85 @@ export default function InvoiceView() {
 
   const amountDue = total - totalPaid - totalCredits;
 
+  // Available credit notes for this customer (not linked to this invoice, status = available)
+  const availableCustomerCredits = creditNotes.filter(cn =>
+    cn.clientName === invoice.clientName &&
+    cn.companyId === invoice.companyId &&
+    (cn.status === 'available' || cn.status === 'partially_applied') &&
+    cn.invoiceId !== invoice.id
+  );
+  const customerCreditBalance = availableCustomerCredits.reduce((sum, cn) => {
+    const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+    return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+  }, 0);
+
+  const handleApplyCredit = async () => {
+    if (applyingCredit) return;
+    const cn = creditNotes.find(c => c.id === selectedCreditNoteId);
+    if (!cn) { toast.error('Select a credit note'); return; }
+    const applyAmt = parseFloat(applyCreditAmount);
+    if (!applyAmt || applyAmt <= 0) { toast.error('Enter a valid amount'); return; }
+
+    const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+    const cnTotal = calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+
+    if (applyAmt > cnTotal + 0.01) { toast.error('Amount exceeds credit note value'); return; }
+    if (applyAmt > amountDue + 0.01) { toast.error('Amount exceeds invoice balance due'); return; }
+
+    setApplyingCredit(true);
+
+    // Create a new credit note linked to this invoice for the applied amount
+    const { v4: uuidv4 } = await import('uuid');
+    const cnId = uuidv4();
+    const d = new Date(); d.setDate(d.getDate() + 30);
+    const appliedCN = await addCreditNote({
+      id: cnId,
+      companyId: invoice.companyId,
+      invoiceId: invoice.id,
+      clientName: invoice.clientName,
+      clientEmail: invoice.clientEmail,
+      clientAddress: invoice.clientAddress,
+      items: [{ id: uuidv4(), description: `Credit applied from ${cn.creditNoteNumber}`, quantity: 1, unitPrice: applyAmt }],
+      taxRate: 0,
+      currency: invoice.currency,
+      status: 'approved',
+      notes: `Applied from credit note ${cn.creditNoteNumber}`,
+      dueDate: d.toISOString().split('T')[0],
+    });
+
+    if (appliedCN) {
+      // Update original credit note status
+      const remaining = cnTotal - applyAmt;
+      const newStatus = remaining <= 0.01 ? 'applied' : 'partially_applied';
+      // If partially applied, update the items to reflect remaining amount
+      if (newStatus === 'partially_applied') {
+        await updateCreditNote({
+          ...cn,
+          items: [{ id: cn.items[0]?.id || uuidv4(), description: cn.items[0]?.description || 'Credit balance', quantity: 1, unitPrice: remaining }],
+          status: 'partially_applied',
+        });
+      } else {
+        await updateCreditNote({ ...cn, status: 'applied' });
+      }
+
+      // Recalculate invoice status
+      await recalculateAndUpdateStatus(total, {
+        action: 'credit_applied',
+        details: `Credit of ${formatCurrency(applyAmt, invoice.currency)} applied from ${cn.creditNoteNumber}`,
+      });
+
+      await logActivity('invoice', invoice.id, 'credit_applied', `Credit of ${formatCurrency(applyAmt, invoice.currency)} applied from ${cn.creditNoteNumber}`);
+      toast.success(`Credit of ${formatCurrency(applyAmt, invoice.currency)} applied`);
+      await refetchCreditNotes();
+      fetchLogs('invoice', invoice.id).then(setActivityLogs);
+    }
+
+    setApplyingCredit(false);
+    setApplyCreditOpen(false);
+    setSelectedCreditNoteId('');
+    setApplyCreditAmount('');
+  };
+
   const handleExportPdf = async () => {
     const element = document.getElementById('invoice-document');
     if (!element) return;
