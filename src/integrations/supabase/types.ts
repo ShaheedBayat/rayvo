@@ -742,6 +742,47 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          body: string
+          company_id: string | null
+          created_at: string
+          id: string
+          owner_id: string
+          subject: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          owner_id: string
+          subject?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string
+          subject?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_unsubscribe_tokens: {
         Row: {
           created_at: string

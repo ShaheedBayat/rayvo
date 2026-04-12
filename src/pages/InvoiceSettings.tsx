@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBrandingThemes, type BrandingTheme, getDefaultTheme } from '@/hooks/useBrandingThemes';
 import { useGlobalSettings, type LateFeeSettings } from '@/hooks/useGlobalSettings';
+import { useEmailTemplates } from '@/hooks/useEmailTemplates';
 import BrandingThemeEditor from '@/components/branding/BrandingThemeEditor';
 import TemplateLibrary from '@/components/branding/TemplateLibrary';
 import TemplateExportImport from '@/components/branding/TemplateExportImport';
@@ -10,11 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, MoreHorizontal, Pencil, Copy, Star, Trash2, ArrowLeft,
-  FileText, CreditCard, Bell, Settings2, LayoutGrid, Sparkles, ArrowUpDown, AlertTriangle,
+  FileText, CreditCard, Bell, Settings2, LayoutGrid, Sparkles, ArrowUpDown, AlertTriangle, Mail,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -26,6 +28,7 @@ const tabs = [
   { id: 'library', label: 'Template Library', icon: LayoutGrid },
   { id: 'ai', label: 'AI Assistant', icon: Sparkles },
   { id: 'export', label: 'Import / Export', icon: ArrowUpDown },
+  { id: 'emailtemplate', label: 'Email Template', icon: Mail },
   { id: 'latefees', label: 'Late Fees', icon: AlertTriangle },
   { id: 'defaults', label: 'Default Settings', icon: Settings2 },
   { id: 'payments', label: 'Payment Services', icon: CreditCard },
@@ -113,12 +116,22 @@ function ThemeCard({ theme, onEdit, onDuplicate, onSetDefault, onDelete }: {
 export default function InvoiceSettings() {
   const { themes, addTheme, updateTheme, deleteTheme, duplicateTheme, setDefault } = useBrandingThemes();
   const { settings: globalSettings, saveLateFeeSettings } = useGlobalSettings();
+  const { template: emailTemplate, saveTemplate: saveEmailTemplate, resetToDefault, loading: emailLoading } = useEmailTemplates();
   const [activeTab, setActiveTab] = useState('themes');
   const [editingTheme, setEditingTheme] = useState<BrandingTheme | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [lateFeeEnabled, setLateFeeEnabled] = useState(false);
   const [lateFeeType, setLateFeeType] = useState<'flat' | 'percentage'>('percentage');
   const [lateFeeValue, setLateFeeValue] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+
+  useEffect(() => {
+    const defaults = resetToDefault();
+    setEmailSubject(emailTemplate?.subject || defaults.subject);
+    setEmailBody(emailTemplate?.body || defaults.body);
+  }, [emailTemplate, resetToDefault]);
 
   useEffect(() => {
     if (globalSettings?.lateFee) {
@@ -287,6 +300,72 @@ export default function InvoiceSettings() {
       {activeTab === 'export' && (
         <div className="max-w-2xl">
           <TemplateExportImport themes={themes} onImport={handleImport} />
+        </div>
+      )}
+
+      {activeTab === 'emailtemplate' && (
+        <div className="max-w-2xl rounded-xl border bg-card p-6 space-y-6">
+          <div>
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" /> Invoice Email Template
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Customise the subject and body used when emailing invoices. Use placeholders like{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{invoice_number}}'}</code>,{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{client_name}}'}</code>,{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{company_name}}'}</code>,{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{total_amount}}'}</code>,{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{due_date}}'}</code>.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Subject Line</Label>
+            <Input
+              value={emailSubject}
+              onChange={e => setEmailSubject(e.target.value)}
+              className="h-9"
+              placeholder="Invoice {{invoice_number}} from {{company_name}}"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Email Body</Label>
+            <Textarea
+              value={emailBody}
+              onChange={e => setEmailBody(e.target.value)}
+              rows={10}
+              className="font-mono text-sm"
+              placeholder="Hi {{client_name}},..."
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={emailSaving}
+              onClick={async () => {
+                setEmailSaving(true);
+                const ok = await saveEmailTemplate(emailSubject, emailBody);
+                setEmailSaving(false);
+                if (ok) toast.success('Email template saved');
+                else toast.error('Failed to save template');
+              }}
+            >
+              {emailSaving ? 'Saving...' : 'Save Template'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const defaults = resetToDefault();
+                setEmailSubject(defaults.subject);
+                setEmailBody(defaults.body);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
         </div>
       )}
 
