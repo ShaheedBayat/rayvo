@@ -260,7 +260,7 @@ export default function Invoices() {
   const showFrom = filtered.length > 0 ? page * PAGE_SIZE + 1 : 0;
   const showTo = Math.min((page + 1) * PAGE_SIZE, filtered.length);
 
-  const statuses = ['draft', 'sent', 'paid', 'partially_paid', 'voided', 'overdue'];
+  const statuses = ['draft', 'awaiting_approval', 'sent', 'paid', 'partially_paid', 'voided', 'overdue'];
 
   return (
     <AppLayout>
