@@ -36,6 +36,7 @@ import Team from "./pages/Team";
 import Onboarding from "./pages/Onboarding";
 import Unsubscribe from "./pages/Unsubscribe";
 import { toast } from "sonner";
+import SmartHelp from "@/components/SmartHelp";
 
 const queryClient = new QueryClient();
 

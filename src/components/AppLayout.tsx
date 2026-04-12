@@ -7,7 +7,6 @@ import {
   CreditCard, Receipt, FileCheck, Menu, X, Wallet, Activity, UsersRound, Search,
 } from 'lucide-react';
 import CommandPalette from '@/components/CommandPalette';
-import SmartHelp from '@/components/SmartHelp';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
