@@ -226,9 +226,18 @@ export function useCompanies() {
     if (!error) setCompanies(prev => prev.map(c => c.id === company.id ? company : c));
   }, []);
 
-  const deleteCompany = useCallback(async (id: string) => {
+  const deleteCompany = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
+    // Delete related company_users first
+    await supabase.from('company_users').delete().eq('company_id', id);
     const { error } = await supabase.from('companies').delete().eq('id', id);
-    if (!error) setCompanies(prev => prev.filter(c => c.id !== id));
+    if (error) {
+      const msg = error.message.includes('violates foreign key')
+        ? 'Cannot delete this company because it has invoices, customers, or other data linked to it. Please remove or reassign that data first.'
+        : error.message;
+      return { success: false, error: msg };
+    }
+    setCompanies(prev => prev.filter(c => c.id !== id));
+    return { success: true };
   }, []);
 
   const getCompany = useCallback((id: string) => {
