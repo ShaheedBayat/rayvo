@@ -40,6 +40,10 @@ function mapInvoice(row: any): Invoice {
     createdAt: row.created_at,
     dueDate: row.due_date,
     shareToken: row.share_token || undefined,
+    invoiceType: (row.invoice_type as any) || 'standard',
+    depositType: (row.deposit_type as any) || 'percentage',
+    depositValue: row.deposit_value != null ? Number(row.deposit_value) : 0,
+    parentInvoiceId: row.parent_invoice_id || undefined,
   };
 }
 
