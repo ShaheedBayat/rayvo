@@ -93,11 +93,11 @@ export default function PublicInvoice() {
             <div className="flex items-center gap-6">
               <div>
                 <span className="text-muted-foreground">Invoice Total</span>
-                <p className="font-semibold mono">{formatCurrency(total, invoice.currency)}</p>
+                <p className="font-semibold">{formatCurrency(total, invoice.currency)}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Amount Paid</span>
-                <p className="font-semibold mono text-success">{formatCurrency(totalPaid, invoice.currency)}</p>
+                <p className="font-semibold text-success">{formatCurrency(totalPaid, invoice.currency)}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Balance Due</span>

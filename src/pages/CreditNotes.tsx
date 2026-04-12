@@ -292,7 +292,7 @@ export default function CreditNotes() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Available to credit</span>
-                    <span className="mono font-semibold text-primary">{formatCurrency(selectedInvoiceOutstanding, currency)}</span>
+                    <span className="font-semibold text-primary">{formatCurrency(selectedInvoiceOutstanding, currency)}</span>
                   </div>
                 </div>
               )}
@@ -391,9 +391,9 @@ export default function CreditNotes() {
                   <tr key={cn.id} className="border-b last:border-0 hover:bg-secondary/40 transition-colors">
                     <td className="px-4 py-3.5 mono font-medium">{cn.creditNoteNumber}</td>
                     <td className="px-4 py-3.5">{cn.clientName}</td>
-                    <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell mono text-xs">{linkedInvoice?.invoiceNumber || '—'}</td>
+                    <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell text-xs font-mono">{linkedInvoice?.invoiceNumber || '—'}</td>
                     <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{new Date(cn.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3.5 text-right mono font-medium">{formatCurrency(total, cn.currency)}</td>
+                    <td className="px-4 py-3.5 text-right font-medium">{formatCurrency(total, cn.currency)}</td>
                     <td className="px-4 py-3.5 text-center">
                       <Badge variant="outline" className={`${cfg.className} text-[11px]`}>{cfg.label}</Badge>
                     </td>

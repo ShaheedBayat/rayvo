@@ -243,15 +243,15 @@ export default function CustomerStatement() {
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="rounded-lg border p-3">
                 <p className="text-xs text-muted-foreground mb-1">Invoices</p>
-                <p className="mono font-semibold text-sm">{formatCurrency(totalInvoices, entries[0]?.currency || 'ZAR')}</p>
+                <p className="font-semibold text-sm">{formatCurrency(totalInvoices, entries[0]?.currency || 'ZAR')}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-xs text-muted-foreground mb-1">Payments</p>
-                <p className="mono font-semibold text-sm text-success">− {formatCurrency(totalPayments, entries[0]?.currency || 'ZAR')}</p>
+                <p className="font-semibold text-sm text-success">− {formatCurrency(totalPayments, entries[0]?.currency || 'ZAR')}</p>
               </div>
               <div className="rounded-lg border p-3">
                 <p className="text-xs text-muted-foreground mb-1">Credits</p>
-                <p className="mono font-semibold text-sm text-info">− {formatCurrency(totalCredits, entries[0]?.currency || 'ZAR')}</p>
+                <p className="font-semibold text-sm text-info">− {formatCurrency(totalCredits, entries[0]?.currency || 'ZAR')}</p>
               </div>
             </div>
 

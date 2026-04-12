@@ -243,7 +243,7 @@ export default function Expenses() {
                       <Badge variant="outline" className="text-[10px]">Billable</Badge>
                     ) : null}
                   </td>
-                  <td className="px-4 py-2.5 text-right mono font-medium">{formatCurrency(e.amount, (e.currency || 'ZAR') as Currency)}</td>
+                  <td className="px-4 py-2.5 text-right font-medium">{formatCurrency(e.amount, (e.currency || 'ZAR') as Currency)}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1 justify-end items-center">
                       <ExpenseReceiptIndicator expenseId={e.id} />
