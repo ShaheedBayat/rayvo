@@ -70,9 +70,10 @@ export function useTeam() {
   useEffect(() => { fetchTeam(); }, [fetchTeam]);
 
   const sendInvite = useCallback(async (email: string, role: string) => {
-    if (!user) return null;
+    if (!user || !activeCompanyId) return null;
     const { data, error } = await supabase.from('team_invites').insert({
       owner_id: user.id,
+      company_id: activeCompanyId,
       email,
       role,
     }).select().single();

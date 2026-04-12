@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,12 @@ import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function Auth() {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
+  const inviteParams = useMemo(() => new URLSearchParams(window.location.search), []);
+  const inviteEmail = inviteParams.get('email') ?? '';
+  const inviteMode = inviteParams.get('mode') === 'signup';
+
+  const [isSignUp, setIsSignUp] = useState(inviteMode);
+  const [email, setEmail] = useState(inviteEmail);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,7 +55,9 @@ export default function Auth() {
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 {isSignUp
-                  ? 'Get started with RayVo invoicing'
+                  ? inviteEmail
+                    ? 'Complete your sign up to join your team on RayVo'
+                    : 'Get started with RayVo invoicing'
                   : 'Sign in to manage your invoices'}
               </p>
             </div>
