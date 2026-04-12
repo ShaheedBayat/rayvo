@@ -938,6 +938,10 @@ export default function InvoiceView() {
           statusIcon = <CreditCard className="h-5 w-5 text-warning" />;
         }
 
+        // Find linked invoices
+        const linkedBalanceInvoice = invoice.invoiceType === 'deposit' ? invoices.find(i => i.parentInvoiceId === invoice.id) : null;
+        const linkedDepositInvoice = invoice.invoiceType === 'balance' && invoice.parentInvoiceId ? invoices.find(i => i.id === invoice.parentInvoiceId) : null;
+
         return (
           <>
             {/* Status banner for paid/overdue/partial */}
