@@ -15,7 +15,7 @@ export interface CreditNote {
   items: InvoiceItem[];
   taxRate: number;
   currency: Currency;
-  status: 'draft' | 'approved' | 'sent';
+  status: 'draft' | 'approved' | 'sent' | 'available' | 'applied' | 'partially_applied';
   notes: string;
   createdAt: string;
   dueDate: string;
