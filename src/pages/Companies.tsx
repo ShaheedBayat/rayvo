@@ -339,6 +339,8 @@ export default function Companies() {
   const [createOpen, setCreateOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return companies;
@@ -456,8 +458,7 @@ export default function Companies() {
                       className="h-7 w-7 text-muted-foreground hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteCompany(c.id);
-                        toast.success('Company deleted');
+                        setDeleteTarget({ id: c.id, name: c.name });
                       }}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
