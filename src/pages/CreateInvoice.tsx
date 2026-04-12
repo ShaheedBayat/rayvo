@@ -348,13 +348,25 @@ export default function CreateInvoice() {
               <Switch
                 id="recurring-toggle"
                 checked={isRecurring}
-                onCheckedChange={setIsRecurring}
+                onCheckedChange={(v) => { setIsRecurring(v); if (v) setInvoiceType('standard'); }}
               />
               <Label htmlFor="recurring-toggle" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
                 <RefreshCw className="h-3.5 w-3.5" />
                 Recurring
               </Label>
             </div>
+            {!isRecurring && (
+              <div className="flex items-center gap-2 mr-2">
+                <Switch
+                  id="deposit-toggle"
+                  checked={invoiceType === 'deposit'}
+                  onCheckedChange={(v) => setInvoiceType(v ? 'deposit' : 'standard')}
+                />
+                <Label htmlFor="deposit-toggle" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+                  💰 Deposit
+                </Label>
+              </div>
+            )}
             <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
             <Button type="submit" disabled={!canSave || saving}>
               {saving ? 'Saving...' : isRecurring ? 'Create Recurring' : 'Save as Draft'}
