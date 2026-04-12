@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useVatLedger } from '@/hooks/useVatLedger';
@@ -51,7 +51,7 @@ export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const permissions = usePermissions();
-  const { getInvoice, updateInvoice, softDeleteInvoice, voidInvoice } = useInvoices();
+  const { getInvoice, updateInvoice, softDeleteInvoice, voidInvoice, addInvoice, invoices } = useInvoices();
   const { getCompany } = useCompanies();
   const { settings } = useGlobalSettings();
   const { payments, addPayment, deletePayment, totalPaid } = usePayments(id);
