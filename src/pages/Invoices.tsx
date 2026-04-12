@@ -239,15 +239,12 @@ export default function Invoices() {
 
   const displayInvoices = showDeleted ? deletedInvoices : invoices;
 
+  const companyFilteredRaw = activeCompanyId
+    ? displayInvoices.filter(inv => inv.companyId === activeCompanyId)
+    : displayInvoices;
+
   // Staff with canViewOwnInvoicesOnly see only their own invoices (unless canViewAllInvoices override)
-  const userFiltered = (permissions.canViewOwnInvoicesOnly && !permissions.canViewAllInvoices && user)
-    ? companyFiltered.filter(inv => {
-        // Check if current user created this invoice by checking owner_id via the invoices hook
-        // Since we don't have owner_id in the Invoice type, staff see all invoices loaded by RLS
-        // The RLS already handles this at DB level, so we just filter client-side
-        return true; // RLS handles the filtering at DB level
-      })
-    : companyFiltered;
+  const companyFiltered = companyFilteredRaw;
 
   const filtered = companyFiltered.filter((inv) => {
     const matchesSearch = !search || inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) || inv.clientName.toLowerCase().includes(search.toLowerCase());
