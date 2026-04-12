@@ -290,6 +290,71 @@ export default function InvoiceSettings() {
         </div>
       )}
 
+      {activeTab === 'latefees' && (
+        <div className="max-w-lg rounded-xl border bg-card p-6 space-y-6">
+          <div>
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Late Payment Fees
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Automatically prompt to add a late fee when an invoice goes overdue.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Switch checked={lateFeeEnabled} onCheckedChange={setLateFeeEnabled} />
+            <span className="text-sm">{lateFeeEnabled ? 'Late fees enabled' : 'Late fees disabled'}</span>
+          </div>
+
+          {lateFeeEnabled && (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Fee Type</Label>
+                <Select value={lateFeeType} onValueChange={(v) => setLateFeeType(v as 'flat' | 'percentage')}>
+                  <SelectTrigger className="h-9 w-56"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage per month</SelectItem>
+                    <SelectItem value="flat">Flat fee</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  {lateFeeType === 'percentage' ? 'Percentage (%)' : 'Flat fee amount'}
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={lateFeeValue}
+                  onChange={e => setLateFeeValue(e.target.value)}
+                  placeholder={lateFeeType === 'percentage' ? 'e.g. 2' : 'e.g. 250'}
+                  className="h-9 w-56"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {lateFeeType === 'percentage'
+                    ? 'E.g. 2 means 2% of the invoice total per month overdue.'
+                    : 'A fixed amount added as a line item when the invoice is overdue.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <Button
+            size="sm"
+            onClick={async () => {
+              const val = parseFloat(lateFeeValue) || 0;
+              if (lateFeeEnabled && val <= 0) { toast.error('Enter a valid fee value'); return; }
+              const ok = await saveLateFeeSettings({ enabled: lateFeeEnabled, type: lateFeeType, value: val });
+              if (ok) toast.success('Late fee settings saved');
+              else toast.error('Failed to save');
+            }}
+          >
+            Save Late Fee Settings
+          </Button>
+        </div>
+      )}
+
       {activeTab === 'defaults' && (
         <div className="rounded-xl border bg-card p-8 text-center">
           <Settings2 className="h-10 w-10 mx-auto text-muted-foreground/30" />
