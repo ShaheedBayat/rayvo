@@ -15,6 +15,10 @@ export interface Expense {
   notes: string;
   companyId: string | null;
   createdAt: string;
+  isBillable: boolean;
+  customerId: string | null;
+  isBilled: boolean;
+  billedInvoiceId: string | null;
 }
 
 export const EXPENSE_CATEGORIES = [
@@ -35,6 +39,10 @@ function mapExpense(row: any): Expense {
     notes: row.notes || '',
     companyId: row.company_id,
     createdAt: row.created_at,
+    isBillable: row.is_billable ?? false,
+    customerId: row.customer_id ?? null,
+    isBilled: row.is_billed ?? false,
+    billedInvoiceId: row.billed_invoice_id ?? null,
   };
 }
 
@@ -69,6 +77,10 @@ export function useExpenses() {
       vendor: expense.vendor,
       reference: expense.reference,
       notes: expense.notes,
+      is_billable: expense.isBillable,
+      customer_id: expense.customerId,
+      is_billed: expense.isBilled,
+      billed_invoice_id: expense.billedInvoiceId,
     }).select().single();
     if (error || !data) return null;
     return mapExpense(data);
@@ -85,9 +97,21 @@ export function useExpenses() {
       reference: expense.reference,
       notes: expense.notes,
       company_id: expense.companyId,
+      is_billable: expense.isBillable,
+      customer_id: expense.customerId,
+      is_billed: expense.isBilled,
+      billed_invoice_id: expense.billedInvoiceId,
     }).eq('id', expense.id).select().single();
     if (error || !data) return null;
     return mapExpense(data);
+  }, []);
+
+  const markExpenseAsBilled = useCallback(async (expenseId: string, invoiceId: string) => {
+    const { error } = await supabase.from('expenses').update({
+      is_billed: true,
+      billed_invoice_id: invoiceId,
+    }).eq('id', expenseId);
+    return !error;
   }, []);
 
   const deleteExpense = useCallback(async (id: string) => {
@@ -95,5 +119,9 @@ export function useExpenses() {
     return !error;
   }, []);
 
-  return { expenses, loading, addExpense, updateExpense, deleteExpense, refetch: fetchExpenses };
+  const getUnbilledExpensesForCustomer = useCallback((customerId: string) => {
+    return expenses.filter(e => e.isBillable && !e.isBilled && e.customerId === customerId);
+  }, [expenses]);
+
+  return { expenses, loading, addExpense, updateExpense, deleteExpense, markExpenseAsBilled, getUnbilledExpensesForCustomer, refetch: fetchExpenses };
 }
