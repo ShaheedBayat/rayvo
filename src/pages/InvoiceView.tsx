@@ -328,7 +328,7 @@ export default function InvoiceView() {
     if (dbInvoice.status === 'voided') { toast.error('Cannot record payment on a voided invoice'); return; }
     if (dbInvoice.status === 'draft') { toast.error('Cannot record payment on a draft invoice'); return; }
 
-    if (amount > amountDue + 0.01) { toast.error(`Amount exceeds balance due of ${formatCurrency(amountDue, invoice.currency)}`); return; }
+    const overpaymentAmount = amount - amountDue;
 
     setPaymentProcessing(true);
     const result = await safeExecuteAction({
@@ -349,21 +349,44 @@ export default function InvoiceView() {
     });
 
     if (result) {
+      // Auto-create credit note for overpayment
+      if (overpaymentAmount > 0.01) {
+        const { v4: uuidv4 } = await import('uuid');
+        const cnId = uuidv4();
+        const d = new Date(); d.setDate(d.getDate() + 30);
+        const creditNote = await addCreditNote({
+          id: cnId,
+          companyId: invoice.companyId,
+          invoiceId: invoice.id,
+          clientName: invoice.clientName,
+          clientEmail: invoice.clientEmail,
+          clientAddress: invoice.clientAddress,
+          items: [{ id: uuidv4(), description: `Overpayment on ${invoice.invoiceNumber}`, quantity: 1, unitPrice: overpaymentAmount }],
+          taxRate: 0,
+          currency: invoice.currency,
+          status: 'available',
+          notes: `Auto-generated from overpayment on invoice ${invoice.invoiceNumber}`,
+          dueDate: d.toISOString().split('T')[0],
+        });
+        if (creditNote) {
+          await logActivity('credit_note', cnId, 'created', `Credit note ${creditNote.creditNoteNumber} auto-created for overpayment of ${formatCurrency(overpaymentAmount, invoice.currency)} on ${invoice.invoiceNumber}`);
+          toast.info(`Credit note ${creditNote.creditNoteNumber} created for overpayment of ${formatCurrency(overpaymentAmount, invoice.currency)}`);
+        }
+      }
+
       // Refetch payments & recalculate status from DB
-      const newTotalPaid = totalPaid + amount;
-      const remaining = total - newTotalPaid;
       const statusOk = await recalculateAndUpdateStatus(total, {
-        action: newTotalPaid >= total ? 'paid' : 'partial_payment',
-        details: newTotalPaid >= total
-          ? `Full payment received. Total: ${formatCurrency(newTotalPaid, invoice.currency)}`
-          : `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(remaining, invoice.currency)}`,
+        action: amount >= amountDue ? 'paid' : 'partial_payment',
+        details: amount >= amountDue
+          ? `Full payment received. Amount: ${formatCurrency(amount, invoice.currency)}`
+          : `Payment of ${formatCurrency(amount, invoice.currency)} recorded.`,
       });
 
       if (statusOk) {
         toast.success(
-          newTotalPaid >= total
+          amount >= amountDue
             ? `Payment recorded. Invoice fully paid!`
-            : `Payment recorded. Remaining balance: ${formatCurrency(remaining, invoice.currency)}`
+            : `Payment recorded. Remaining balance: ${formatCurrency(amountDue - amount, invoice.currency)}`
         );
       }
       setPaymentOpen(false);
