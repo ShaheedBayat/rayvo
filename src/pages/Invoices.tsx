@@ -213,6 +213,7 @@ export default function Invoices() {
   const { getCompany } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedInvoices, setDeletedInvoices] = useState<any[]>([]);
