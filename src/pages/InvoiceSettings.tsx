@@ -303,7 +303,73 @@ export default function InvoiceSettings() {
         </div>
       )}
 
-      {activeTab === 'latefees' && (
+      {activeTab === 'emailtemplate' && (
+        <div className="max-w-2xl rounded-xl border bg-card p-6 space-y-6">
+          <div>
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" /> Invoice Email Template
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Customise the subject and body used when emailing invoices. Use placeholders like{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{invoice_number}}'}</code>,{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{client_name}}'}</code>,{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{company_name}}'}</code>,{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{total_amount}}'}</code>,{' '}
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{'{{due_date}}'}</code>.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Subject Line</Label>
+            <Input
+              value={emailSubject}
+              onChange={e => setEmailSubject(e.target.value)}
+              className="h-9"
+              placeholder="Invoice {{invoice_number}} from {{company_name}}"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Email Body</Label>
+            <Textarea
+              value={emailBody}
+              onChange={e => setEmailBody(e.target.value)}
+              rows={10}
+              className="font-mono text-sm"
+              placeholder="Hi {{client_name}},..."
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={emailSaving}
+              onClick={async () => {
+                setEmailSaving(true);
+                const ok = await saveEmailTemplate(emailSubject, emailBody);
+                setEmailSaving(false);
+                if (ok) toast.success('Email template saved');
+                else toast.error('Failed to save template');
+              }}
+            >
+              {emailSaving ? 'Saving...' : 'Save Template'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const defaults = resetToDefault();
+                setEmailSubject(defaults.subject);
+                setEmailBody(defaults.body);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
+        </div>
+      )}
+
+
         <div className="max-w-lg rounded-xl border bg-card p-6 space-y-6">
           <div>
             <h3 className="text-lg font-medium flex items-center gap-2">
