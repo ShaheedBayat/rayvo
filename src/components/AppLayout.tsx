@@ -106,22 +106,12 @@ function NavItem({ to, label, icon: Icon, active, collapsed, badge, children, on
 function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean, canCreateInvoice: boolean) {
   const salesNav = [
     { to: '/', label: 'Overview', icon: LayoutDashboard },
-    {
-      to: '/invoices', label: 'Invoices', icon: FileText,
-      children: [
-        { to: '/invoices', label: 'All Invoices' },
-        { to: '/invoices?status=draft', label: 'Draft' },
-        { to: '/invoices?status=sent', label: 'Awaiting Payment' },
-        { to: '/invoices?status=paid', label: 'Paid' },
-        { to: '/invoices?status=overdue', label: 'Overdue' },
-        { to: '/invoices?tab=recurring', label: 'Recurring Invoices' },
-      ],
-    },
+    { to: '/invoices', label: 'Invoices', icon: FileText },
     { to: '/credit-notes', label: 'Credit Notes', icon: Receipt },
     { to: '/quotes', label: 'Quotes', icon: FileCheck },
     { to: '/customers', label: 'Customers', icon: Users },
     { to: '/customer-statements', label: 'Statements', icon: FileText },
-    { to: '/products', label: 'Products & Services', icon: Package },
+    { to: '/products', label: 'Products', icon: Package },
     { to: '/online-payments', label: 'Online Payments', icon: CreditCard },
     { to: '/expenses', label: 'Expenses', icon: Wallet },
   ];
