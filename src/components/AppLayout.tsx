@@ -24,6 +24,7 @@ interface NavItemProps {
   icon: React.ElementType;
   active: boolean;
   collapsed: boolean;
+  badge?: number;
   children?: { to: string; label: string }[];
   onNavigate?: () => void;
 }
@@ -85,12 +86,19 @@ function NavItem({ to, label, icon: Icon, active, collapsed, children, onNavigat
       title={collapsed ? label : undefined}
       className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
         active
-          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-sidebar-primary -ml-[2px]'
           : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
       }`}
     >
-      <Icon className="h-4 w-4 shrink-0" />
-      {!collapsed && <span>{label}</span>}
+      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-sidebar-primary' : ''}`} />
+      {!collapsed && (
+        <span className="flex-1">{label}</span>
+      )}
+      {!collapsed && badge !== undefined && badge > 0 && (
+        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-sidebar-primary/20 px-1.5 text-[10px] font-semibold text-sidebar-primary">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </Link>
   );
 }
