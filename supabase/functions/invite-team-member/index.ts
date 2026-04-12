@@ -12,6 +12,15 @@ const SITE_NAME = "RayVo";
 const SENDER_DOMAIN = "notify.hivepayadmin.com";
 const FROM_DOMAIN = "notify.hivepayadmin.com";
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -59,15 +68,32 @@ serve(async (req) => {
       if (company?.name) companyName = company.name;
     }
 
+    const siteUrl = Deno.env.get("SITE_URL") || req.headers.get("origin") || req.headers.get("referer")?.split("/").slice(0, 3).join("/") || "https://rayvo.lovable.app";
+    const inviteUrl = new URL("/auth", siteUrl);
+    inviteUrl.searchParams.set("mode", "signup");
+    inviteUrl.searchParams.set("email", email);
+    if (inviteId) inviteUrl.searchParams.set("invite", inviteId);
+    if (companyId) inviteUrl.searchParams.set("company", companyId);
+
+    const safeCompanyName = escapeHtml(companyName);
+    const safeRole = escapeHtml(role || "staff");
+    const inviteUrlString = inviteUrl.toString();
+    const safeInviteUrl = escapeHtml(inviteUrlString);
+
     // Build HTML inline (avoids needing React Email + JSX in this function)
     const html = `
       <div style="font-family: 'Inter', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="font-size: 22px; font-weight: 700; color: #1a1a1a; margin: 0 0 20px;">Team Invitation</h1>
         <p style="font-size: 15px; color: #444; line-height: 1.6; margin: 0 0 16px;">
-          You've been invited to join <strong>${companyName}</strong> as a <strong>${role}</strong>.
+          You've been invited to join <strong>${safeCompanyName}</strong> as a <strong>${safeRole}</strong>.
         </p>
         <p style="font-size: 15px; color: #444; line-height: 1.6; margin: 0 0 16px;">
-          Sign up or log in to accept the invitation.
+          Create your account to join the company and go straight into the app.
+        </p>
+        <a href="${safeInviteUrl}" style="display: inline-block; margin: 8px 0 0; padding: 12px 20px; border-radius: 10px; background: #111827; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none;">Accept invitation</a>
+        <p style="font-size: 13px; color: #666; line-height: 1.6; margin: 16px 0 0;">
+          Or open this link in your browser:<br />
+          <a href="${safeInviteUrl}" style="color: #111827; word-break: break-all;">${safeInviteUrl}</a>
         </p>
         <hr style="border-color: #eee; margin: 30px 0;" />
         <p style="font-size: 12px; color: #999; margin-top: 30px;">Sent via ${SITE_NAME}</p>
@@ -129,7 +155,7 @@ serve(async (req) => {
         sender_domain: SENDER_DOMAIN,
         subject: `You've been invited to join ${companyName} on ${SITE_NAME}`,
         html,
-        text: `You've been invited to join ${companyName} as a ${role}. Sign up or log in to accept.`,
+        text: `You've been invited to join ${companyName} as a ${role}. Accept your invitation here: ${inviteUrlString}`,
         purpose: "transactional",
         label: "team-invite",
         idempotency_key: idempotencyKey,

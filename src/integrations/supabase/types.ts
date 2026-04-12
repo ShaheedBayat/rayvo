@@ -1373,6 +1373,7 @@ export type Database = {
       team_invites: {
         Row: {
           accepted_at: string | null
+          company_id: string | null
           email: string
           id: string
           invited_at: string
@@ -1382,6 +1383,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          company_id?: string | null
           email: string
           id?: string
           invited_at?: string
@@ -1391,6 +1393,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          company_id?: string | null
           email?: string
           id?: string
           invited_at?: string
@@ -1398,7 +1401,15 @@ export type Database = {
           role?: string
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "team_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_permission_overrides: {
         Row: {
