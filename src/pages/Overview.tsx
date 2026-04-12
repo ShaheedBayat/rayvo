@@ -85,52 +85,6 @@ export default function Overview() {
     return entries.map(([c, v]) => formatCurrency(v, c as Currency)).join(' · ');
   };
 
-  // Sparkline data: invoice counts by week (last 8 weeks) per status
-  const sparklineData = useMemo(() => {
-    const now = new Date();
-    const weeks = 8;
-    const draftByWeek: number[] = Array(weeks).fill(0);
-    const sentByWeek: number[] = Array(weeks).fill(0);
-    const overdueByWeek: number[] = Array(weeks).fill(0);
-    const paidByWeek: number[] = Array(weeks).fill(0);
-    const totalByWeek: number[] = Array(weeks).fill(0);
-
-    activeInvoices.forEach(inv => {
-      const created = new Date(inv.createdAt);
-      const weekIdx = Math.floor((now.getTime() - created.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      if (weekIdx >= 0 && weekIdx < weeks) {
-        const idx = weeks - 1 - weekIdx;
-        totalByWeek[idx]++;
-        if (inv.status === 'draft') draftByWeek[idx]++;
-        else if (inv.status === 'sent' || inv.status === 'partially_paid') sentByWeek[idx]++;
-        else if (inv.status === 'paid') paidByWeek[idx]++;
-      }
-    });
-
-    overdue.forEach(inv => {
-      const created = new Date(inv.createdAt);
-      const weekIdx = Math.floor((now.getTime() - created.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      if (weekIdx >= 0 && weekIdx < weeks) {
-        overdueByWeek[weeks - 1 - weekIdx]++;
-      }
-    });
-
-    return { draft: draftByWeek, sent: sentByWeek, overdue: overdueByWeek, paid: paidByWeek, total: totalByWeek };
-  }, [activeInvoices, overdue]);
-
-  // Revenue sparkline: last 8 weeks payments
-  const revenueSparkline = useMemo(() => {
-    const now = new Date();
-    const weeks = 8;
-    const data: number[] = Array(weeks).fill(0);
-    const invoiceIds = new Set(activeInvoices.map(i => i.id));
-    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
-      const d = new Date(p.paymentDate);
-      const weekIdx = Math.floor((now.getTime() - d.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      if (weekIdx >= 0 && weekIdx < weeks) data[weeks - 1 - weekIdx] += p.amount;
-    });
-    return data;
-  }, [activeInvoices, allPayments]);
 
   const customerOwing: Record<string, { name: string; amount: number; currency: Currency }> = {};
   sent.forEach(inv => {
