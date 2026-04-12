@@ -549,7 +549,7 @@ export default function Invoices() {
                         const config = isOverdue ? statusConfig.overdue : (statusConfig[inv.status] || statusConfig.draft);
                         const isSelected = selected.has(inv.id);
                         return (
-                          <tr key={inv.id} className={`group border-b last:border-0 transition-colors ${isSelected ? 'bg-primary/5' : 'hover:bg-secondary/40'}`}>
+                          <tr key={inv.id} className={`group border-b last:border-0 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : 'hover:bg-secondary/40'}`} onClick={(e) => { if ((e.target as HTMLElement).closest('a, button, input, [role="checkbox"]')) return; window.location.href = `/invoices/${inv.id}`; }}>
                             <td className={`px-3 ${py}`}>
                               <Checkbox
                                 checked={isSelected}
