@@ -196,14 +196,14 @@ export default function Overview() {
 
       {/* Money summary */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-2" style={{ borderLeft: '3px solid hsl(38 92% 50%)' }}>
+        <Link to="/invoices?status=sent" className="block rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-2" style={{ borderLeft: '3px solid hsl(38 92% 50%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <Send className="h-3.5 w-3.5 text-warning" />
             <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
           </div>
           <p className="text-2xl font-bold text-warning">{formatMultiCurrency(outstandingByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
-        </div>
+        </Link>
         <Link to="/invoices?status=paid" className="block rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-3" style={{ borderLeft: '3px solid hsl(152 56% 42%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
@@ -212,14 +212,14 @@ export default function Overview() {
           <p className="text-2xl font-bold text-success">{formatMultiCurrency(paidByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
         </Link>
-        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-4" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
+        <Link to="/invoices?status=overdue" className="block rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-4" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <AlertCircle className="h-3.5 w-3.5 text-overdue" />
             <p className="text-xs font-medium text-muted-foreground">Overdue</p>
           </div>
           <p className="text-2xl font-bold text-overdue">{formatMultiCurrency(overdueByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
-        </div>
+        </Link>
         <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-5" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <Receipt className="h-3.5 w-3.5 text-destructive" />
