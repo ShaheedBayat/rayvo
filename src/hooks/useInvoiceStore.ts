@@ -234,6 +234,7 @@ export function useCompanies() {
 export function usePublicInvoice(id: string, token: string | null) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
+  const [totalPaid, setTotalPaid] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -248,6 +249,16 @@ export function usePublicInvoice(id: string, token: string | null) {
       if (error || !data) { setLoading(false); return; }
       const inv = mapInvoice(data);
       setInvoice(inv);
+
+      // Fetch payments for this invoice
+      const { data: payData } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('invoice_id', id);
+      if (payData) {
+        setTotalPaid(payData.reduce((sum, p) => sum + Number(p.amount), 0));
+      }
+
       if (inv.companyId) {
         const { data: compData } = await supabase
           .from('companies')
@@ -261,5 +272,5 @@ export function usePublicInvoice(id: string, token: string | null) {
     fetch();
   }, [id, token]);
 
-  return { invoice, company, loading };
+  return { invoice, company, totalPaid, loading };
 }
