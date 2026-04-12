@@ -520,6 +520,7 @@ export default function InvoiceView() {
               <Button variant="outline" size="sm" onClick={() => setApplyCreditOpen(true)} className="text-info border-info/30 hover:bg-info/10">
                 <Receipt className="mr-1.5 h-4 w-4" /> Apply Credit
               </Button>
+            )}
             <Button variant="outline" size="sm" onClick={handleShare}>
               <Share2 className="mr-1.5 h-4 w-4" /> Share
             </Button>
