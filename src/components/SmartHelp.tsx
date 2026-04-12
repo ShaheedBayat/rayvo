@@ -38,16 +38,11 @@ export default function SmartHelp() {
     }
   }, [open]);
 
-  // When navigating to a new page while open, auto-ask about the new page
+  // Keep the same conversation when navigating between pages
   useEffect(() => {
     if (prevPathRef.current !== location.pathname) {
       prevPathRef.current = location.pathname;
-      if (open) {
-        setMessages([]);
-        setTimeout(() => askHelp("What can I do on this page? Give me a quick guide."), 0);
-      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   const askHelp = async (question?: string) => {
