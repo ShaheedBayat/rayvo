@@ -260,6 +260,9 @@ export default function CreateInvoice() {
         status: 'draft',
         createdAt: new Date().toISOString(),
         dueDate,
+        invoiceType,
+        depositType: invoiceType === 'deposit' ? depositType : undefined,
+        depositValue: invoiceType === 'deposit' ? depositValue : undefined,
       };
 
       await safeExecuteAction({
