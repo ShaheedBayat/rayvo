@@ -4,6 +4,7 @@ import { useExpenses, EXPENSE_CATEGORIES, type Expense } from '@/hooks/useExpens
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useActivityLog } from '@/hooks/useActivityLog';
+import { useAttachments } from '@/hooks/useAttachments';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,10 +15,47 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Receipt, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Receipt, Loader2, Paperclip, X, FileText, Image } from 'lucide-react';
 import { formatDate } from '@/lib/formatDate';
 import { formatCurrency } from '@/types/invoice';
 import type { Currency } from '@/types/invoice';
+import FileUpload from '@/components/FileUpload';
+
+function ExpenseAttachments({ expenseId }: { expenseId: string }) {
+  const { attachments, loading, uploadAttachment, deleteAttachment, getPublicUrl } = useAttachments('expense', expenseId);
+
+  if (loading) return null;
+
+  const isImage = (mime: string) => mime.startsWith('image/');
+
+  return (
+    <div className="space-y-3">
+      <FileUpload onUpload={uploadAttachment} maxSizeMb={10} accept=".pdf,.jpg,.jpeg,.png,.webp" />
+      {attachments.length > 0 && (
+        <div className="space-y-2">
+          {attachments.map(att => (
+            <div key={att.id} className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+              {isImage(att.mimeType) ? <Image className="h-4 w-4 text-muted-foreground shrink-0" /> : <FileText className="h-4 w-4 text-muted-foreground shrink-0" />}
+              <a href={getPublicUrl(att.filePath)} target="_blank" rel="noopener noreferrer" className="truncate text-primary hover:underline flex-1">
+                {att.fileName}
+              </a>
+              <span className="text-[10px] text-muted-foreground shrink-0">{(att.fileSize / 1024).toFixed(0)}KB</span>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => deleteAttachment(att)}>
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExpenseReceiptIndicator({ expenseId }: { expenseId: string }) {
+  const { attachments } = useAttachments('expense', expenseId);
+  if (attachments.length === 0) return null;
+  return <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />;
+}
 
 export default function Expenses() {
   const { expenses, loading, addExpense, updateExpense, deleteExpense, refetch } = useExpenses();
@@ -181,7 +219,7 @@ export default function Expenses() {
                 <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Vendor</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                 <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
-                <th className="px-4 py-2.5 w-20" />
+                <th className="px-4 py-2.5 w-24" />
               </tr>
             </thead>
             <tbody>
@@ -207,7 +245,8 @@ export default function Expenses() {
                   </td>
                   <td className="px-4 py-2.5 text-right mono font-medium">{formatCurrency(e.amount, (e.currency || 'ZAR') as Currency)}</td>
                   <td className="px-4 py-2.5">
-                    <div className="flex gap-1 justify-end">
+                    <div className="flex gap-1 justify-end items-center">
+                      <ExpenseReceiptIndicator expenseId={e.id} />
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(e)}><Pencil className="h-3 w-3" /></Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(e.id)}><Trash2 className="h-3 w-3" /></Button>
                     </div>
@@ -221,7 +260,7 @@ export default function Expenses() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Edit Expense' : 'Add Expense'}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
             <div className="grid gap-3 sm:grid-cols-2">
@@ -287,6 +326,15 @@ export default function Expenses() {
               <Label className="text-xs">Notes</Label>
               <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
             </div>
+
+            {/* Receipt uploads — only when editing an existing expense */}
+            {editing && (
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5"><Paperclip className="h-3 w-3" /> Receipts</Label>
+                <ExpenseAttachments expenseId={editing.id} />
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={submitting}>
