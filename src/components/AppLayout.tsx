@@ -10,6 +10,7 @@ import CommandPalette from '@/components/CommandPalette';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useRecurringProcessor } from '@/hooks/useRecurringProcessor';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
