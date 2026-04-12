@@ -65,7 +65,10 @@ export default function InvoiceView() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
-
+  const [applyCreditOpen, setApplyCreditOpen] = useState(false);
+  const [selectedCreditNoteId, setSelectedCreditNoteId] = useState('');
+  const [applyCreditAmount, setApplyCreditAmount] = useState('');
+  const [applyingCredit, setApplyingCredit] = useState(false);
   // Payment form state
   const [payAmount, setPayAmount] = useState('');
   const [payDate, setPayDate] = useState(() => new Date().toISOString().split('T')[0]);
