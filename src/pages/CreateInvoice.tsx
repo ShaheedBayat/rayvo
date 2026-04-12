@@ -8,6 +8,7 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
+import { useExpenses } from '@/hooks/useExpenses';
 import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
@@ -25,6 +26,7 @@ import InvoiceLineItems from '@/components/invoice/InvoiceLineItems';
 import InvoiceSummary from '@/components/invoice/InvoiceSummary';
 import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
+import BillableExpenses from '@/components/invoice/BillableExpenses';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { useActivityLog } from '@/hooks/useActivityLog';
@@ -40,6 +42,8 @@ export default function CreateInvoice() {
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
   const { products } = useProducts();
+  const { markExpenseAsBilled, refetch: refetchExpenses } = useExpenses();
+  const [pendingBilledExpenseIds, setPendingBilledExpenseIds] = useState<string[]>([]);
   const companyId = activeCompany?.id || '';
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const pricingMode = activeCompany?.pricingMode || 'exclusive';
@@ -193,6 +197,12 @@ export default function CreateInvoice() {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
   };
 
+  const handleAddBillableExpenses = (newItems: InvoiceItem[], expenseIds: string[]) => {
+    setItems(prev => [...prev, ...newItems]);
+    setPendingBilledExpenseIds(prev => [...prev, ...expenseIds]);
+  };
+
+
   const handleCustomerSelect = (customer: { name: string; email: string; address: string; taxRate?: number; currency?: string; dueDays?: number }) => {
     setClientName(customer.name);
     setClientEmail(customer.email);
@@ -259,6 +269,11 @@ export default function CreateInvoice() {
         },
         successMessage: `Invoice created successfully`,
         onSuccess: async (created) => {
+          // Mark billable expenses as billed
+          for (const expId of pendingBilledExpenseIds) {
+            await markExpenseAsBilled(expId, created.id);
+          }
+          if (pendingBilledExpenseIds.length > 0) await refetchExpenses();
           await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
           toast.success(`Invoice ${created.invoiceNumber} created successfully`);
           navigate(`/invoices/${created.id}`);
@@ -424,6 +439,13 @@ export default function CreateInvoice() {
                 </div>
               </div>
             )}
+
+            <BillableExpenses
+              clientName={clientName}
+              customerId={selectedCustomer?.id || null}
+              currency={currency}
+              onAddItems={handleAddBillableExpenses}
+            />
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow" style={{ overflow: 'visible' }}>
               <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Line Items</h2>

@@ -7,6 +7,7 @@ import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
+import { useExpenses } from '@/hooks/useExpenses';
 import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { ArrowLeft } from 'lucide-react';
@@ -21,6 +22,7 @@ import InvoiceLineItems from '@/components/invoice/InvoiceLineItems';
 import InvoiceSummary from '@/components/invoice/InvoiceSummary';
 import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
+import BillableExpenses from '@/components/invoice/BillableExpenses';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { useActivityLog } from '@/hooks/useActivityLog';
@@ -33,6 +35,8 @@ export default function EditInvoice() {
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
   const { products } = useProducts();
+  const { markExpenseAsBilled, refetch: refetchExpenses } = useExpenses();
+  const [pendingBilledExpenseIds, setPendingBilledExpenseIds] = useState<string[]>([]);
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const pricingMode = activeCompany?.pricingMode || 'exclusive';
   const { taxRates, ensureDefaults } = useTaxRates(activeCompany?.id);
@@ -104,6 +108,12 @@ export default function EditInvoice() {
     setItems(prev => prev.map(i => (i.id === itemId ? { ...i, [field]: value } : i)));
   };
 
+  const handleAddBillableExpenses = (newItems: InvoiceItem[], expenseIds: string[]) => {
+    setItems(prev => [...prev, ...newItems]);
+    setPendingBilledExpenseIds(prev => [...prev, ...expenseIds]);
+  };
+
+
   const handleCustomerSelect = (customer: { name: string; email: string; address: string; taxRate?: number; currency?: string; dueDays?: number }) => {
     setClientName(customer.name);
     setClientEmail(customer.email);
@@ -147,6 +157,11 @@ export default function EditInvoice() {
       },
       successMessage: 'Invoice updated!',
       onSuccess: async () => {
+        // Mark billable expenses as billed
+        for (const expId of pendingBilledExpenseIds) {
+          await markExpenseAsBilled(expId, invoice.id);
+        }
+        if (pendingBilledExpenseIds.length > 0) await refetchExpenses();
         await logActivity('invoice', invoice.id, 'updated', `Invoice ${invoice.invoiceNumber} updated`);
         navigate(`/invoices/${invoice.id}`);
       },
@@ -217,6 +232,13 @@ export default function EditInvoice() {
                 </div>
               </div>
             </div>
+
+            <BillableExpenses
+              clientName={clientName}
+              customerId={customers.find(c => c.name === clientName)?.id || null}
+              currency={currency}
+              onAddItems={handleAddBillableExpenses}
+            />
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
               <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Line Items</h2>

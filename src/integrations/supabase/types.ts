@@ -766,13 +766,17 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          billed_invoice_id: string | null
           category: string
           company_id: string | null
           created_at: string
           currency: string
+          customer_id: string | null
           date: string
           description: string
           id: string
+          is_billable: boolean
+          is_billed: boolean
           notes: string | null
           owner_id: string
           reference: string | null
@@ -781,13 +785,17 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          billed_invoice_id?: string | null
           category?: string
           company_id?: string | null
           created_at?: string
           currency?: string
+          customer_id?: string | null
           date?: string
           description?: string
           id?: string
+          is_billable?: boolean
+          is_billed?: boolean
           notes?: string | null
           owner_id: string
           reference?: string | null
@@ -796,13 +804,17 @@ export type Database = {
         }
         Update: {
           amount?: number
+          billed_invoice_id?: string | null
           category?: string
           company_id?: string | null
           created_at?: string
           currency?: string
+          customer_id?: string | null
           date?: string
           description?: string
           id?: string
+          is_billable?: boolean
+          is_billed?: boolean
           notes?: string | null
           owner_id?: string
           reference?: string | null
@@ -811,10 +823,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "expenses_billed_invoice_id_fkey"
+            columns: ["billed_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "expenses_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]

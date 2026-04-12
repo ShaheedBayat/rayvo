@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useExpenses, EXPENSE_CATEGORIES, type Expense } from '@/hooks/useExpenses';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useCustomers } from '@/hooks/useCustomers';
 import { useActivityLog } from '@/hooks/useActivityLog';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -20,6 +22,7 @@ import type { Currency } from '@/types/invoice';
 export default function Expenses() {
   const { expenses, loading, addExpense, updateExpense, deleteExpense, refetch } = useExpenses();
   const { activeCompanyId } = useActiveCompany();
+  const { customers } = useCustomers();
   const { logActivity } = useActivityLog();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -37,6 +40,8 @@ export default function Expenses() {
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
   const [includeVat, setIncludeVat] = useState(false);
+  const [isBillable, setIsBillable] = useState(false);
+  const [customerId, setCustomerId] = useState<string>('');
 
   const resetForm = () => {
     setDate(new Date().toISOString().split('T')[0]);
@@ -47,6 +52,8 @@ export default function Expenses() {
     setReference('');
     setNotes('');
     setIncludeVat(false);
+    setIsBillable(false);
+    setCustomerId('');
     setEditing(null);
   };
 
@@ -60,6 +67,8 @@ export default function Expenses() {
     setVendor(e.vendor);
     setReference(e.reference);
     setNotes(e.notes);
+    setIsBillable(e.isBillable);
+    setCustomerId(e.customerId || '');
     setDialogOpen(true);
   };
 
@@ -70,6 +79,10 @@ export default function Expenses() {
     const data = {
       date, category, description, amount: parsedAmount,
       currency: 'ZAR', vendor, reference, notes, companyId: activeCompanyId || null,
+      isBillable,
+      customerId: isBillable && customerId ? customerId : null,
+      isBilled: editing?.isBilled ?? false,
+      billedInvoiceId: editing?.billedInvoiceId ?? null,
     };
 
     if (editing) {
@@ -116,6 +129,11 @@ export default function Expenses() {
   const filtered = filterCategory === 'all' ? expenses : expenses.filter(e => e.category === filterCategory);
   const totalExpenses = filtered.reduce((sum, e) => sum + e.amount, 0);
 
+  const getCustomerName = (cId: string | null) => {
+    if (!cId) return null;
+    return customers.find(c => c.id === cId)?.name || null;
+  };
+
   return (
     <AppLayout>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -161,6 +179,7 @@ export default function Expenses() {
                 <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Description</th>
                 <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Vendor</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                 <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
                 <th className="px-4 py-2.5 w-20" />
               </tr>
@@ -172,8 +191,20 @@ export default function Expenses() {
                   <td className="px-4 py-2.5">
                     <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">{e.category}</span>
                   </td>
-                  <td className="px-4 py-2.5 max-w-[200px] truncate">{e.description || '—'}</td>
+                  <td className="px-4 py-2.5 max-w-[200px] truncate">
+                    {e.description || '—'}
+                    {e.isBillable && !e.isBilled && (
+                      <span className="ml-1.5 text-[10px] text-muted-foreground">(Billable{getCustomerName(e.customerId) ? ` — ${getCustomerName(e.customerId)}` : ''})</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-muted-foreground">{e.vendor || '—'}</td>
+                  <td className="px-4 py-2.5">
+                    {e.isBilled ? (
+                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]">Billed</Badge>
+                    ) : e.isBillable ? (
+                      <Badge variant="outline" className="text-[10px]">Billable</Badge>
+                    ) : null}
+                  </td>
                   <td className="px-4 py-2.5 text-right mono font-medium">{formatCurrency(e.amount, (e.currency || 'ZAR') as Currency)}</td>
                   <td className="px-4 py-2.5">
                     <div className="flex gap-1 justify-end">
@@ -226,6 +257,28 @@ export default function Expenses() {
               <Switch checked={includeVat} onCheckedChange={setIncludeVat} id="include-vat" />
               <Label htmlFor="include-vat" className="text-xs text-muted-foreground">Amount includes VAT</Label>
             </div>
+
+            {/* Billable toggle */}
+            <div className="space-y-3 rounded-lg border border-border/50 p-3">
+              <div className="flex items-center gap-2">
+                <Switch checked={isBillable} onCheckedChange={setIsBillable} id="is-billable" />
+                <Label htmlFor="is-billable" className="text-xs font-medium">Billable to customer</Label>
+              </div>
+              {isBillable && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Customer</Label>
+                  <Select value={customerId} onValueChange={setCustomerId}>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Select customer..." /></SelectTrigger>
+                    <SelectContent>
+                      {customers.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs">Reference</Label>
               <Input value={reference} onChange={e => setReference(e.target.value)} className="h-9" placeholder="e.g. receipt number" />
