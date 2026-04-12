@@ -271,6 +271,17 @@ function CompanyCreateForm({
           <Input required value={country} onChange={e => setCountry(e.target.value)} />
         </div>
       </div>
+      <div className="space-y-1.5">
+        <Label>Default Currency</Label>
+        <Select value={defaultCurrency} onValueChange={(v) => setDefaultCurrency(v as Currency)}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {Object.entries(currencyLabels).map(([code, label]) => (
+              <SelectItem key={code} value={code}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="space-y-4 pt-2">
         <div className="flex items-start gap-3">
           <Checkbox checked={isVatRegistered} onCheckedChange={(v) => setIsVatRegistered(!!v)} id="vat-reg-new" className="mt-0.5" />
