@@ -197,6 +197,12 @@ export default function CreateInvoice() {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
   };
 
+  const handleAddBillableExpenses = (newItems: InvoiceItem[], expenseIds: string[]) => {
+    setItems(prev => [...prev, ...newItems]);
+    setPendingBilledExpenseIds(prev => [...prev, ...expenseIds]);
+  };
+
+
   const handleCustomerSelect = (customer: { name: string; email: string; address: string; taxRate?: number; currency?: string; dueDays?: number }) => {
     setClientName(customer.name);
     setClientEmail(customer.email);
