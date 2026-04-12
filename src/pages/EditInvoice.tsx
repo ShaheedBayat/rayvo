@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 import { v4 as uuidv4 } from 'uuid';
 import { useInvoices } from '@/hooks/useInvoiceStore';
@@ -30,6 +30,8 @@ import { useActivityLog } from '@/hooks/useActivityLog';
 export default function EditInvoice() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const lateFeeState = (location.state as any)?.addLateFee;
   const permissions = usePermissions();
   const { getInvoice, updateInvoice } = useInvoices();
   const { logActivity } = useActivityLog();
@@ -68,10 +70,26 @@ export default function EditInvoice() {
       setDueDate(invoice.dueDate);
       setTaxRate(invoice.taxRate);
       setNotes(invoice.notes);
-      setItems(invoice.items);
+      let invoiceItems = [...invoice.items];
+      // Auto-add late fee line item if navigated with addLateFee state
+      if (lateFeeState?.description && lateFeeState?.amount) {
+        const alreadyHas = invoiceItems.some(item =>
+          item.description.toLowerCase().includes('late') && item.description.toLowerCase().includes('fee')
+        );
+        if (!alreadyHas) {
+          invoiceItems.push({
+            id: uuidv4(),
+            description: lateFeeState.description,
+            quantity: 1,
+            unitPrice: lateFeeState.amount,
+          });
+          toast.info('Late payment fee added as a line item');
+        }
+      }
+      setItems(invoiceItems);
       setLoaded(true);
     }
-  }, [invoice, loaded]);
+  }, [invoice, loaded, lateFeeState]);
 
   if (!invoice) {
     return (

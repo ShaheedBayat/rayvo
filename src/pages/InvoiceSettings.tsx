@@ -1,15 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBrandingThemes, type BrandingTheme, getDefaultTheme } from '@/hooks/useBrandingThemes';
+import { useGlobalSettings, type LateFeeSettings } from '@/hooks/useGlobalSettings';
 import BrandingThemeEditor from '@/components/branding/BrandingThemeEditor';
 import TemplateLibrary from '@/components/branding/TemplateLibrary';
 import TemplateExportImport from '@/components/branding/TemplateExportImport';
 import AILayoutSuggestions from '@/components/branding/AILayoutSuggestions';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, MoreHorizontal, Pencil, Copy, Star, Trash2, ArrowLeft,
-  FileText, CreditCard, Bell, Settings2, LayoutGrid, Sparkles, ArrowUpDown,
+  FileText, CreditCard, Bell, Settings2, LayoutGrid, Sparkles, ArrowUpDown, AlertTriangle,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -21,6 +26,7 @@ const tabs = [
   { id: 'library', label: 'Template Library', icon: LayoutGrid },
   { id: 'ai', label: 'AI Assistant', icon: Sparkles },
   { id: 'export', label: 'Import / Export', icon: ArrowUpDown },
+  { id: 'latefees', label: 'Late Fees', icon: AlertTriangle },
   { id: 'defaults', label: 'Default Settings', icon: Settings2 },
   { id: 'payments', label: 'Payment Services', icon: CreditCard },
   { id: 'reminders', label: 'Reminders', icon: Bell },
@@ -106,9 +112,21 @@ function ThemeCard({ theme, onEdit, onDuplicate, onSetDefault, onDelete }: {
 
 export default function InvoiceSettings() {
   const { themes, addTheme, updateTheme, deleteTheme, duplicateTheme, setDefault } = useBrandingThemes();
+  const { settings: globalSettings, saveLateFeeSettings } = useGlobalSettings();
   const [activeTab, setActiveTab] = useState('themes');
   const [editingTheme, setEditingTheme] = useState<BrandingTheme | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [lateFeeEnabled, setLateFeeEnabled] = useState(false);
+  const [lateFeeType, setLateFeeType] = useState<'flat' | 'percentage'>('percentage');
+  const [lateFeeValue, setLateFeeValue] = useState('');
+
+  useEffect(() => {
+    if (globalSettings?.lateFee) {
+      setLateFeeEnabled(globalSettings.lateFee.enabled);
+      setLateFeeType(globalSettings.lateFee.type);
+      setLateFeeValue(globalSettings.lateFee.value > 0 ? String(globalSettings.lateFee.value) : '');
+    }
+  }, [globalSettings]);
 
   const handleApplyPreset = async (themeData: Partial<BrandingTheme>) => {
     const result = await addTheme(themeData);
@@ -269,6 +287,71 @@ export default function InvoiceSettings() {
       {activeTab === 'export' && (
         <div className="max-w-2xl">
           <TemplateExportImport themes={themes} onImport={handleImport} />
+        </div>
+      )}
+
+      {activeTab === 'latefees' && (
+        <div className="max-w-lg rounded-xl border bg-card p-6 space-y-6">
+          <div>
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Late Payment Fees
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Automatically prompt to add a late fee when an invoice goes overdue.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Switch checked={lateFeeEnabled} onCheckedChange={setLateFeeEnabled} />
+            <span className="text-sm">{lateFeeEnabled ? 'Late fees enabled' : 'Late fees disabled'}</span>
+          </div>
+
+          {lateFeeEnabled && (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Fee Type</Label>
+                <Select value={lateFeeType} onValueChange={(v) => setLateFeeType(v as 'flat' | 'percentage')}>
+                  <SelectTrigger className="h-9 w-56"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage per month</SelectItem>
+                    <SelectItem value="flat">Flat fee</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  {lateFeeType === 'percentage' ? 'Percentage (%)' : 'Flat fee amount'}
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={lateFeeValue}
+                  onChange={e => setLateFeeValue(e.target.value)}
+                  placeholder={lateFeeType === 'percentage' ? 'e.g. 2' : 'e.g. 250'}
+                  className="h-9 w-56"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {lateFeeType === 'percentage'
+                    ? 'E.g. 2 means 2% of the invoice total per month overdue.'
+                    : 'A fixed amount added as a line item when the invoice is overdue.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <Button
+            size="sm"
+            onClick={async () => {
+              const val = parseFloat(lateFeeValue) || 0;
+              if (lateFeeEnabled && val <= 0) { toast.error('Enter a valid fee value'); return; }
+              const ok = await saveLateFeeSettings({ enabled: lateFeeEnabled, type: lateFeeType, value: val });
+              if (ok) toast.success('Late fee settings saved');
+              else toast.error('Failed to save');
+            }}
+          >
+            Save Late Fee Settings
+          </Button>
         </div>
       )}
 
