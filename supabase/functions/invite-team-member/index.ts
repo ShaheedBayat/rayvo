@@ -68,7 +68,7 @@ serve(async (req) => {
       if (company?.name) companyName = company.name;
     }
 
-    const siteUrl = Deno.env.get("SITE_URL") || req.headers.get("origin") || "https://rayvo.lovable.app";
+    const siteUrl = Deno.env.get("SITE_URL") || req.headers.get("origin") || req.headers.get("referer")?.split("/").slice(0, 3).join("/") || "https://rayvo.lovable.app";
     const inviteUrl = new URL("/auth", siteUrl);
     inviteUrl.searchParams.set("mode", "signup");
     inviteUrl.searchParams.set("email", email);
