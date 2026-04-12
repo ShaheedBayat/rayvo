@@ -25,6 +25,9 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
   approved: { label: 'Approved', className: 'bg-info/10 text-info border-info/20' },
   sent: { label: 'Sent', className: 'bg-warning/10 text-warning border-warning/20' },
+  available: { label: 'Available', className: 'bg-success/10 text-success border-success/20' },
+  applied: { label: 'Applied', className: 'bg-muted text-muted-foreground' },
+  partially_applied: { label: 'Partially Applied', className: 'bg-warning/10 text-warning border-warning/20' },
 };
 
 export default function CreditNotes() {
