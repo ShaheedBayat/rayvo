@@ -50,6 +50,7 @@ function mapCompany(row: any): Company {
     isVatRegistered: row.is_vat_registered ?? false,
     vatRate: row.vat_rate ?? 15,
     pricingMode: row.pricing_mode || 'exclusive',
+    defaultCurrency: row.default_currency || 'ZAR',
   };
 }
 
