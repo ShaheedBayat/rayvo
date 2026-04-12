@@ -4,11 +4,13 @@ import raynLogo from '@/assets/rayn-logo.png';
 import {
   LayoutDashboard, FileText, Users, Package, Building2, BarChart3, Settings,
   Plus, LogOut, Sun, Moon, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
-  CreditCard, Receipt, FileCheck, Menu, X, Wallet, Activity, UsersRound,
+  CreditCard, Receipt, FileCheck, Menu, X, Wallet, Activity, UsersRound, Search,
 } from 'lucide-react';
+import CommandPalette from '@/components/CommandPalette';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
+import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useRecurringProcessor } from '@/hooks/useRecurringProcessor';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
@@ -23,11 +25,12 @@ interface NavItemProps {
   icon: React.ElementType;
   active: boolean;
   collapsed: boolean;
+  badge?: number;
   children?: { to: string; label: string }[];
   onNavigate?: () => void;
 }
 
-function NavItem({ to, label, icon: Icon, active, collapsed, children, onNavigate }: NavItemProps) {
+function NavItem({ to, label, icon: Icon, active, collapsed, badge, children, onNavigate }: NavItemProps) {
   const location = useLocation();
   const [open, setOpen] = useState(() => {
     if (!children) return false;
@@ -84,12 +87,19 @@ function NavItem({ to, label, icon: Icon, active, collapsed, children, onNavigat
       title={collapsed ? label : undefined}
       className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
         active
-          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-sidebar-primary -ml-[2px]'
           : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
       }`}
     >
-      <Icon className="h-4 w-4 shrink-0" />
-      {!collapsed && <span>{label}</span>}
+      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-sidebar-primary' : ''}`} />
+      {!collapsed && (
+        <span className="flex-1">{label}</span>
+      )}
+      {!collapsed && badge !== undefined && badge > 0 && (
+        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-sidebar-primary/20 px-1.5 text-[10px] font-semibold text-sidebar-primary">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </Link>
   );
 }
@@ -97,22 +107,12 @@ function NavItem({ to, label, icon: Icon, active, collapsed, children, onNavigat
 function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean, canCreateInvoice: boolean) {
   const salesNav = [
     { to: '/', label: 'Overview', icon: LayoutDashboard },
-    {
-      to: '/invoices', label: 'Invoices', icon: FileText,
-      children: [
-        { to: '/invoices', label: 'All Invoices' },
-        { to: '/invoices?status=draft', label: 'Draft' },
-        { to: '/invoices?status=sent', label: 'Awaiting Payment' },
-        { to: '/invoices?status=paid', label: 'Paid' },
-        { to: '/invoices?status=overdue', label: 'Overdue' },
-        { to: '/invoices?tab=recurring', label: 'Recurring Invoices' },
-      ],
-    },
+    { to: '/invoices', label: 'Invoices', icon: FileText },
     { to: '/credit-notes', label: 'Credit Notes', icon: Receipt },
     { to: '/quotes', label: 'Quotes', icon: FileCheck },
     { to: '/customers', label: 'Customers', icon: Users },
     { to: '/customer-statements', label: 'Statements', icon: FileText },
-    { to: '/products', label: 'Products & Services', icon: Package },
+    { to: '/products', label: 'Products', icon: Package },
     { to: '/online-payments', label: 'Online Payments', icon: CreditCard },
     { to: '/expenses', label: 'Expenses', icon: Wallet },
   ];
@@ -129,7 +129,7 @@ function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean, ca
   return { salesNav, manageNav };
 }
 
-function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void; salesNav: any[]; manageNav: any[] }) {
+function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav, badges }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void; salesNav: any[]; manageNav: any[]; badges?: Record<string, number> }) {
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
       <div>
@@ -139,7 +139,7 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }
           </p>
         )}
         <div className="space-y-0.5">
-          {salesNav.map((item) => (
+          {salesNav.map((item: any) => (
             <NavItem
               key={item.to + item.label}
               to={item.to}
@@ -147,7 +147,7 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }
               icon={item.icon}
               active={isActive(item.to)}
               collapsed={collapsed}
-              children={'children' in item ? item.children : undefined}
+              badge={badges?.[item.to]}
               onNavigate={onNavigate}
             />
           ))}
@@ -160,7 +160,7 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }
           </p>
         )}
         <div className="space-y-0.5">
-          {manageNav.map((item) => (
+          {manageNav.map((item: any) => (
             <NavItem
               key={item.to}
               to={item.to}
@@ -168,6 +168,7 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav }
               icon={item.icon}
               active={isActive(item.to)}
               collapsed={collapsed}
+              badge={badges?.[item.to]}
               onNavigate={onNavigate}
             />
           ))}
@@ -182,12 +183,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { signOut, user } = useAuth();
   const permissions = usePermissions();
   const { theme, toggleTheme } = useTheme();
-  const { activeCompany, companies, switchCompany } = useActiveCompany();
+  const { activeCompany, companies, switchCompany, activeCompanyId } = useActiveCompany();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   useRecurringProcessor();
 
   const { salesNav, manageNav } = getNavItems(permissions.canAccessSettings, permissions.canManageCompanies, permissions.canCreateInvoice);
+
+  // Badge counts for sidebar
+  const { invoices: allInvoices } = useInvoices();
+  const companyInvoices = activeCompanyId ? allInvoices.filter((i: any) => i.companyId === activeCompanyId) : allInvoices;
+  const activeInvoices = companyInvoices.filter((i: any) => i.status !== 'voided');
+  const overdueCount = activeInvoices.filter((i: any) => (i.status === 'sent' || i.status === 'partially_paid') && new Date(i.dueDate) < new Date()).length;
+  const draftCount = activeInvoices.filter((i: any) => i.status === 'draft').length;
+  const badges: Record<string, number> = {
+    '/invoices': overdueCount + draftCount,
+  };
 
   const cachedName = localStorage.getItem('activeCompanyName');
   const cachedLogo = localStorage.getItem('activeCompanyLogo');
@@ -237,6 +248,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
+    <>
+    <CommandPalette />
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside
@@ -245,7 +258,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }`}
       >
         <LogoSection isCollapsed={collapsed} />
-        <SidebarContent collapsed={collapsed} isActive={isActive} salesNav={salesNav} manageNav={manageNav} />
+        <SidebarContent collapsed={collapsed} isActive={isActive} salesNav={salesNav} manageNav={manageNav} badges={badges} />
         <div className="border-t border-border/40 p-3">
           <button
             onClick={() => setCollapsed(!collapsed)}
@@ -270,7 +283,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
                 <LogoSection isCollapsed={false} />
-                <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} salesNav={salesNav} manageNav={manageNav} />
+                <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} salesNav={salesNav} manageNav={manageNav} badges={badges} />
               </SheetContent>
             </Sheet>
 
@@ -304,6 +317,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Search / Command Palette trigger */}
+            <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-2 h-9 rounded-lg text-muted-foreground hover:text-foreground border border-border/60 px-3" onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}>
+              <Search className="h-3.5 w-3.5" />
+              <span className="text-xs">Search...</span>
+              <kbd className="ml-2 pointer-events-none hidden sm:inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                ⌘K
+              </kbd>
+            </Button>
+
             <Button variant="ghost" size="icon" onClick={toggleTheme} title="Toggle theme" className="h-9 w-9 rounded-lg">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
@@ -317,9 +339,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild><Link to="/invoices/new"><FileText className="mr-2 h-4 w-4" /> New Invoice</Link></DropdownMenuItem>
-                  {permissions.canManageRecurring && (
-                    <DropdownMenuItem asChild><Link to="/invoices/recurring/new"><Receipt className="mr-2 h-4 w-4" /> New Recurring Invoice</Link></DropdownMenuItem>
-                  )}
                   <DropdownMenuSeparator />
                   {permissions.canCreateCustomer && (
                     <DropdownMenuItem asChild><Link to="/customers"><Users className="mr-2 h-4 w-4" /> New Customer</Link></DropdownMenuItem>
@@ -361,5 +380,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
     </div>
+    </>
   );
 }
