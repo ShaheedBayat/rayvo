@@ -59,7 +59,7 @@ export default function CreateInvoice() {
 
   const defaultRate = isVatRegistered ? (activeCompany?.vatRate ?? 15) : 0;
 
-  const [currency, setCurrency] = useState<Currency>(dupState?.currency || 'ZAR');
+  const [currency, setCurrency] = useState<Currency>(dupState?.currency || activeCompany?.defaultCurrency || 'ZAR');
   const [clientName, setClientName] = useState(dupState?.clientName || '');
   const [clientEmail, setClientEmail] = useState(dupState?.clientEmail || '');
   const [clientAddress, setClientAddress] = useState(dupState?.clientAddress || '');
