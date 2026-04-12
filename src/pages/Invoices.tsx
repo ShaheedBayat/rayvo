@@ -406,9 +406,17 @@ export default function Invoices() {
                               <span className={`mono font-medium ${inv.status === 'voided' ? 'line-through text-muted-foreground' : ''}`}>{formatCurrency((() => { const co = getCompany(inv.companyId); return calculateSmartTotals(inv.items, inv.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total; })(), inv.currency)}</span>
                             </td>
                             <td className="px-4 py-3.5 text-center">
-                              <Badge variant="outline" className={`${config.className} text-[11px] capitalize`}>
-                                {isOverdue ? 'Overdue' : config.label}
-                              </Badge>
+                              <div className="flex items-center justify-center gap-1.5">
+                                <Badge variant="outline" className={`${config.className} text-[11px] capitalize`}>
+                                  {isOverdue ? 'Overdue' : config.label}
+                                </Badge>
+                                {(inv as any).invoiceType === 'deposit' && (
+                                  <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-[10px]">Deposit</Badge>
+                                )}
+                                {(inv as any).invoiceType === 'balance' && (
+                                  <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 text-[10px]">Balance</Badge>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-3.5">
                               <DropdownMenu>
