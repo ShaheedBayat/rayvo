@@ -36,6 +36,7 @@ import Team from "./pages/Team";
 import Onboarding from "./pages/Onboarding";
 import Unsubscribe from "./pages/Unsubscribe";
 import { toast } from "sonner";
+import SmartHelp from "@/components/SmartHelp";
 
 const queryClient = new QueryClient();
 
@@ -171,7 +172,8 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <ActiveCompanyProvider>
-            <Routes>
+              <SmartHelp />
+              <Routes>
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
               <Route path="/onboarding" element={<ProtectedRoute><OnboardingGuard><Onboarding /></OnboardingGuard></ProtectedRoute>} />
               <Route path="/public/invoice/:id" element={<PublicInvoice />} />
