@@ -9,7 +9,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useTaxRates } from '@/hooks/useTaxRates';
 import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { useExpenses } from '@/hooks/useExpenses';
-import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
+import type { Invoice, InvoiceItem, Currency, InvoiceType, DepositType } from '@/types/invoice';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -77,6 +77,11 @@ export default function CreateInvoice() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
   const [dayOfMonth, setDayOfMonth] = useState(1);
+
+  // Deposit invoice state
+  const [invoiceType, setInvoiceType] = useState<InvoiceType>('standard');
+  const [depositType, setDepositType] = useState<DepositType>('percentage');
+  const [depositValue, setDepositValue] = useState(50);
 
   const computeNextRunDate = (freq: string, dom: number): string => {
     const now = new Date();
@@ -255,6 +260,9 @@ export default function CreateInvoice() {
         status: 'draft',
         createdAt: new Date().toISOString(),
         dueDate,
+        invoiceType,
+        depositType: invoiceType === 'deposit' ? depositType : undefined,
+        depositValue: invoiceType === 'deposit' ? depositValue : undefined,
       };
 
       await safeExecuteAction({
@@ -340,13 +348,25 @@ export default function CreateInvoice() {
               <Switch
                 id="recurring-toggle"
                 checked={isRecurring}
-                onCheckedChange={setIsRecurring}
+                onCheckedChange={(v) => { setIsRecurring(v); if (v) setInvoiceType('standard'); }}
               />
               <Label htmlFor="recurring-toggle" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
                 <RefreshCw className="h-3.5 w-3.5" />
                 Recurring
               </Label>
             </div>
+            {!isRecurring && (
+              <div className="flex items-center gap-2 mr-2">
+                <Switch
+                  id="deposit-toggle"
+                  checked={invoiceType === 'deposit'}
+                  onCheckedChange={(v) => setInvoiceType(v ? 'deposit' : 'standard')}
+                />
+                <Label htmlFor="deposit-toggle" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+                  💰 Deposit
+                </Label>
+              </div>
+            )}
             <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
             <Button type="submit" disabled={!canSave || saving}>
               {saving ? 'Saving...' : isRecurring ? 'Create Recurring' : 'Save as Draft'}
@@ -430,6 +450,63 @@ export default function CreateInvoice() {
                     })()}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {invoiceType === 'deposit' && !isRecurring && (
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-6 invoice-shadow">
+                <h2 className="text-sm font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-4 flex items-center gap-2">
+                  💰 Deposit Settings
+                </h2>
+                <p className="text-xs text-muted-foreground mb-4">
+                  A deposit invoice charges a portion upfront. When fully paid, a balance invoice is automatically created for the remainder.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Deposit Type</Label>
+                    <Select value={depositType} onValueChange={v => setDepositType(v as DepositType)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage of Total</SelectItem>
+                        <SelectItem value="fixed">Fixed Amount</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{depositType === 'percentage' ? 'Deposit %' : `Deposit Amount (${currency})`}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={depositType === 'percentage' ? 99 : undefined}
+                      step={depositType === 'percentage' ? 1 : 0.01}
+                      value={depositValue}
+                      onChange={e => setDepositValue(parseFloat(e.target.value) || 0)}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                {totals.total > 0 && (
+                  <div className="mt-4 rounded-md bg-card border p-3 text-sm space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Full Invoice Total</span>
+                      <span className="mono font-medium">{formatCurrency(totals.total, currency)}</span>
+                    </div>
+                    <div className="flex justify-between text-amber-700 dark:text-amber-400 font-medium">
+                      <span>Deposit Amount</span>
+                      <span className="mono">{formatCurrency(
+                        depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total),
+                        currency
+                      )}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground border-t pt-1">
+                      <span>Balance (auto-invoiced later)</span>
+                      <span className="mono">{formatCurrency(
+                        totals.total - (depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total)),
+                        currency
+                      )}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

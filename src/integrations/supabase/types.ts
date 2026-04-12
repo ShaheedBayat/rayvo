@@ -938,12 +938,16 @@ export type Database = {
           created_at: string
           currency: string
           deleted_at: string | null
+          deposit_type: string | null
+          deposit_value: number | null
           due_date: string
           id: string
           invoice_number: string
+          invoice_type: string
           items: Json
           notes: string | null
           owner_id: string
+          parent_invoice_id: string | null
           share_token: string | null
           status: string
           tax_rate: number
@@ -957,12 +961,16 @@ export type Database = {
           created_at?: string
           currency?: string
           deleted_at?: string | null
+          deposit_type?: string | null
+          deposit_value?: number | null
           due_date?: string
           id?: string
           invoice_number: string
+          invoice_type?: string
           items?: Json
           notes?: string | null
           owner_id: string
+          parent_invoice_id?: string | null
           share_token?: string | null
           status?: string
           tax_rate?: number
@@ -976,12 +984,16 @@ export type Database = {
           created_at?: string
           currency?: string
           deleted_at?: string | null
+          deposit_type?: string | null
+          deposit_value?: number | null
           due_date?: string
           id?: string
           invoice_number?: string
+          invoice_type?: string
           items?: Json
           notes?: string | null
           owner_id?: string
+          parent_invoice_id?: string | null
           share_token?: string | null
           status?: string
           tax_rate?: number
@@ -993,6 +1005,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_parent_invoice_id_fkey"
+            columns: ["parent_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]

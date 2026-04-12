@@ -40,6 +40,10 @@ function mapInvoice(row: any): Invoice {
     createdAt: row.created_at,
     dueDate: row.due_date,
     shareToken: row.share_token || undefined,
+    invoiceType: (row.invoice_type as any) || 'standard',
+    depositType: (row.deposit_type as any) || 'percentage',
+    depositValue: row.deposit_value != null ? Number(row.deposit_value) : 0,
+    parentInvoiceId: row.parent_invoice_id || undefined,
   };
 }
 
@@ -80,7 +84,11 @@ export function useInvoices() {
       notes: invoice.notes,
       status: invoice.status,
       due_date: invoice.dueDate,
-    }).select().single();
+      invoice_type: invoice.invoiceType || 'standard',
+      deposit_type: invoice.depositType || 'percentage',
+      deposit_value: invoice.depositValue || 0,
+      parent_invoice_id: invoice.parentInvoiceId || null,
+    } as any).select().single();
     if (!error && data) {
       const newInvoice = mapInvoice(data);
       setInvoices(prev => [newInvoice, ...prev]);

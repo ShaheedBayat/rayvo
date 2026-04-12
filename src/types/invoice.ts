@@ -28,6 +28,9 @@ export interface InvoiceItem {
   taxRateName?: string; // name of the tax rate applied
 }
 
+export type InvoiceType = 'standard' | 'deposit' | 'balance';
+export type DepositType = 'percentage' | 'fixed';
+
 export interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -43,6 +46,10 @@ export interface Invoice {
   createdAt: string;
   dueDate: string;
   shareToken?: string;
+  invoiceType?: InvoiceType;
+  depositType?: DepositType;
+  depositValue?: number;
+  parentInvoiceId?: string;
 }
 
 export const currencySymbols: Record<Currency, string> = {

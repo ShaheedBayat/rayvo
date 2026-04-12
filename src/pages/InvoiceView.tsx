@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useVatLedger } from '@/hooks/useVatLedger';
@@ -32,7 +32,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction, safeDeleteAction } from '@/lib/safeExecuteAction';
 
@@ -51,7 +51,7 @@ export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const permissions = usePermissions();
-  const { getInvoice, updateInvoice, softDeleteInvoice, voidInvoice } = useInvoices();
+  const { getInvoice, updateInvoice, softDeleteInvoice, voidInvoice, addInvoice, invoices } = useInvoices();
   const { getCompany } = useCompanies();
   const { settings } = useGlobalSettings();
   const { payments, addPayment, deletePayment, totalPaid } = usePayments(id);
@@ -489,6 +489,44 @@ export default function InvoiceView() {
       return false;
     }
 
+    // Auto-create balance invoice when a deposit invoice is fully paid
+    if (newStatus === 'paid' && invoice.invoiceType === 'deposit' && invoice.depositValue && invoice.depositValue > 0) {
+      const depositAmount = invoice.depositType === 'percentage'
+        ? invoiceTotal * (invoice.depositValue / 100)
+        : Math.min(invoice.depositValue, invoiceTotal);
+      const balanceAmount = invoiceTotal - depositAmount;
+
+      if (balanceAmount > 0.01) {
+        const balanceId = uuidv4();
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        const balanceInvoice = await addInvoice({
+          id: balanceId,
+          invoiceNumber: '',
+          companyId: invoice.companyId,
+          clientName: invoice.clientName,
+          clientEmail: invoice.clientEmail,
+          clientAddress: invoice.clientAddress,
+          currency: invoice.currency,
+          items: [{ id: uuidv4(), description: `Balance due — Deposit invoice ${invoice.invoiceNumber}`, quantity: 1, unitPrice: balanceAmount }],
+          taxRate: 0, // Tax was already on the original invoice
+          notes: `Balance invoice for deposit ${invoice.invoiceNumber}`,
+          status: 'draft',
+          createdAt: new Date().toISOString(),
+          dueDate: d.toISOString().split('T')[0],
+          invoiceType: 'balance',
+          parentInvoiceId: invoice.id,
+        });
+        if (balanceInvoice) {
+          await logActivity('invoice', balanceId, 'created', `Balance invoice ${balanceInvoice.invoiceNumber} auto-created from deposit ${invoice.invoiceNumber}`);
+          toast.success(`Balance invoice ${balanceInvoice.invoiceNumber} created for ${formatCurrency(balanceAmount, invoice.currency)}`, {
+            action: { label: 'View', onClick: () => navigate(`/invoices/${balanceId}`) },
+            duration: 8000,
+          });
+        }
+      }
+    }
+
     if (logContext) {
       await logActivity('invoice', invoice.id, logContext.action, logContext.details);
     }
@@ -587,6 +625,12 @@ export default function InvoiceView() {
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold mono">{invoice.invoiceNumber}</h1>
             <Badge variant="outline" className={`${config.className} text-[11px]`}>{config.label}</Badge>
+            {invoice.invoiceType === 'deposit' && (
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-[11px]">💰 Deposit</Badge>
+            )}
+            {invoice.invoiceType === 'balance' && (
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 text-[11px]">📋 Balance</Badge>
+            )}
             {isLocked && (
               <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[11px] gap-1">
                 🔒 Finalized
@@ -894,6 +938,10 @@ export default function InvoiceView() {
           statusIcon = <CreditCard className="h-5 w-5 text-warning" />;
         }
 
+        // Find linked invoices
+        const linkedBalanceInvoice = invoice.invoiceType === 'deposit' ? invoices.find(i => i.parentInvoiceId === invoice.id) : null;
+        const linkedDepositInvoice = invoice.invoiceType === 'balance' && invoice.parentInvoiceId ? invoices.find(i => i.id === invoice.parentInvoiceId) : null;
+
         return (
           <>
             {/* Status banner for paid/overdue/partial */}
@@ -906,6 +954,32 @@ export default function InvoiceView() {
                   {statusLabel}
                   {isOverdue && ` — ${Math.ceil((Date.now() - new Date(invoice.dueDate).getTime()) / 86400000)} days past due`}
                 </span>
+              </div>
+            )}
+
+            {/* Deposit/Balance invoice info banner */}
+            {invoice.invoiceType === 'deposit' && (
+              <div className="mb-4 rounded-lg border-2 border-amber-500/30 bg-amber-500/5 p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">
+                    💰 Deposit Invoice — {invoice.depositType === 'percentage' ? `${invoice.depositValue}%` : formatCurrency(invoice.depositValue || 0, invoice.currency)} of total
+                  </span>
+                </div>
+                {linkedBalanceInvoice && (
+                  <Link to={`/invoices/${linkedBalanceInvoice.id}`} className="text-xs text-primary hover:underline font-medium">
+                    View Balance Invoice → {linkedBalanceInvoice.invoiceNumber}
+                  </Link>
+                )}
+              </div>
+            )}
+            {invoice.invoiceType === 'balance' && linkedDepositInvoice && (
+              <div className="mb-4 rounded-lg border-2 border-blue-500/30 bg-blue-500/5 p-3 flex items-center justify-between">
+                <span className="text-blue-700 dark:text-blue-400 font-semibold text-sm">
+                  📋 Balance Invoice — remainder from deposit
+                </span>
+                <Link to={`/invoices/${linkedDepositInvoice.id}`} className="text-xs text-primary hover:underline font-medium">
+                  View Deposit Invoice → {linkedDepositInvoice.invoiceNumber}
+                </Link>
               </div>
             )}
 
