@@ -391,7 +391,7 @@ export default function Invoices() {
                             </td>
                             <td className="px-4 py-3.5 text-muted-foreground">{formatDate(inv.dueDate)}</td>
                             <td className="px-4 py-3.5 text-right">
-                              <span className={`mono font-medium ${inv.status === 'voided' ? 'line-through text-muted-foreground' : ''}`}>{formatCurrency((() => { const co = getCompany(inv.companyId); return calculateSmartTotals(inv.items, inv.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total; })(), inv.currency)}</span>
+                              <span className={`font-medium ${inv.status === 'voided' ? 'line-through text-muted-foreground' : ''}`}>{formatCurrency((() => { const co = getCompany(inv.companyId); return calculateSmartTotals(inv.items, inv.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total; })(), inv.currency)}</span>
                             </td>
                             <td className="px-4 py-3.5 text-center">
                               <div className="flex items-center justify-center gap-1.5">
@@ -471,7 +471,7 @@ export default function Invoices() {
                       <div className="text-sm">{inv.clientName}</div>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs text-muted-foreground">Due {formatDate(inv.dueDate)}</span>
-                        <span className={`mono text-sm font-medium ${inv.status === 'voided' ? 'line-through text-muted-foreground' : ''}`}>{formatCurrency((() => { const co = getCompany(inv.companyId); return calculateSmartTotals(inv.items, inv.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total; })(), inv.currency)}</span>
+                        <span className={`text-sm font-medium ${inv.status === 'voided' ? 'line-through text-muted-foreground' : ''}`}>{formatCurrency((() => { const co = getCompany(inv.companyId); return calculateSmartTotals(inv.items, inv.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total; })(), inv.currency)}</span>
                       </div>
                     </Link>
                   );
