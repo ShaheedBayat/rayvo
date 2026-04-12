@@ -983,6 +983,7 @@ export default function InvoiceView() {
               </div>
             )}
 
+            <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="rounded-lg border bg-card p-4 invoice-shadow">
                 <p className="text-xs text-muted-foreground mb-1">Customer</p>
                 <p className="text-sm font-medium truncate">{invoice.clientName}</p>
