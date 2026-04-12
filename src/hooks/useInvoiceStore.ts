@@ -84,7 +84,11 @@ export function useInvoices() {
       notes: invoice.notes,
       status: invoice.status,
       due_date: invoice.dueDate,
-    }).select().single();
+      invoice_type: invoice.invoiceType || 'standard',
+      deposit_type: invoice.depositType || 'percentage',
+      deposit_value: invoice.depositValue || 0,
+      parent_invoice_id: invoice.parentInvoiceId || null,
+    } as any).select().single();
     if (!error && data) {
       const newInvoice = mapInvoice(data);
       setInvoices(prev => [newInvoice, ...prev]);
