@@ -523,9 +523,14 @@ export default function InvoiceView() {
                 <Edit className="mr-1.5 h-4 w-4" /> Edit
               </Button>
             )}
-            {permissions.canSendInvoice && (invoice.status === 'draft' || invoice.status === 'approved') && (
+            {permissions.canApproveInvoice && (invoice.status === 'draft' || invoice.status === 'approved' || invoice.status === 'awaiting_approval') && (
               <Button variant="outline" size="sm" onClick={() => setSendConfirmOpen(true)} className="text-info border-info/30 hover:bg-info/10">
                 <Send className="mr-1.5 h-4 w-4" /> Approve & Send
+              </Button>
+            )}
+            {!permissions.canApproveInvoice && permissions.canCreateInvoice && invoice.status === 'draft' && (
+              <Button variant="outline" size="sm" onClick={submitForApproval} className="text-warning border-warning/30 hover:bg-warning/10">
+                <Send className="mr-1.5 h-4 w-4" /> Submit for Approval
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={() => setSendEmailOpen(true)}>
