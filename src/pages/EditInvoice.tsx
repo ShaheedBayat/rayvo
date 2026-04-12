@@ -12,10 +12,8 @@ import type { Invoice, InvoiceItem, Currency } from '@/types/invoice';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/components/AppLayout';
 import { toast } from 'sonner';
 import InvoiceLineItems from '@/components/invoice/InvoiceLineItems';
@@ -24,6 +22,7 @@ import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 import BillableExpenses from '@/components/invoice/BillableExpenses';
 import CurrencySelect from '@/components/invoice/CurrencySelect';
+import InvoiceDatePicker from '@/components/invoice/InvoiceDatePicker';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { useActivityLog } from '@/hooks/useActivityLog';
@@ -235,7 +234,7 @@ export default function EditInvoice() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Due Date</Label>
-                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-9" />
+                  <InvoiceDatePicker value={dueDate} onChange={setDueDate} placeholder="Due date" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Currency</Label>
