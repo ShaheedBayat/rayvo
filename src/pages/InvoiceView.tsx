@@ -287,7 +287,23 @@ export default function InvoiceView() {
     }
   };
 
-  const handleVoid = async () => {
+  const submitForApproval = async () => {
+    const result = await safeExecuteAction({
+      actionName: 'Submit for approval',
+      actionFn: () => updateInvoice({ ...invoice, status: 'awaiting_approval' as any }),
+      verifyFn: async (updated) => {
+        const { data } = await supabase.from('invoices').select('id, status').eq('id', updated.id).maybeSingle();
+        return data?.status === 'awaiting_approval';
+      },
+      silentSuccess: true,
+    });
+    if (result) {
+      await logActivity('invoice', invoice.id, 'submitted_for_approval', `Invoice ${invoice.invoiceNumber} submitted for approval`);
+      toast.success('Invoice submitted for approval');
+      fetchLogs('invoice', invoice.id).then(setActivityLogs);
+    }
+  };
+
     const success = await safeDeleteAction({
       actionName: 'Void invoice',
       actionFn: async () => {
