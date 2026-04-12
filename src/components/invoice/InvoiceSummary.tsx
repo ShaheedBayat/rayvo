@@ -60,12 +60,12 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
           {totalDiscount > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Discount</span>
-              <span className="mono text-destructive">-{formatCurrency(totalDiscount, currency)}</span>
+              <span className="text-destructive">-{formatCurrency(totalDiscount, currency)}</span>
             </div>
           )}
           <div className="flex justify-between text-lg font-bold border-t pt-3">
             <span>Total</span>
-            <span className="mono text-primary">
+            <span className="text-primary">
               {formatCurrency(calculateSubtotal(items), currency)}
             </span>
           </div>
@@ -79,13 +79,13 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
       <div className="w-72 space-y-2.5">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Subtotal (excl. VAT)</span>
-          <span className="mono font-medium">{formatCurrency(totalTaxable, currency)}</span>
+          <span className="font-medium">{formatCurrency(totalTaxable, currency)}</span>
         </div>
 
         {totalDiscount > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Discount</span>
-            <span className="mono text-destructive">-{formatCurrency(totalDiscount, currency)}</span>
+            <span className="text-destructive">-{formatCurrency(totalDiscount, currency)}</span>
           </div>
         )}
         
@@ -94,7 +94,7 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
           group.vat !== 0 && (
             <div key={key} className="flex justify-between text-sm">
               <span className="text-muted-foreground">VAT — {group.rateName}</span>
-              <span className="mono">{formatCurrency(group.vat, currency)}</span>
+              <span className="">{formatCurrency(group.vat, currency)}</span>
             </div>
           )
         ))}
@@ -102,13 +102,13 @@ export default function InvoiceSummary({ items, taxRate, currency, onTaxRateChan
         {!hasPerLineTax && totalVat > 0 && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">VAT ({taxRate}%)</span>
-            <span className="mono">{formatCurrency(totalVat, currency)}</span>
+            <span className="">{formatCurrency(totalVat, currency)}</span>
           </div>
         )}
         
         <div className="flex justify-between text-lg font-bold border-t pt-3">
           <span>Total incl. VAT</span>
-          <span className="mono text-primary">
+          <span className="text-primary">
             {formatCurrency(grandTotal, currency)}
           </span>
         </div>

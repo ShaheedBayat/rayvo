@@ -304,17 +304,17 @@ export default function EditInvoice() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="mono">{formatCurrency(totals.subtotal, currency)}</span>
+                  <span className="">{formatCurrency(totals.subtotal, currency)}</span>
                 </div>
                 {isVatRegistered && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">VAT</span>
-                    <span className="mono">{formatCurrency(totals.tax, currency)}</span>
+                    <span className="">{formatCurrency(totals.tax, currency)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-semibold text-base border-t pt-2">
                   <span>Total</span>
-                  <span className="mono text-primary">{formatCurrency(totals.total, currency)}</span>
+                  <span className="text-primary">{formatCurrency(totals.total, currency)}</span>
                 </div>
               </div>
             </div>

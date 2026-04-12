@@ -37,13 +37,13 @@ export default function InvoiceDocument({ invoice, company, bankingDetails, term
                 <p>{company.city}, {company.country}</p>
                 <p>{company.email}</p>
                 {company.phone && <p>{company.phone}</p>}
-                {company.taxNumber && <p className="mono text-xs mt-2">Tax/VAT: {company.taxNumber}</p>}
+                {company.taxNumber && <p className="text-xs mt-2">Tax/VAT: {company.taxNumber}</p>}
               </div>
             )}
           </div>
           <div className="text-right">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Invoice</p>
-            <p className="mono text-lg font-semibold text-foreground">{invoice.invoiceNumber}</p>
+            <p className="text-lg font-semibold text-foreground">{invoice.invoiceNumber}</p>
             <div className="text-sm text-muted-foreground mt-3 space-y-1">
               <div className="flex justify-end gap-6">
                 <span className="text-xs uppercase tracking-wider">Issued</span>
@@ -126,7 +126,7 @@ export default function InvoiceDocument({ invoice, company, bankingDetails, term
                   <span className="text-muted-foreground">
                     Subtotal {isVatRegistered ? '(excl. VAT)' : ''}
                   </span>
-                  <span className="mono">
+                  <span className="">
                     {formatCurrency(totals.subtotal, invoice.currency)}
                   </span>
                 </div>
@@ -134,13 +134,13 @@ export default function InvoiceDocument({ invoice, company, bankingDetails, term
                   group.vat !== 0 && (
                     <div key={key} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">VAT — {group.rateName}</span>
-                      <span className="mono">{formatCurrency(group.vat, invoice.currency)}</span>
+                      <span className="">{formatCurrency(group.vat, invoice.currency)}</span>
                     </div>
                   )
                 ))}
                 <div className="flex justify-between text-lg font-semibold border-t-2 border-border pt-3 mt-1">
                   <span>{isVatRegistered ? 'Total incl. VAT' : 'Total'}</span>
-                  <span className="mono text-primary">{formatCurrency(totals.total, invoice.currency)}</span>
+                  <span className="text-primary">{formatCurrency(totals.total, invoice.currency)}</span>
                 </div>
               </div>
             </div>

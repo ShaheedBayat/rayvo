@@ -805,9 +805,9 @@ export default function InvoiceView() {
           <DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
           <form onSubmit={handleRecordPayment} className="space-y-4 mt-2">
             <div className="rounded-lg bg-muted/40 p-3 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Invoice Total</span><span className="mono font-medium">{formatCurrency(total, invoice.currency)}</span></div>
-              <div className="flex justify-between mt-1"><span className="text-muted-foreground">Already Paid</span><span className="mono font-medium text-success">{formatCurrency(totalPaid, invoice.currency)}</span></div>
-              <div className="flex justify-between mt-1 border-t pt-1"><span className="font-medium">Amount Due</span><span className="mono font-semibold text-primary">{formatCurrency(amountDue, invoice.currency)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Invoice Total</span><span className="font-medium">{formatCurrency(total, invoice.currency)}</span></div>
+              <div className="flex justify-between mt-1"><span className="text-muted-foreground">Already Paid</span><span className="font-medium text-success">{formatCurrency(totalPaid, invoice.currency)}</span></div>
+              <div className="flex justify-between mt-1 border-t pt-1"><span className="font-medium">Amount Due</span><span className="font-semibold text-primary">{formatCurrency(amountDue, invoice.currency)}</span></div>
               {payAmount && parseFloat(payAmount) > 0 && (
                 <div className="flex justify-between mt-1 border-t pt-1">
                   <span className="text-muted-foreground">Remaining after payment</span>
@@ -871,8 +871,8 @@ export default function InvoiceView() {
           <DialogHeader><DialogTitle>Apply Credit to Invoice</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="rounded-lg bg-muted/40 p-3 text-sm space-y-1">
-              <div className="flex justify-between"><span className="text-muted-foreground">Amount Due</span><span className="mono font-semibold text-primary">{formatCurrency(amountDue, invoice.currency)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Customer Credit Balance</span><span className="mono font-medium text-info">{formatCurrency(customerCreditBalance, invoice.currency)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Amount Due</span><span className="font-semibold text-primary">{formatCurrency(amountDue, invoice.currency)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Customer Credit Balance</span><span className="font-medium text-info">{formatCurrency(customerCreditBalance, invoice.currency)}</span></div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Select Credit Note</Label>
@@ -1012,40 +1012,40 @@ export default function InvoiceView() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal (excl. VAT)</span>
-                  <span className="mono font-medium">{formatCurrency(smartTotals.subtotal, invoice.currency)}</span>
+                  <span className="font-medium">{formatCurrency(smartTotals.subtotal, invoice.currency)}</span>
                 </div>
                 {isVatRegistered && smartTotals.tax > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">VAT ({invoice.taxRate}%)</span>
-                    <span className="mono font-medium">{formatCurrency(smartTotals.tax, invoice.currency)}</span>
+                    <span className="font-medium">{formatCurrency(smartTotals.tax, invoice.currency)}</span>
                   </div>
                 )}
                 <div className="flex justify-between border-t pt-2">
                   <span className="font-medium">{isVatRegistered ? 'Total incl. VAT' : 'Total'}</span>
-                  <span className="mono font-semibold">{formatCurrency(total, invoice.currency)}</span>
+                  <span className="font-semibold">{formatCurrency(total, invoice.currency)}</span>
                 </div>
                 {totalPaid > 0 && (
                   <div className="flex justify-between">
                     <span className="text-success font-medium">Total Paid</span>
-                    <span className="mono font-medium text-success">− {formatCurrency(totalPaid, invoice.currency)}</span>
+                    <span className="font-medium text-success">− {formatCurrency(totalPaid, invoice.currency)}</span>
                   </div>
                 )}
                 {totalCredits > 0 && (
                   <div className="flex justify-between">
                     <span className="text-info font-medium">Credit Notes</span>
-                    <span className="mono font-medium text-info">− {formatCurrency(totalCredits, invoice.currency)}</span>
+                    <span className="font-medium text-info">− {formatCurrency(totalCredits, invoice.currency)}</span>
                   </div>
                 )}
                 <div className={`flex justify-between border-t pt-2 ${
                   isPaid ? 'text-success' : isOverdue ? 'text-destructive' : isPartial ? 'text-warning' : ''
                 }`}>
                   <span className="font-semibold">Remaining Balance</span>
-                  <span className="mono font-bold text-lg">{formatCurrency(Math.max(0, amountDue), invoice.currency)}</span>
+                  <span className="font-bold text-lg">{formatCurrency(Math.max(0, amountDue), invoice.currency)}</span>
                 </div>
                 {customerCreditBalance > 0 && amountDue > 0.01 && (
                   <div className="flex justify-between mt-1">
                     <span className="text-info text-xs">Customer has available credit</span>
-                    <span className="mono text-xs text-info">{formatCurrency(customerCreditBalance, invoice.currency)}</span>
+                    <span className="text-xs text-info">{formatCurrency(customerCreditBalance, invoice.currency)}</span>
                   </div>
                 )}
               </div>
@@ -1157,8 +1157,8 @@ export default function InvoiceView() {
                 <tr className="bg-muted/30 border-t">
                   <td colSpan={3} className="px-4 py-3">
                     <div className="flex flex-wrap gap-4 text-xs">
-                      <span>Total Paid: <span className="mono font-semibold text-success">{formatCurrency(totalPaid, invoice.currency)}</span></span>
-                      <span>Total Due: <span className="mono font-semibold">{formatCurrency(total, invoice.currency)}</span></span>
+                      <span>Total Paid: <span className="font-semibold text-success">{formatCurrency(totalPaid, invoice.currency)}</span></span>
+                      <span>Total Due: <span className="font-semibold">{formatCurrency(total, invoice.currency)}</span></span>
                       <span>Balance: <span className={`mono font-semibold ${amountDue <= 0.01 ? 'text-success' : 'text-primary'}`}>{formatCurrency(Math.max(0, amountDue), invoice.currency)}</span></span>
                     </div>
                   </td>
