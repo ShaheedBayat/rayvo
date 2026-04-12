@@ -100,6 +100,44 @@ export default function InvoiceView() {
     }
   }, [invoice?.clientEmail]);
 
+  // Late fee prompt for overdue invoices
+  useEffect(() => {
+    if (!invoice || !settings) return;
+    const lateFee = (settings as any).lateFee;
+    if (!lateFee?.enabled || lateFee.value <= 0) return;
+    if (invoice.status !== 'sent' && invoice.status !== 'partially_paid') return;
+    
+    const dueDate = new Date(invoice.dueDate);
+    const now = new Date();
+    if (now <= dueDate) return;
+    
+    // Check if a late fee line item already exists
+    const hasLateFee = invoice.items.some(item => 
+      item.description.toLowerCase().includes('late') && item.description.toLowerCase().includes('fee')
+    );
+    if (hasLateFee) return;
+
+    const monthsOverdue = Math.max(1, Math.ceil((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    const feeAmount = lateFee.type === 'percentage'
+      ? (total * (lateFee.value / 100) * monthsOverdue)
+      : lateFee.value;
+    const feeLabel = lateFee.type === 'percentage'
+      ? `${lateFee.value}% × ${monthsOverdue} month${monthsOverdue > 1 ? 's' : ''}`
+      : `Flat fee`;
+
+    toast.info(`This invoice is ${monthsOverdue} month${monthsOverdue > 1 ? 's' : ''} overdue`, {
+      description: `Late fee: ${feeLabel} = ${formatCurrency(feeAmount, invoice.currency)}. Edit the invoice to add it as a line item.`,
+      duration: 10000,
+      action: {
+        label: 'Edit Invoice',
+        onClick: () => navigate(`/invoices/${invoice.id}/edit`, {
+          state: { addLateFee: { description: `Late Payment Fee (${feeLabel})`, amount: feeAmount } },
+        }),
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoice?.id, invoice?.status, settings]);
+
   if (!invoice) {
     return (
       <AppLayout>
