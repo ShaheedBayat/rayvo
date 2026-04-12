@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { CreditCard, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 
 export default function PublicInvoice() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const paymentResult = searchParams.get('payment');
-  const { invoice, company, loading } = usePublicInvoice(id || '', token);
+  const { invoice, company, totalPaid, loading } = usePublicInvoice(id || '', token);
   const [payLoading, setPayLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -27,7 +28,6 @@ export default function PublicInvoice() {
         toast.error(data?.error || 'Failed to initiate payment');
         return;
       }
-      // Create a hidden form and submit to PayFast
       const form = formRef.current;
       if (!form) return;
       form.action = data.payfast_url;
@@ -63,6 +63,12 @@ export default function PublicInvoice() {
     );
   }
 
+  const pricingMode = company?.pricingMode || 'exclusive';
+  const isVatRegistered = company?.isVatRegistered ?? false;
+  const smartTotals = calculateSmartTotals(invoice.items, invoice.taxRate, pricingMode, isVatRegistered);
+  const total = smartTotals.total;
+  const balanceDue = total - totalPaid;
+  const hasPartialPayment = totalPaid > 0 && balanceDue > 0.01;
   const canPay = invoice.status === 'sent' || invoice.status === 'approved' || invoice.status === 'partially_paid';
 
   return (
@@ -80,11 +86,41 @@ export default function PublicInvoice() {
         </div>
       )}
 
+      {/* Payment summary bar for partial payments */}
+      {totalPaid > 0 && (
+        <div className="max-w-3xl mx-auto mb-6 rounded-lg border bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+            <div className="flex items-center gap-6">
+              <div>
+                <span className="text-muted-foreground">Invoice Total</span>
+                <p className="font-semibold mono">{formatCurrency(total, invoice.currency)}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Amount Paid</span>
+                <p className="font-semibold mono text-success">{formatCurrency(totalPaid, invoice.currency)}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Balance Due</span>
+                <p className={`font-semibold mono ${balanceDue <= 0.01 ? 'text-success' : 'text-primary'}`}>
+                  {formatCurrency(Math.max(0, balanceDue), invoice.currency)}
+                </p>
+              </div>
+            </div>
+            {balanceDue <= 0.01 && (
+              <div className="flex items-center gap-1.5 text-success">
+                <CheckCircle className="h-4 w-4" />
+                <span className="font-medium text-xs">Paid in Full</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {canPay && (
         <div className="max-w-3xl mx-auto mb-6 flex justify-center">
           <Button onClick={handlePayNow} disabled={payLoading} size="lg" className="gap-2">
             <CreditCard className="h-5 w-5" />
-            {payLoading ? 'Redirecting to PayFast...' : 'Pay Now'}
+            {payLoading ? 'Redirecting to PayFast...' : hasPartialPayment ? `Pay ${formatCurrency(balanceDue, invoice.currency)}` : 'Pay Now'}
           </Button>
         </div>
       )}
