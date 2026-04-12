@@ -38,13 +38,30 @@ function buildInvoiceHtml(invoiceNumber: string, clientName: string, amount: str
   `;
 }
 
+function buildFeedbackHtml(reportText: string, userEmail: string, page: string) {
+  return `
+    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+      <h1 style="font-size: 24px; font-weight: 700; color: #1a1a1a; margin: 0 0 20px;">🐛 Bug / Feedback Report</h1>
+      <div style="background: #fff3cd; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+        <p style="font-size: 13px; color: #856404; margin: 0;"><strong>From:</strong> ${userEmail}</p>
+        <p style="font-size: 13px; color: #856404; margin: 4px 0 0;"><strong>Page:</strong> ${page}</p>
+        <p style="font-size: 13px; color: #856404; margin: 4px 0 0;"><strong>Time:</strong> ${new Date().toISOString()}</p>
+      </div>
+      <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; white-space: pre-wrap; font-size: 14px; color: #333; line-height: 1.6;">
+${reportText}
+      </div>
+    </div>
+  `;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { emails, invoiceNumber, clientName, amount, currency, dueDate, publicUrl, companyName } = await req.json();
+    const body = await req.json();
+    const { emails, invoiceNumber, clientName, amount, currency, dueDate, publicUrl, companyName, customHtml } = body;
 
     if (!emails || !Array.isArray(emails) || emails.length === 0) {
       return new Response(JSON.stringify({ error: "No email addresses provided" }), {
@@ -52,9 +69,23 @@ serve(async (req) => {
       });
     }
 
+    // Determine if this is a feedback report or invoice email
+    const isFeedback = invoiceNumber === 'FEEDBACK';
     const name = companyName || SITE_NAME;
-    const html = buildInvoiceHtml(invoiceNumber, clientName, amount, currency, dueDate, publicUrl, name);
-    const subject = `Invoice ${invoiceNumber} from ${name} — ${currency} ${amount}`;
+    
+    let subject: string;
+    let html: string;
+    let textContent: string;
+    
+    if (isFeedback) {
+      subject = `[RayVo Feedback] from ${clientName}`;
+      html = buildFeedbackHtml(customHtml || '', clientName, publicUrl || '');
+      textContent = `Feedback from ${clientName}: ${customHtml || ''}`;
+    } else {
+      html = buildInvoiceHtml(invoiceNumber, clientName, amount, currency, dueDate, publicUrl, name);
+      subject = `Invoice ${invoiceNumber} from ${name} — ${currency} ${amount}`;
+      textContent = `Invoice ${invoiceNumber} from ${name} for ${currency} ${amount}. Due: ${dueDate}.`;
+    }
 
     const adminSupabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -69,7 +100,7 @@ serve(async (req) => {
       if (preparation.error) {
         await adminSupabase.from("email_send_log").insert({
           message_id: messageId,
-          template_name: "invoice-email",
+          template_name: isFeedback ? "feedback-report" : "invoice-email",
           recipient_email: email,
           status: "failed",
           error_message: preparation.error,
@@ -81,7 +112,7 @@ serve(async (req) => {
       if (preparation.suppressed || !preparation.unsubscribeToken) {
         await adminSupabase.from("email_send_log").insert({
           message_id: messageId,
-          template_name: "invoice-email",
+          template_name: isFeedback ? "feedback-report" : "invoice-email",
           recipient_email: email,
           status: "suppressed",
         });
@@ -90,7 +121,7 @@ serve(async (req) => {
 
       await adminSupabase.from("email_send_log").insert({
         message_id: messageId,
-        template_name: "invoice-email",
+        template_name: isFeedback ? "feedback-report" : "invoice-email",
         recipient_email: email,
         status: "pending",
       });
@@ -100,14 +131,14 @@ serve(async (req) => {
         payload: {
           message_id: messageId,
           to: email,
-          from: `${name} <noreply@${FROM_DOMAIN}>`,
+          from: `${isFeedback ? SITE_NAME : name} <noreply@${FROM_DOMAIN}>`,
           sender_domain: SENDER_DOMAIN,
           subject,
           html,
-          text: `Invoice ${invoiceNumber} from ${name} for ${currency} ${amount}. Due: ${dueDate}.`,
+          text: textContent,
           purpose: "transactional",
-          label: "invoice-email",
-          idempotency_key: `invoice-${invoiceNumber}-${email}`,
+          label: isFeedback ? "feedback-report" : "invoice-email",
+          idempotency_key: isFeedback ? `feedback-${messageId}` : `invoice-${invoiceNumber}-${email}`,
           unsubscribe_token: preparation.unsubscribeToken,
           queued_at: new Date().toISOString(),
         },
