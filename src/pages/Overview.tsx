@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useAllPayments } from '@/hooks/usePayments';
 import { useExpenses } from '@/hooks/useExpenses';
-import { formatCurrency, calculateSmartTotals, currencySymbols } from '@/types/invoice';
+import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
 import type { Currency } from '@/types/invoice';
 import {
@@ -13,6 +13,27 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/AppLayout';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+
+// Tiny sparkline component
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const chartData = data.map((v, i) => ({ v, i }));
+  return (
+    <div className="h-8 w-full mt-2">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id={`spark-${color}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} fill={`url(#spark-${color})`} dot={false} isAnimationActive={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
 
 export default function Overview() {
   const [overdueDismissed, setOverdueDismissed] = useState(() => sessionStorage.getItem('overdue-dismissed') === 'true');
@@ -26,7 +47,6 @@ export default function Overview() {
     ? allInvoices.filter(i => i.companyId === activeCompanyId)
     : allInvoices;
 
-  // Filter out voided
   const activeInvoices = invoices.filter(i => i.status !== 'voided');
 
   const draft = activeInvoices.filter(i => i.status === 'draft');
@@ -37,7 +57,6 @@ export default function Overview() {
     return new Date(i.dueDate) < new Date();
   });
 
-  // Group by currency
   const currencies = [...new Set(activeInvoices.map(i => i.currency))] as Currency[];
   const primaryCurrency: Currency = currencies[0] || 'ZAR';
 
@@ -48,7 +67,6 @@ export default function Overview() {
     return calculateSmartTotals(inv.items, inv.taxRate, pricingMode, isVat).total;
   };
 
-  // Use actual payments for "Received" and actual balance for "Outstanding"/"Overdue"
   const outstandingByCurrency = (() => {
     const groups: Record<string, number> = {};
     sent.forEach(inv => {
@@ -88,6 +106,53 @@ export default function Overview() {
     return entries.map(([c, v]) => formatCurrency(v, c as Currency)).join(' · ');
   };
 
+  // Sparkline data: invoice counts by week (last 8 weeks) per status
+  const sparklineData = useMemo(() => {
+    const now = new Date();
+    const weeks = 8;
+    const draftByWeek: number[] = Array(weeks).fill(0);
+    const sentByWeek: number[] = Array(weeks).fill(0);
+    const overdueByWeek: number[] = Array(weeks).fill(0);
+    const paidByWeek: number[] = Array(weeks).fill(0);
+    const totalByWeek: number[] = Array(weeks).fill(0);
+
+    activeInvoices.forEach(inv => {
+      const created = new Date(inv.createdAt);
+      const weekIdx = Math.floor((now.getTime() - created.getTime()) / (7 * 24 * 60 * 60 * 1000));
+      if (weekIdx >= 0 && weekIdx < weeks) {
+        const idx = weeks - 1 - weekIdx;
+        totalByWeek[idx]++;
+        if (inv.status === 'draft') draftByWeek[idx]++;
+        else if (inv.status === 'sent' || inv.status === 'partially_paid') sentByWeek[idx]++;
+        else if (inv.status === 'paid') paidByWeek[idx]++;
+      }
+    });
+
+    overdue.forEach(inv => {
+      const created = new Date(inv.createdAt);
+      const weekIdx = Math.floor((now.getTime() - created.getTime()) / (7 * 24 * 60 * 60 * 1000));
+      if (weekIdx >= 0 && weekIdx < weeks) {
+        overdueByWeek[weeks - 1 - weekIdx]++;
+      }
+    });
+
+    return { draft: draftByWeek, sent: sentByWeek, overdue: overdueByWeek, paid: paidByWeek, total: totalByWeek };
+  }, [activeInvoices, overdue]);
+
+  // Revenue sparkline: last 8 weeks payments
+  const revenueSparkline = useMemo(() => {
+    const now = new Date();
+    const weeks = 8;
+    const data: number[] = Array(weeks).fill(0);
+    const invoiceIds = new Set(activeInvoices.map(i => i.id));
+    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+      const d = new Date(p.paymentDate);
+      const weekIdx = Math.floor((now.getTime() - d.getTime()) / (7 * 24 * 60 * 60 * 1000));
+      if (weekIdx >= 0 && weekIdx < weeks) data[weeks - 1 - weekIdx] += p.amount;
+    });
+    return data;
+  }, [activeInvoices, allPayments]);
+
   const customerOwing: Record<string, { name: string; amount: number; currency: Currency }> = {};
   sent.forEach(inv => {
     const balance = Math.max(0, getInvoiceTotal(inv) - paidForInvoice(inv.id));
@@ -97,9 +162,7 @@ export default function Overview() {
     }
     customerOwing[inv.clientName].amount += balance;
   });
-  const topOwing = Object.values(customerOwing)
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
+  const topOwing = Object.values(customerOwing).sort((a, b) => b.amount - a.amount).slice(0, 5);
 
   const statBorders = [
     '3px solid hsl(192 18% 75%)',
@@ -107,6 +170,22 @@ export default function Overview() {
     '3px solid hsl(0 72% 51%)',
     '3px solid hsl(152 56% 42%)',
     '3px solid hsl(192 75% 36%)',
+  ];
+
+  const sparkColors = [
+    'hsl(192, 18%, 65%)',
+    'hsl(38, 92%, 50%)',
+    'hsl(0, 72%, 51%)',
+    'hsl(152, 56%, 42%)',
+    'hsl(192, 75%, 36%)',
+  ];
+
+  const sparkDataArrays = [
+    sparklineData.draft,
+    sparklineData.sent,
+    sparklineData.overdue,
+    sparklineData.paid,
+    sparklineData.total,
   ];
 
   const stats = [
@@ -117,7 +196,6 @@ export default function Overview() {
     { label: 'Total Invoices', value: activeInvoices.length, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
   ];
 
-  // Empty state: no companies yet
   if (!loading && companies.length === 0) {
     return (
       <AppLayout>
@@ -144,12 +222,10 @@ export default function Overview() {
     <AppLayout>
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Sales Overview</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          A snapshot of your invoicing activity.
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">A snapshot of your invoicing activity.</p>
       </div>
 
-      {/* Overdue Alert Banner */}
+      {/* Overdue Alert */}
       {!overdueDismissed && overdue.length > 0 && (
         <div
           className="mb-6 flex items-center justify-between gap-4 rounded-xl px-5 py-4 animate-fade-in"
@@ -167,25 +243,13 @@ export default function Overview() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              to="/invoices?status=overdue"
-              className="text-xs font-medium underline"
-              style={{ color: 'hsl(0 72% 35%)' }}
-            >
-              View overdue invoices
-            </Link>
-            <button
-              onClick={() => { setOverdueDismissed(true); sessionStorage.setItem('overdue-dismissed', 'true'); }}
-              className="text-sm leading-none"
-              style={{ color: 'hsl(0 72% 45%)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
-            >
-              ✕
-            </button>
+            <Link to="/invoices?status=overdue" className="text-xs font-medium underline" style={{ color: 'hsl(0 72% 35%)' }}>View overdue</Link>
+            <button onClick={() => { setOverdueDismissed(true); sessionStorage.setItem('overdue-dismissed', 'true'); }} className="text-sm leading-none" style={{ color: 'hsl(0 72% 45%)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>✕</button>
           </div>
         </div>
       )}
 
-      {/* KPI Stats */}
+      {/* KPI Stats with Sparklines */}
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -199,7 +263,7 @@ export default function Overview() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
           {stats.map((s, idx) => (
-            <div key={s.label} className={`rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-${idx + 1}`} style={{ borderLeft: statBorders[idx] }}>
+            <div key={s.label} className={`rounded-xl border-y border-r border-border/50 bg-card px-5 pt-5 pb-2 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-${idx + 1}`} style={{ borderLeft: statBorders[idx] }}>
               <div className="flex items-center justify-between mb-2">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.bg}`}>
                   <s.icon className={`h-5 w-5 ${s.color}`} />
@@ -208,6 +272,7 @@ export default function Overview() {
               </div>
               <p className="text-3xl font-bold">{s.value}</p>
               <p className="text-[11px] text-muted-foreground">{s.label}</p>
+              <Sparkline data={sparkDataArrays[idx]} color={sparkColors[idx]} />
             </div>
           ))}
         </div>
@@ -220,29 +285,24 @@ export default function Overview() {
             <Send className="h-3.5 w-3.5 text-warning" />
             <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
           </div>
-          <p className="text-2xl font-bold text-warning">
-            {formatMultiCurrency(outstandingByCurrency)}
-          </p>
+          <p className="text-2xl font-bold text-warning">{formatMultiCurrency(outstandingByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
         </div>
-        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-3" style={{ borderLeft: '3px solid hsl(152 56% 42%)' }}>
+        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 pt-5 pb-2 invoice-shadow stagger-3" style={{ borderLeft: '3px solid hsl(152 56% 42%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             <p className="text-xs font-medium text-muted-foreground">Received</p>
           </div>
-          <p className="text-2xl font-bold text-success">
-            {formatMultiCurrency(paidByCurrency)}
-          </p>
+          <p className="text-2xl font-bold text-success">{formatMultiCurrency(paidByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
+          <Sparkline data={revenueSparkline} color="hsl(152, 56%, 42%)" />
         </div>
         <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-4" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <AlertCircle className="h-3.5 w-3.5 text-overdue" />
             <p className="text-xs font-medium text-muted-foreground">Overdue</p>
           </div>
-          <p className="text-2xl font-bold text-overdue">
-            {formatMultiCurrency(overdueByCurrency)}
-          </p>
+          <p className="text-2xl font-bold text-overdue">{formatMultiCurrency(overdueByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
         </div>
         <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-5" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
@@ -264,13 +324,8 @@ export default function Overview() {
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 py-20">
               <FileText className="h-10 w-10 text-muted-foreground/30" />
               <h3 className="mt-4 text-lg font-medium">No invoices yet</h3>
-              <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">
-                Create your first invoice to start tracking payments.
-              </p>
-              <Link
-                to="/invoices/new"
-                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
+              <p className="mt-1 text-sm text-muted-foreground max-w-sm text-center">Create your first invoice to start tracking payments.</p>
+              <Link to="/invoices/new" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
                 <Plus className="h-4 w-4" /> Create your first invoice
               </Link>
             </div>
@@ -291,26 +346,18 @@ export default function Overview() {
                       className="flex items-center justify-between rounded-lg px-3 py-2.5 hover:bg-secondary/60 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="mono text-sm font-medium">{inv.invoiceNumber}</span>
+                        <span className="font-mono text-sm font-medium">{inv.invoiceNumber}</span>
                         <span className="text-sm text-muted-foreground truncate">{inv.clientName}</span>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                         <span className="text-sm font-medium">
-                          {formatCurrency(total, inv.currency)}
-                        </span>
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${
-                            inv.status === 'paid'
-                              ? 'bg-success/10 text-success'
-                              : isOverdue
-                              ? 'bg-overdue/10 text-overdue'
-                              : inv.status === 'sent'
-                              ? 'bg-warning/10 text-warning'
-                              : inv.status === 'partially_paid'
-                              ? 'bg-info/10 text-info'
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
+                        <span className="text-sm font-medium">{formatCurrency(total, inv.currency)}</span>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${
+                          inv.status === 'paid' ? 'bg-success/10 text-success'
+                            : isOverdue ? 'bg-overdue/10 text-overdue'
+                            : inv.status === 'sent' ? 'bg-warning/10 text-warning'
+                            : inv.status === 'partially_paid' ? 'bg-info/10 text-info'
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
                           {isOverdue ? 'Overdue' : inv.status === 'sent' ? 'Awaiting' : inv.status === 'partially_paid' ? 'Partial' : inv.status}
                         </span>
                       </div>
@@ -336,15 +383,10 @@ export default function Overview() {
                     <div key={customer.name}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium truncate max-w-[140px]">{customer.name}</span>
-                        <span className="text-sm text-warning font-medium">
-                          {formatCurrency(customer.amount, customer.currency)}
-                        </span>
+                        <span className="text-sm text-warning font-medium">{formatCurrency(customer.amount, customer.currency)}</span>
                       </div>
                       <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-warning/70 transition-all duration-500"
-                          style={{ width: `${percent}%` }}
-                        />
+                        <div className="h-full rounded-full bg-warning/70 transition-all duration-500" style={{ width: `${percent}%` }} />
                       </div>
                     </div>
                   );
