@@ -22,6 +22,7 @@ import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 import BillableExpenses from '@/components/invoice/BillableExpenses';
 import CurrencySelect from '@/components/invoice/CurrencySelect';
+import InvoiceDatePicker from '@/components/invoice/InvoiceDatePicker';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { useActivityLog } from '@/hooks/useActivityLog';
