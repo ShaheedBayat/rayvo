@@ -203,6 +203,7 @@ function CompanyCreateForm({
   const [isVatRegistered, setIsVatRegistered] = useState(false);
   const [vatRate, setVatRate] = useState('15');
   const [pricingMode, setPricingMode] = useState<PricingMode>('exclusive');
+  const [defaultCurrency, setDefaultCurrency] = useState<Currency>('ZAR');
 
   const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -221,6 +222,7 @@ function CompanyCreateForm({
       isVatRegistered,
       vatRate: parseFloat(vatRate) || 15,
       pricingMode,
+      defaultCurrency,
     });
     onClose();
   };
