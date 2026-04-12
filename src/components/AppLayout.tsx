@@ -190,9 +190,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const { salesNav, manageNav } = getNavItems(permissions.canAccessSettings, permissions.canManageCompanies, permissions.canCreateInvoice);
 
-  // Badge counts for sidebar - we import useInvoices lazily to avoid circular deps
-  const { useInvoices: useInvoicesHook } = require('@/hooks/useInvoiceStore');
-  const { invoices: allInvoices } = useInvoicesHook();
+  // Badge counts for sidebar
+  const { invoices: allInvoices } = useInvoices();
   const companyInvoices = activeCompanyId ? allInvoices.filter((i: any) => i.companyId === activeCompanyId) : allInvoices;
   const activeInvoices = companyInvoices.filter((i: any) => i.status !== 'voided');
   const overdueCount = activeInvoices.filter((i: any) => (i.status === 'sent' || i.status === 'partially_paid') && new Date(i.dueDate) < new Date()).length;
