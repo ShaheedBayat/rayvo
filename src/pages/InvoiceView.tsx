@@ -304,6 +304,7 @@ export default function InvoiceView() {
     }
   };
 
+  const handleVoid = async () => {
     const success = await safeDeleteAction({
       actionName: 'Void invoice',
       actionFn: async () => {
