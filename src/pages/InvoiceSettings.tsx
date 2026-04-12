@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBrandingThemes, type BrandingTheme, getDefaultTheme } from '@/hooks/useBrandingThemes';
 import { useGlobalSettings, type LateFeeSettings } from '@/hooks/useGlobalSettings';
+import { useEmailTemplates } from '@/hooks/useEmailTemplates';
 import BrandingThemeEditor from '@/components/branding/BrandingThemeEditor';
 import TemplateLibrary from '@/components/branding/TemplateLibrary';
 import TemplateExportImport from '@/components/branding/TemplateExportImport';
@@ -10,11 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   Plus, MoreHorizontal, Pencil, Copy, Star, Trash2, ArrowLeft,
-  FileText, CreditCard, Bell, Settings2, LayoutGrid, Sparkles, ArrowUpDown, AlertTriangle,
+  FileText, CreditCard, Bell, Settings2, LayoutGrid, Sparkles, ArrowUpDown, AlertTriangle, Mail,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -26,6 +28,7 @@ const tabs = [
   { id: 'library', label: 'Template Library', icon: LayoutGrid },
   { id: 'ai', label: 'AI Assistant', icon: Sparkles },
   { id: 'export', label: 'Import / Export', icon: ArrowUpDown },
+  { id: 'emailtemplate', label: 'Email Template', icon: Mail },
   { id: 'latefees', label: 'Late Fees', icon: AlertTriangle },
   { id: 'defaults', label: 'Default Settings', icon: Settings2 },
   { id: 'payments', label: 'Payment Services', icon: CreditCard },
