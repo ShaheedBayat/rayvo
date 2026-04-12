@@ -272,21 +272,9 @@ export default function Invoices() {
           </p>
         </div>
         {permissions.canCreateInvoice && (
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="gap-1.5 rounded-lg">
-                  <Plus className="h-4 w-4" /> New <ChevronDown className="h-3 w-3 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild><Link to="/invoices/new">New Invoice</Link></DropdownMenuItem>
-                {permissions.canManageRecurring && (
-                  <DropdownMenuItem asChild><Link to="/invoices/recurring/new">New Recurring Invoice</Link></DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <Button className="gap-1.5 rounded-lg" asChild>
+            <Link to="/invoices/new"><Plus className="h-4 w-4" /> New Invoice</Link>
+          </Button>
         )}
       </div>
 
