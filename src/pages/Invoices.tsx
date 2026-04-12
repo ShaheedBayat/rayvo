@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
@@ -213,6 +213,7 @@ export default function Invoices() {
   const { getCompany } = useCompanies();
   const { activeCompanyId } = useActiveCompany();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedInvoices, setDeletedInvoices] = useState<any[]>([]);
@@ -549,7 +550,7 @@ export default function Invoices() {
                         const config = isOverdue ? statusConfig.overdue : (statusConfig[inv.status] || statusConfig.draft);
                         const isSelected = selected.has(inv.id);
                         return (
-                          <tr key={inv.id} className={`group border-b last:border-0 transition-colors ${isSelected ? 'bg-primary/5' : 'hover:bg-secondary/40'}`}>
+                          <tr key={inv.id} className={`group border-b last:border-0 transition-colors cursor-pointer ${isSelected ? 'bg-primary/5' : 'hover:bg-secondary/40'}`} onClick={(e) => { if ((e.target as HTMLElement).closest('a, button, input, [role="checkbox"]')) return; navigate(`/invoices/${inv.id}`); }}>
                             <td className={`px-3 ${py}`}>
                               <Checkbox
                                 checked={isSelected}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useInvoices, useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
@@ -13,27 +13,6 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/AppLayout';
-import { AreaChart, Area, ResponsiveContainer } from 'recharts';
-
-// Tiny sparkline component
-function Sparkline({ data, color }: { data: number[]; color: string }) {
-  const chartData = data.map((v, i) => ({ v, i }));
-  return (
-    <div className="h-8 w-full mt-2">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id={`spark-${color}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} fill={`url(#spark-${color})`} dot={false} isAnimationActive={false} />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
 
 export default function Overview() {
   const [overdueDismissed, setOverdueDismissed] = useState(() => sessionStorage.getItem('overdue-dismissed') === 'true');
@@ -106,52 +85,6 @@ export default function Overview() {
     return entries.map(([c, v]) => formatCurrency(v, c as Currency)).join(' · ');
   };
 
-  // Sparkline data: invoice counts by week (last 8 weeks) per status
-  const sparklineData = useMemo(() => {
-    const now = new Date();
-    const weeks = 8;
-    const draftByWeek: number[] = Array(weeks).fill(0);
-    const sentByWeek: number[] = Array(weeks).fill(0);
-    const overdueByWeek: number[] = Array(weeks).fill(0);
-    const paidByWeek: number[] = Array(weeks).fill(0);
-    const totalByWeek: number[] = Array(weeks).fill(0);
-
-    activeInvoices.forEach(inv => {
-      const created = new Date(inv.createdAt);
-      const weekIdx = Math.floor((now.getTime() - created.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      if (weekIdx >= 0 && weekIdx < weeks) {
-        const idx = weeks - 1 - weekIdx;
-        totalByWeek[idx]++;
-        if (inv.status === 'draft') draftByWeek[idx]++;
-        else if (inv.status === 'sent' || inv.status === 'partially_paid') sentByWeek[idx]++;
-        else if (inv.status === 'paid') paidByWeek[idx]++;
-      }
-    });
-
-    overdue.forEach(inv => {
-      const created = new Date(inv.createdAt);
-      const weekIdx = Math.floor((now.getTime() - created.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      if (weekIdx >= 0 && weekIdx < weeks) {
-        overdueByWeek[weeks - 1 - weekIdx]++;
-      }
-    });
-
-    return { draft: draftByWeek, sent: sentByWeek, overdue: overdueByWeek, paid: paidByWeek, total: totalByWeek };
-  }, [activeInvoices, overdue]);
-
-  // Revenue sparkline: last 8 weeks payments
-  const revenueSparkline = useMemo(() => {
-    const now = new Date();
-    const weeks = 8;
-    const data: number[] = Array(weeks).fill(0);
-    const invoiceIds = new Set(activeInvoices.map(i => i.id));
-    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
-      const d = new Date(p.paymentDate);
-      const weekIdx = Math.floor((now.getTime() - d.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      if (weekIdx >= 0 && weekIdx < weeks) data[weeks - 1 - weekIdx] += p.amount;
-    });
-    return data;
-  }, [activeInvoices, allPayments]);
 
   const customerOwing: Record<string, { name: string; amount: number; currency: Currency }> = {};
   sent.forEach(inv => {
@@ -172,28 +105,12 @@ export default function Overview() {
     '3px solid hsl(192 75% 36%)',
   ];
 
-  const sparkColors = [
-    'hsl(192, 18%, 65%)',
-    'hsl(38, 92%, 50%)',
-    'hsl(0, 72%, 51%)',
-    'hsl(152, 56%, 42%)',
-    'hsl(192, 75%, 36%)',
-  ];
-
-  const sparkDataArrays = [
-    sparklineData.draft,
-    sparklineData.sent,
-    sparklineData.overdue,
-    sparklineData.paid,
-    sparklineData.total,
-  ];
-
   const stats = [
-    { label: 'Draft', value: draft.length, icon: FileText, color: 'text-muted-foreground', bg: 'bg-muted' },
-    { label: 'Awaiting Payment', value: sent.length, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
-    { label: 'Overdue', value: overdue.length, icon: AlertCircle, color: 'text-overdue', bg: 'bg-overdue/10' },
-    { label: 'Paid', value: paid.length, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10' },
-    { label: 'Total Invoices', value: activeInvoices.length, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'Draft', value: draft.length, icon: FileText, color: 'text-muted-foreground', bg: 'bg-muted', link: '/invoices?status=draft' },
+    { label: 'Awaiting Payment', value: sent.length, icon: Clock, color: 'text-warning', bg: 'bg-warning/10', link: '/invoices?status=sent' },
+    { label: 'Overdue', value: overdue.length, icon: AlertCircle, color: 'text-overdue', bg: 'bg-overdue/10', link: '/invoices?status=overdue' },
+    { label: 'Paid', value: paid.length, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10', link: '/invoices?status=paid' },
+    { label: 'Total Invoices', value: activeInvoices.length, icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10', link: '/invoices' },
   ];
 
   if (!loading && companies.length === 0) {
@@ -263,7 +180,7 @@ export default function Overview() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
           {stats.map((s, idx) => (
-            <div key={s.label} className={`rounded-xl border-y border-r border-border/50 bg-card px-5 pt-5 pb-2 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-${idx + 1}`} style={{ borderLeft: statBorders[idx] }}>
+            <Link key={s.label} to={s.link} className={`block rounded-xl border-y border-r border-border/50 bg-card px-5 pt-5 pb-5 invoice-shadow hover:invoice-shadow-lg transition-shadow cursor-pointer stagger-${idx + 1}`} style={{ borderLeft: statBorders[idx] }}>
               <div className="flex items-center justify-between mb-2">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.bg}`}>
                   <s.icon className={`h-5 w-5 ${s.color}`} />
@@ -272,40 +189,38 @@ export default function Overview() {
               </div>
               <p className="text-3xl font-bold">{s.value}</p>
               <p className="text-[11px] text-muted-foreground">{s.label}</p>
-              <Sparkline data={sparkDataArrays[idx]} color={sparkColors[idx]} />
-            </div>
+            </Link>
           ))}
         </div>
       )}
 
       {/* Money summary */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-2" style={{ borderLeft: '3px solid hsl(38 92% 50%)' }}>
+        <Link to="/invoices?status=sent" className="block rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-2" style={{ borderLeft: '3px solid hsl(38 92% 50%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <Send className="h-3.5 w-3.5 text-warning" />
             <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
           </div>
           <p className="text-2xl font-bold text-warning">{formatMultiCurrency(outstandingByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
-        </div>
-        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 pt-5 pb-2 invoice-shadow stagger-3" style={{ borderLeft: '3px solid hsl(152 56% 42%)' }}>
+        </Link>
+        <Link to="/invoices?status=paid" className="block rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-3" style={{ borderLeft: '3px solid hsl(152 56% 42%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             <p className="text-xs font-medium text-muted-foreground">Received</p>
           </div>
           <p className="text-2xl font-bold text-success">{formatMultiCurrency(paidByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
-          <Sparkline data={revenueSparkline} color="hsl(152, 56%, 42%)" />
-        </div>
-        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-4" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
+        </Link>
+        <Link to="/invoices?status=overdue" className="block rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-4" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <AlertCircle className="h-3.5 w-3.5 text-overdue" />
             <p className="text-xs font-medium text-muted-foreground">Overdue</p>
           </div>
           <p className="text-2xl font-bold text-overdue">{formatMultiCurrency(overdueByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
-        </div>
-        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-5" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
+        </Link>
+        <Link to="/expenses" className="block rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-5" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <Receipt className="h-3.5 w-3.5 text-destructive" />
             <p className="text-xs font-medium text-muted-foreground">Total Expenses</p>
@@ -314,7 +229,7 @@ export default function Overview() {
             {formatCurrency(expenses.reduce((sum, e) => sum + e.amount, 0), primaryCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">{expenses.length} expense{expenses.length !== 1 ? 's' : ''} recorded</p>
-        </div>
+        </Link>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
