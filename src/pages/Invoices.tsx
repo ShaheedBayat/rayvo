@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,17 +13,26 @@ import type { Currency } from '@/types/invoice';
 import {
   FileText, Plus, MoreHorizontal, Trash2, Eye, Search, RefreshCw,
   ToggleLeft, ToggleRight, ChevronLeft, ChevronRight, Ban, Pencil,
+  ArrowUpDown, ArrowUp, ArrowDown, Rows3, Rows2, Copy, ChevronDown,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip, TooltipContent, TooltipTrigger,
+} from '@/components/ui/tooltip';
 import AppLayout from '@/components/AppLayout';
 import { toast } from 'sonner';
+
+type SortKey = 'invoiceNumber' | 'clientName' | 'dueDate' | 'amount' | 'status';
+type SortDir = 'asc' | 'desc';
+type Density = 'compact' | 'comfortable';
 
 const PAGE_SIZE = 20;
 
