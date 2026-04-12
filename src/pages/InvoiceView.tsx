@@ -955,27 +955,7 @@ export default function InvoiceView() {
                     <td className="px-4 py-2.5 text-right mono font-medium text-success">{formatCurrency(p.amount, invoice.currency)}</td>
                     <td className="px-4 py-2.5">
                       {!isVoided && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={async () => {
-                          // Verify payment exists before deleting
-                          const { data: existsCheck } = await supabase.from('payments').select('id').eq('id', p.id).maybeSingle();
-                          if (!existsCheck) { toast.error('Payment not found'); return; }
-
-                          await deletePayment(p.id);
-
-                          // Verify deletion
-                          const { data: stillExists } = await supabase.from('payments').select('id').eq('id', p.id).maybeSingle();
-                          if (stillExists) { toast.error('Payment deletion failed — please refresh'); return; }
-
-                          // Recalculate status from DB
-                          const statusOk = await recalculateAndUpdateStatus(total, {
-                            action: 'payment_removed',
-                            details: `Payment of ${formatCurrency(p.amount, invoice.currency)} removed.`,
-                          });
-                          if (statusOk) {
-                            toast.success('Payment removed');
-                          }
-                          fetchLogs('invoice', invoice.id).then(setActivityLogs);
-                        }}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setDeletePaymentId(p.id)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       )}
@@ -983,10 +963,66 @@ export default function InvoiceView() {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="bg-muted/30 border-t">
+                  <td colSpan={3} className="px-4 py-3">
+                    <div className="flex flex-wrap gap-4 text-xs">
+                      <span>Total Paid: <span className="mono font-semibold text-success">{formatCurrency(totalPaid, invoice.currency)}</span></span>
+                      <span>Total Due: <span className="mono font-semibold">{formatCurrency(total, invoice.currency)}</span></span>
+                      <span>Balance: <span className={`mono font-semibold ${amountDue <= 0.01 ? 'text-success' : 'text-primary'}`}>{formatCurrency(Math.max(0, amountDue), invoice.currency)}</span></span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right mono font-semibold text-success">{formatCurrency(totalPaid, invoice.currency)}</td>
+                  <td />
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
       )}
+
+      {/* Delete Payment Confirmation */}
+      <AlertDialog open={!!deletePaymentId} onOpenChange={() => setDeletePaymentId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete payment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the payment of {deletePaymentId ? formatCurrency(payments.find(p => p.id === deletePaymentId)?.amount || 0, invoice.currency) : ''} and recalculate the invoice balance. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingPayment}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingPayment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deletePaymentId) return;
+                setDeletingPayment(true);
+                const p = payments.find(pay => pay.id === deletePaymentId);
+
+                const { data: existsCheck } = await supabase.from('payments').select('id').eq('id', deletePaymentId).maybeSingle();
+                if (!existsCheck) { toast.error('Payment not found'); setDeletingPayment(false); setDeletePaymentId(null); return; }
+
+                await deletePayment(deletePaymentId);
+
+                const { data: stillExists } = await supabase.from('payments').select('id').eq('id', deletePaymentId).maybeSingle();
+                if (stillExists) { toast.error('Payment deletion failed — please refresh'); setDeletingPayment(false); setDeletePaymentId(null); return; }
+
+                const statusOk = await recalculateAndUpdateStatus(total, {
+                  action: 'payment_removed',
+                  details: `Payment of ${formatCurrency(p?.amount || 0, invoice.currency)} removed.`,
+                });
+                if (statusOk) toast.success('Payment removed');
+                fetchLogs('invoice', invoice.id).then(setActivityLogs);
+                setDeletingPayment(false);
+                setDeletePaymentId(null);
+              }}
+            >
+              {deletingPayment ? 'Deleting...' : 'Delete Payment'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Activity Log */}
       {activityLogs.length > 0 && (
