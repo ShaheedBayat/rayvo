@@ -112,9 +112,21 @@ function ThemeCard({ theme, onEdit, onDuplicate, onSetDefault, onDelete }: {
 
 export default function InvoiceSettings() {
   const { themes, addTheme, updateTheme, deleteTheme, duplicateTheme, setDefault } = useBrandingThemes();
+  const { settings: globalSettings, saveLateFeeSettings } = useGlobalSettings();
   const [activeTab, setActiveTab] = useState('themes');
   const [editingTheme, setEditingTheme] = useState<BrandingTheme | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [lateFeeEnabled, setLateFeeEnabled] = useState(false);
+  const [lateFeeType, setLateFeeType] = useState<'flat' | 'percentage'>('percentage');
+  const [lateFeeValue, setLateFeeValue] = useState('');
+
+  useEffect(() => {
+    if (globalSettings?.lateFee) {
+      setLateFeeEnabled(globalSettings.lateFee.enabled);
+      setLateFeeType(globalSettings.lateFee.type);
+      setLateFeeValue(globalSettings.lateFee.value > 0 ? String(globalSettings.lateFee.value) : '');
+    }
+  }, [globalSettings]);
 
   const handleApplyPreset = async (themeData: Partial<BrandingTheme>) => {
     const result = await addTheme(themeData);
