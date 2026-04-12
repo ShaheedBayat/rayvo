@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
-import type { Company, PricingMode } from '@/types/invoice';
+import type { Company, PricingMode, Currency } from '@/types/invoice';
+import { currencyLabels } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,7 @@ function CompanyEditPanel({
   const [isVatRegistered, setIsVatRegistered] = useState(initial.isVatRegistered ?? false);
   const [vatRate, setVatRate] = useState(initial.vatRate?.toString() ?? '15');
   const [pricingMode, setPricingMode] = useState<PricingMode>(initial.pricingMode || 'exclusive');
+  const [defaultCurrency, setDefaultCurrency] = useState<Currency>(initial.defaultCurrency || 'ZAR');
 
   const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,6 +61,7 @@ function CompanyEditPanel({
       isVatRegistered,
       vatRate: parseFloat(vatRate) || 15,
       pricingMode,
+      defaultCurrency,
     });
   };
 
@@ -139,6 +142,18 @@ function CompanyEditPanel({
         <p className="text-xs text-muted-foreground">PNG or JPG, max 2MB</p>
       </div>
 
+      <div className="space-y-1.5">
+        <Label>Default Currency</Label>
+        <Select value={defaultCurrency} onValueChange={(v) => setDefaultCurrency(v as Currency)}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {Object.entries(currencyLabels).map(([code, label]) => (
+              <SelectItem key={code} value={code}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="space-y-4 pt-2">
         <div className="flex items-start gap-3">
           <Checkbox checked={isVatRegistered} onCheckedChange={(v) => setIsVatRegistered(!!v)} id={`vat-reg-${initial.id}`} className="mt-0.5" />
@@ -188,6 +203,7 @@ function CompanyCreateForm({
   const [isVatRegistered, setIsVatRegistered] = useState(false);
   const [vatRate, setVatRate] = useState('15');
   const [pricingMode, setPricingMode] = useState<PricingMode>('exclusive');
+  const [defaultCurrency, setDefaultCurrency] = useState<Currency>('ZAR');
 
   const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -206,6 +222,7 @@ function CompanyCreateForm({
       isVatRegistered,
       vatRate: parseFloat(vatRate) || 15,
       pricingMode,
+      defaultCurrency,
     });
     onClose();
   };
@@ -253,6 +270,17 @@ function CompanyCreateForm({
           <Label>Country <span className="text-destructive">*</span></Label>
           <Input required value={country} onChange={e => setCountry(e.target.value)} />
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Default Currency</Label>
+        <Select value={defaultCurrency} onValueChange={(v) => setDefaultCurrency(v as Currency)}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {Object.entries(currencyLabels).map(([code, label]) => (
+              <SelectItem key={code} value={code}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-4 pt-2">
         <div className="flex items-start gap-3">

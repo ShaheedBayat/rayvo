@@ -27,6 +27,7 @@ import InvoiceSummary from '@/components/invoice/InvoiceSummary';
 import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 import BillableExpenses from '@/components/invoice/BillableExpenses';
+import CurrencySelect from '@/components/invoice/CurrencySelect';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { useActivityLog } from '@/hooks/useActivityLog';
@@ -59,7 +60,7 @@ export default function CreateInvoice() {
 
   const defaultRate = isVatRegistered ? (activeCompany?.vatRate ?? 15) : 0;
 
-  const [currency, setCurrency] = useState<Currency>(dupState?.currency || 'ZAR');
+  const [currency, setCurrency] = useState<Currency>(dupState?.currency || activeCompany?.defaultCurrency || 'ZAR');
   const [clientName, setClientName] = useState(dupState?.clientName || '');
   const [clientEmail, setClientEmail] = useState(dupState?.clientEmail || '');
   const [clientAddress, setClientAddress] = useState(dupState?.clientAddress || '');
@@ -388,15 +389,7 @@ export default function CreateInvoice() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Currency</Label>
-                  <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ZAR">ZAR (R)</SelectItem>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="GBP">GBP (£)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <CurrencySelect value={currency} onChange={setCurrency} />
                 </div>
               </div>
             </div>

@@ -13,6 +13,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { currencyLabels } from '@/types/invoice';
+import type { Currency } from '@/types/invoice';
 import { Separator } from '@/components/ui/separator';
 import type { Customer, CustomerContact } from '@/hooks/useCustomers';
 
@@ -394,10 +396,9 @@ export default function CustomerProfileForm({ initial, onSave, onCancel, onSaveA
                 <Select value={data.currency} onValueChange={v => set('currency', v)}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ZAR">ZAR – South African Rand</SelectItem>
-                    <SelectItem value="USD">USD – US Dollar</SelectItem>
-                    <SelectItem value="EUR">EUR – Euro</SelectItem>
-                    <SelectItem value="GBP">GBP – British Pound</SelectItem>
+                    {Object.entries(currencyLabels).map(([code, label]) => (
+                      <SelectItem key={code} value={code}>{label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </Field>

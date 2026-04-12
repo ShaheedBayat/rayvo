@@ -223,6 +223,7 @@ export type Database = {
           city: string
           country: string
           created_at: string
+          default_currency: string
           email: string
           id: string
           is_vat_registered: boolean
@@ -240,6 +241,7 @@ export type Database = {
           city: string
           country: string
           created_at?: string
+          default_currency?: string
           email: string
           id?: string
           is_vat_registered?: boolean
@@ -257,6 +259,7 @@ export type Database = {
           city?: string
           country?: string
           created_at?: string
+          default_currency?: string
           email?: string
           id?: string
           is_vat_registered?: boolean

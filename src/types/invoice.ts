@@ -1,4 +1,4 @@
-export type Currency = 'ZAR' | 'USD' | 'EUR' | 'GBP';
+export type Currency = 'ZAR' | 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD' | 'CAD' | 'CHF' | 'CNY' | 'INR' | 'JPY' | 'NGN' | 'BWP' | 'KES' | 'MZN' | 'NAD';
 
 export type PricingMode = 'exclusive' | 'inclusive';
 
@@ -11,10 +11,11 @@ export interface Company {
   city: string;
   country: string;
   taxNumber?: string;
-  logo?: string; // base64 data URL
+  logo?: string;
   isVatRegistered?: boolean;
   vatRate?: number;
   pricingMode?: PricingMode;
+  defaultCurrency?: Currency;
 }
 
 export interface InvoiceItem {
@@ -49,6 +50,37 @@ export const currencySymbols: Record<Currency, string> = {
   USD: '$',
   EUR: '€',
   GBP: '£',
+  AED: 'د.إ',
+  AUD: 'A$',
+  CAD: 'C$',
+  CHF: 'CHF',
+  CNY: '¥',
+  INR: '₹',
+  JPY: '¥',
+  NGN: '₦',
+  BWP: 'P',
+  KES: 'KSh',
+  MZN: 'MT',
+  NAD: 'N$',
+};
+
+export const currencyLabels: Record<Currency, string> = {
+  ZAR: 'ZAR — South African Rand',
+  USD: 'USD — US Dollar',
+  EUR: 'EUR — Euro',
+  GBP: 'GBP — British Pound',
+  AED: 'AED — UAE Dirham',
+  AUD: 'AUD — Australian Dollar',
+  CAD: 'CAD — Canadian Dollar',
+  CHF: 'CHF — Swiss Franc',
+  CNY: 'CNY — Chinese Yuan',
+  INR: 'INR — Indian Rupee',
+  JPY: 'JPY — Japanese Yen',
+  NGN: 'NGN — Nigerian Naira',
+  BWP: 'BWP — Botswana Pula',
+  KES: 'KES — Kenyan Shilling',
+  MZN: 'MZN — Mozambican Metical',
+  NAD: 'NAD — Namibian Dollar',
 };
 
 export function formatCurrency(amount: number, currency: Currency): string {
