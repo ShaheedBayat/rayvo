@@ -26,6 +26,7 @@ const tabs = [
   { id: 'library', label: 'Template Library', icon: LayoutGrid },
   { id: 'ai', label: 'AI Assistant', icon: Sparkles },
   { id: 'export', label: 'Import / Export', icon: ArrowUpDown },
+  { id: 'latefees', label: 'Late Fees', icon: AlertTriangle },
   { id: 'defaults', label: 'Default Settings', icon: Settings2 },
   { id: 'payments', label: 'Payment Services', icon: CreditCard },
   { id: 'reminders', label: 'Reminders', icon: Bell },
