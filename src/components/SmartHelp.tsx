@@ -44,12 +44,11 @@ export default function SmartHelp() {
       prevPathRef.current = location.pathname;
       if (open) {
         setMessages([]);
-        askHelp("What can I do on this page? Give me a quick guide.");
-      } else {
-        setMessages([]);
+        setTimeout(() => askHelp("What can I do on this page? Give me a quick guide."), 0);
       }
     }
-  }, [location.pathname, open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const askHelp = async (question?: string) => {
     const q = question || input.trim();
