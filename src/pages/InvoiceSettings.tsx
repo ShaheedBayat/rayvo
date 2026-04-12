@@ -116,12 +116,22 @@ function ThemeCard({ theme, onEdit, onDuplicate, onSetDefault, onDelete }: {
 export default function InvoiceSettings() {
   const { themes, addTheme, updateTheme, deleteTheme, duplicateTheme, setDefault } = useBrandingThemes();
   const { settings: globalSettings, saveLateFeeSettings } = useGlobalSettings();
+  const { template: emailTemplate, saveTemplate: saveEmailTemplate, resetToDefault, loading: emailLoading } = useEmailTemplates();
   const [activeTab, setActiveTab] = useState('themes');
   const [editingTheme, setEditingTheme] = useState<BrandingTheme | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [lateFeeEnabled, setLateFeeEnabled] = useState(false);
   const [lateFeeType, setLateFeeType] = useState<'flat' | 'percentage'>('percentage');
   const [lateFeeValue, setLateFeeValue] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+
+  useEffect(() => {
+    const defaults = resetToDefault();
+    setEmailSubject(emailTemplate?.subject || defaults.subject);
+    setEmailBody(emailTemplate?.body || defaults.body);
+  }, [emailTemplate, resetToDefault]);
 
   useEffect(() => {
     if (globalSettings?.lateFee) {
