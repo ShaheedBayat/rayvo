@@ -157,6 +157,11 @@ export default function EditInvoice() {
       },
       successMessage: 'Invoice updated!',
       onSuccess: async () => {
+        // Mark billable expenses as billed
+        for (const expId of pendingBilledExpenseIds) {
+          await markExpenseAsBilled(expId, invoice.id);
+        }
+        if (pendingBilledExpenseIds.length > 0) await refetchExpenses();
         await logActivity('invoice', invoice.id, 'updated', `Invoice ${invoice.invoiceNumber} updated`);
         navigate(`/invoices/${invoice.id}`);
       },
@@ -227,6 +232,13 @@ export default function EditInvoice() {
                 </div>
               </div>
             </div>
+
+            <BillableExpenses
+              clientName={clientName}
+              customerId={customers.find(c => c.name === clientName)?.id || null}
+              currency={currency}
+              onAddItems={handleAddBillableExpenses}
+            />
 
             <div className="rounded-lg border bg-card p-6 invoice-shadow">
               <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Line Items</h2>
