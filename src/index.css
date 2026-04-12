@@ -411,4 +411,12 @@
   .stagger-4 { animation: fade-in 0.4s ease-out 240ms both; }
   .stagger-5 { animation: fade-in 0.4s ease-out 320ms both; }
   .stagger-6 { animation: fade-in 0.4s ease-out 400ms both; }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
