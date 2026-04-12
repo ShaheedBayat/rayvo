@@ -1375,6 +1375,7 @@ export type Database = {
           accepted_at: string | null
           company_id: string | null
           email: string
+          expires_at: string | null
           id: string
           invited_at: string
           owner_id: string
@@ -1385,6 +1386,7 @@ export type Database = {
           accepted_at?: string | null
           company_id?: string | null
           email: string
+          expires_at?: string | null
           id?: string
           invited_at?: string
           owner_id: string
@@ -1395,6 +1397,7 @@ export type Database = {
           accepted_at?: string | null
           company_id?: string | null
           email?: string
+          expires_at?: string | null
           id?: string
           invited_at?: string
           owner_id?: string
