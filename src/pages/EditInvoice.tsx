@@ -234,7 +234,7 @@ export default function EditInvoice() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Due Date</Label>
-                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-9" />
+                  <InvoiceDatePicker value={dueDate} onChange={setDueDate} placeholder="Due date" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Currency</Label>
