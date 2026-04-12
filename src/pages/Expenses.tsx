@@ -54,7 +54,7 @@ function ExpenseAttachments({ expenseId }: { expenseId: string }) {
 function ExpenseReceiptIndicator({ expenseId }: { expenseId: string }) {
   const { attachments } = useAttachments('expense', expenseId);
   if (attachments.length === 0) return null;
-  return <Paperclip className="h-3.5 w-3.5 text-muted-foreground" title={`${attachments.length} receipt(s)`} />;
+  return <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
 export default function Expenses() {
