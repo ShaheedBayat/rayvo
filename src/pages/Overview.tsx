@@ -220,7 +220,7 @@ export default function Overview() {
           <p className="text-2xl font-bold text-overdue">{formatMultiCurrency(overdueByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
         </Link>
-        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-5" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
+        <Link to="/expenses" className="block rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-5" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <Receipt className="h-3.5 w-3.5 text-destructive" />
             <p className="text-xs font-medium text-muted-foreground">Total Expenses</p>
@@ -229,7 +229,7 @@ export default function Overview() {
             {formatCurrency(expenses.reduce((sum, e) => sum + e.amount, 0), primaryCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">{expenses.length} expense{expenses.length !== 1 ? 's' : ''} recorded</p>
-        </div>
+        </Link>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
