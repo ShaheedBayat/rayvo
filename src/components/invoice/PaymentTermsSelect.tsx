@@ -63,8 +63,8 @@ export default function PaymentTermsSelect({ value, onChange }: Props) {
   return (
     <div className="flex gap-2">
       <Select value={value} onValueChange={handleChange}>
-        <SelectTrigger className="h-9 flex-1">
-          <SelectValue placeholder="Select terms" />
+        <SelectTrigger className="h-9 flex-1 min-w-0">
+          <SelectValue placeholder="Select payment terms" />
         </SelectTrigger>
         <SelectContent>
           {PAYMENT_TERMS.map(t => (
@@ -78,7 +78,7 @@ export default function PaymentTermsSelect({ value, onChange }: Props) {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className={cn("h-9 w-[140px] justify-start text-left font-normal", !pickerDate && "text-muted-foreground")}
+              className={cn("h-9 w-[160px] justify-start text-left font-normal shrink-0", !pickerDate && "text-muted-foreground")}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {pickerDate ? format(pickerDate, 'dd MMM yyyy') : 'Pick date'}
