@@ -625,6 +625,12 @@ export default function InvoiceView() {
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold mono">{invoice.invoiceNumber}</h1>
             <Badge variant="outline" className={`${config.className} text-[11px]`}>{config.label}</Badge>
+            {invoice.invoiceType === 'deposit' && (
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-[11px]">💰 Deposit</Badge>
+            )}
+            {invoice.invoiceType === 'balance' && (
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 text-[11px]">📋 Balance</Badge>
+            )}
             {isLocked && (
               <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[11px] gap-1">
                 🔒 Finalized
