@@ -510,6 +510,7 @@ export default function CreateInvoice() {
               </div>
             )}
 
+            <BillableExpenses
               clientName={clientName}
               customerId={selectedCustomer?.id || null}
               currency={currency}
