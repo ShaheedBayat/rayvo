@@ -4,8 +4,9 @@ import raynLogo from '@/assets/rayn-logo.png';
 import {
   LayoutDashboard, FileText, Users, Package, Building2, BarChart3, Settings,
   Plus, LogOut, Sun, Moon, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
-  CreditCard, Receipt, FileCheck, Menu, X, Wallet, Activity, UsersRound,
+  CreditCard, Receipt, FileCheck, Menu, X, Wallet, Activity, UsersRound, Search,
 } from 'lucide-react';
+import CommandPalette from '@/components/CommandPalette';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
