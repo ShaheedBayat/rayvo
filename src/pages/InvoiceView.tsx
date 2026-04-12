@@ -396,53 +396,6 @@ export default function InvoiceView() {
     return true;
   };
 
-      {/* Apply Credit dialog */}
-      <Dialog open={applyCreditOpen} onOpenChange={setApplyCreditOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Apply Credit to Invoice</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="rounded-lg bg-muted/40 p-3 text-sm space-y-1">
-              <div className="flex justify-between"><span className="text-muted-foreground">Amount Due</span><span className="mono font-semibold text-primary">{formatCurrency(amountDue, invoice.currency)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Customer Credit Balance</span><span className="mono font-medium text-info">{formatCurrency(customerCreditBalance, invoice.currency)}</span></div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Select Credit Note</Label>
-              <Select value={selectedCreditNoteId} onValueChange={(v) => {
-                setSelectedCreditNoteId(v);
-                const cn = availableCustomerCredits.find(c => c.id === v);
-                if (cn) {
-                  const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
-                  const cnTotal = calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
-                  setApplyCreditAmount(Math.min(cnTotal, amountDue).toFixed(2));
-                }
-              }}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Select credit note..." /></SelectTrigger>
-                <SelectContent>
-                  {availableCustomerCredits.map(cn => {
-                    const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
-                    const cnTotal = calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
-                    return (
-                      <SelectItem key={cn.id} value={cn.id}>
-                        {cn.creditNoteNumber} — {formatCurrency(cnTotal, cn.currency)} ({cn.status})
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Amount to Apply</Label>
-              <Input type="number" step="0.01" min="0.01" value={applyCreditAmount} onChange={e => setApplyCreditAmount(e.target.value)} className="h-9" />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setApplyCreditOpen(false)} disabled={applyingCredit}>Cancel</Button>
-              <Button onClick={handleApplyCredit} disabled={applyingCredit || !selectedCreditNoteId}>
-                {applyingCredit ? 'Applying...' : 'Apply Credit'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
