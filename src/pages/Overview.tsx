@@ -220,7 +220,7 @@ export default function Overview() {
             <Send className="h-3.5 w-3.5 text-warning" />
             <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
           </div>
-          <p className="text-2xl font-bold mono text-warning">
+          <p className="text-2xl font-bold text-warning">
             {formatMultiCurrency(outstandingByCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
@@ -230,7 +230,7 @@ export default function Overview() {
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             <p className="text-xs font-medium text-muted-foreground">Received</p>
           </div>
-          <p className="text-2xl font-bold mono text-success">
+          <p className="text-2xl font-bold text-success">
             {formatMultiCurrency(paidByCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
@@ -240,7 +240,7 @@ export default function Overview() {
             <AlertCircle className="h-3.5 w-3.5 text-overdue" />
             <p className="text-xs font-medium text-muted-foreground">Overdue</p>
           </div>
-          <p className="text-2xl font-bold mono text-overdue">
+          <p className="text-2xl font-bold text-overdue">
             {formatMultiCurrency(overdueByCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">{overdue.length} invoice{overdue.length !== 1 ? 's' : ''} overdue</p>
@@ -250,7 +250,7 @@ export default function Overview() {
             <Receipt className="h-3.5 w-3.5 text-destructive" />
             <p className="text-xs font-medium text-muted-foreground">Total Expenses</p>
           </div>
-          <p className="text-2xl font-bold mono text-destructive">
+          <p className="text-2xl font-bold text-destructive">
             {formatCurrency(expenses.reduce((sum, e) => sum + e.amount, 0), primaryCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">{expenses.length} expense{expenses.length !== 1 ? 's' : ''} recorded</p>
@@ -295,7 +295,7 @@ export default function Overview() {
                         <span className="text-sm text-muted-foreground truncate">{inv.clientName}</span>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className="mono text-sm font-medium">
+                         <span className="text-sm font-medium">
                           {formatCurrency(total, inv.currency)}
                         </span>
                         <span
@@ -336,7 +336,7 @@ export default function Overview() {
                     <div key={customer.name}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium truncate max-w-[140px]">{customer.name}</span>
-                        <span className="mono text-sm text-warning font-medium">
+                        <span className="text-sm text-warning font-medium">
                           {formatCurrency(customer.amount, customer.currency)}
                         </span>
                       </div>
