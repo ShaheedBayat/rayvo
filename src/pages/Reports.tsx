@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useExpenses } from '@/hooks/useExpenses';
@@ -9,14 +9,41 @@ import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { DollarSign, TrendingUp, Clock, AlertCircle, CheckCircle2, Receipt, Download } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, AlertCircle, CheckCircle2, Receipt, Download, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { exportToCsv } from '@/lib/exportCsv';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--warning))', 'hsl(var(--success))', 'hsl(var(--destructive))', 'hsl(var(--info))'];
 
+function formatAxisValue(v: number): string {
+  if (v === 0) return '0';
+  if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
+  if (v >= 1000) return `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k`;
+  return v.toFixed(0);
+}
+
+function getMonthsForRange(range: string): Record<string, number | { income: number; expenses: number }> {
+  const count = range === '3m' ? 3 : range === '6m' ? 6 : 12;
+  const months: Record<string, number> = {};
+  const now = new Date();
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
+    months[key] = 0;
+  }
+  return months;
+}
+
+function getDateRangeStart(range: string): Date {
+  const now = new Date();
+  const count = range === '3m' ? 3 : range === '6m' ? 6 : 12;
+  return new Date(now.getFullYear(), now.getMonth() - count + 1, 1);
+}
+
 export default function Reports() {
+  const [dateRange, setDateRange] = useState('6m');
   const { invoices: allInvoices } = useInvoices();
   const { getCompany } = useCompanies();
   const { activeCompanyId, activeCompany } = useActiveCompany();
@@ -41,39 +68,25 @@ export default function Reports() {
   const activeInvoices = invoices.filter(i => i.status !== 'voided');
   const currencies = [...new Set(activeInvoices.map(i => i.currency))] as Currency[];
   const primaryCurrency: Currency = currencies[0] || 'ZAR';
+  const rangeStart = getDateRangeStart(dateRange);
 
-  // Revenue by month = sum of actual payments received (last 6 months)
   const revenueByMonth = useMemo(() => {
-    const months: Record<string, number> = {};
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
-      months[key] = 0;
-    }
-    // Filter payments to only those belonging to company-filtered invoices
+    const months = getMonthsForRange(dateRange) as Record<string, number>;
     const invoiceIds = new Set(activeInvoices.map(i => i.id));
-    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+    allPayments.filter(p => invoiceIds.has(p.invoiceId) && new Date(p.paymentDate) >= rangeStart).forEach(p => {
       const d = new Date(p.paymentDate);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
-      if (key in months) {
-        months[key] += p.amount;
-      }
+      if (key in months) months[key] += p.amount;
     });
     return Object.entries(months).map(([month, revenue]) => ({ month, revenue }));
-  }, [activeInvoices, allPayments]);
+  }, [activeInvoices, allPayments, dateRange]);
 
-  // Status breakdown
   const statusBreakdown = useMemo(() => {
     const counts = { draft: 0, sent: 0, paid: 0, overdue: 0, partially_paid: 0 };
     activeInvoices.forEach(inv => {
-      if (inv.status === 'sent' && new Date(inv.dueDate) < new Date()) {
-        counts.overdue++;
-      } else if (inv.status === 'partially_paid') {
-        counts.partially_paid++;
-      } else if (inv.status in counts) {
-        counts[inv.status as keyof typeof counts]++;
-      }
+      if (inv.status === 'sent' && new Date(inv.dueDate) < new Date()) counts.overdue++;
+      else if (inv.status === 'partially_paid') counts.partially_paid++;
+      else if (inv.status in counts) counts[inv.status as keyof typeof counts]++;
     });
     return [
       { name: 'Draft', value: counts.draft },
@@ -84,7 +97,6 @@ export default function Reports() {
     ].filter(s => s.value > 0);
   }, [activeInvoices]);
 
-  // Top customers by actual payments received
   const topCustomers = useMemo(() => {
     const invoiceIds = new Set(activeInvoices.map(i => i.id));
     const invoiceMap = new Map(activeInvoices.map(i => [i.id, i]));
@@ -95,13 +107,9 @@ export default function Reports() {
       if (!map[inv.clientName]) map[inv.clientName] = { total: 0, currency: inv.currency };
       map[inv.clientName].total += p.amount;
     });
-    return Object.entries(map)
-      .map(([name, { total, currency }]) => ({ name, total, currency }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5);
+    return Object.entries(map).map(([name, { total, currency }]) => ({ name, total, currency })).sort((a, b) => b.total - a.total).slice(0, 5);
   }, [activeInvoices, allPayments]);
 
-  // AR Aging — use actual outstanding balance (total - payments)
   const aging = useMemo(() => {
     const buckets = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 };
     const now = new Date();
@@ -109,8 +117,7 @@ export default function Reports() {
       const days = Math.floor((now.getTime() - new Date(inv.dueDate).getTime()) / (1000 * 60 * 60 * 24));
       const balance = getInvoiceTotal(inv) - paidForInvoice(inv.id);
       if (balance <= 0) return;
-      if (days <= 0) buckets['0-30'] += balance;
-      else if (days <= 30) buckets['0-30'] += balance;
+      if (days <= 30) buckets['0-30'] += balance;
       else if (days <= 60) buckets['31-60'] += balance;
       else if (days <= 90) buckets['61-90'] += balance;
       else buckets['90+'] += balance;
@@ -118,41 +125,30 @@ export default function Reports() {
     return Object.entries(buckets).map(([range, amount]) => ({ range, amount }));
   }, [activeInvoices, paidForInvoice]);
 
-  // Tax summary — only show when active company is VAT registered
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const taxSummary = useMemo(() => {
-    const months: Record<string, { taxCollected: number; currency: Currency }> = {};
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
-      months[key] = { taxCollected: 0, currency: primaryCurrency };
-    }
+    const months = getMonthsForRange(dateRange) as Record<string, number>;
     if (isVatRegistered) {
       activeInvoices.filter(i => i.status === 'paid').forEach(inv => {
         const company = getCompany(inv.companyId);
         if (!company?.isVatRegistered) return;
         const d = new Date(inv.createdAt);
+        if (d < rangeStart) return;
         const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
-        if (key in months) {
-          months[key].taxCollected += getInvoiceTax(inv);
-        }
+        if (key in months) months[key] += getInvoiceTax(inv);
       });
     }
-    return Object.entries(months).map(([month, { taxCollected }]) => ({ month, tax: taxCollected }));
-  }, [activeInvoices, primaryCurrency, isVatRegistered]);
+    return Object.entries(months).map(([month, tax]) => ({ month, tax }));
+  }, [activeInvoices, isVatRegistered, dateRange]);
 
-  // Summary cards — revenue = payments, outstanding = balance, overdue = past-due balance
   const summaryByCurrency = useMemo(() => {
-    const invoiceIds = new Set(activeInvoices.map(i => i.id));
     const groups: Record<string, { total: number; paid: number; outstanding: number; overdue: number }> = {};
     activeInvoices.forEach(inv => {
       const c = inv.currency;
       if (!groups[c]) groups[c] = { total: 0, paid: 0, outstanding: 0, overdue: 0 };
-      const invoiceTotal = getInvoiceTotal(inv);
       const paid = paidForInvoice(inv.id);
-      const balance = Math.max(0, invoiceTotal - paid);
-      groups[c].total += paid; // "Total Revenue" = actual payments received
+      const balance = Math.max(0, getInvoiceTotal(inv) - paid);
+      groups[c].total += paid;
       groups[c].paid += paid;
       if (inv.status === 'sent' || inv.status === 'partially_paid') {
         groups[c].outstanding += balance;
@@ -162,33 +158,28 @@ export default function Reports() {
     return groups;
   }, [activeInvoices, paidForInvoice]);
 
-  // P&L data — income = actual payments received, not invoice totals
   const pnlData = useMemo(() => {
     const months: Record<string, { income: number; expenses: number }> = {};
     const now = new Date();
-    for (let i = 5; i >= 0; i--) {
+    const count = dateRange === '3m' ? 3 : dateRange === '6m' ? 6 : 12;
+    for (let i = count - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       months[key] = { income: 0, expenses: 0 };
     }
     const invoiceIds = new Set(activeInvoices.map(i => i.id));
-    allPayments.filter(p => invoiceIds.has(p.invoiceId)).forEach(p => {
+    allPayments.filter(p => invoiceIds.has(p.invoiceId) && new Date(p.paymentDate) >= rangeStart).forEach(p => {
       const d = new Date(p.paymentDate);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       if (key in months) months[key].income += p.amount;
     });
-    expenses.forEach(exp => {
+    expenses.filter(exp => new Date(exp.date) >= rangeStart).forEach(exp => {
       const d = new Date(exp.date);
       const key = d.toLocaleDateString('en', { month: 'short', year: '2-digit' });
       if (key in months) months[key].expenses += exp.amount;
     });
-    return Object.entries(months).map(([month, data]) => ({
-      month,
-      income: data.income,
-      expenses: data.expenses,
-      profit: data.income - data.expenses,
-    }));
-  }, [activeInvoices, allPayments, expenses]);
+    return Object.entries(months).map(([month, data]) => ({ month, income: data.income, expenses: data.expenses, profit: data.income - data.expenses }));
+  }, [activeInvoices, allPayments, expenses, dateRange]);
 
   const totalIncome = pnlData.reduce((s, d) => s + d.income, 0);
   const totalExpensesAmt = pnlData.reduce((s, d) => s + d.expenses, 0);
@@ -202,7 +193,6 @@ export default function Reports() {
     expenses: { label: 'Expenses', color: 'hsl(var(--destructive))' },
   };
 
-  // CSV export handlers
   const exportInvoices = () => {
     exportToCsv('invoices.csv',
       ['Number', 'Client', 'Status', 'Currency', 'Total', 'Due Date', 'Created'],
@@ -222,26 +212,41 @@ export default function Reports() {
     );
   };
 
+  const rangeLabel = dateRange === '3m' ? 'Last 3 Months' : dateRange === '6m' ? 'Last 6 Months' : 'Last 12 Months';
+
   return (
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Reports</h1>
-          <p className="mt-1 text-sm text-muted-foreground">View summaries of your invoicing activity.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Financial summaries and analytics.</p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm"><Download className="mr-1.5 h-4 w-4" /> Export</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={exportInvoices}>Export Invoices (CSV)</DropdownMenuItem>
-            <DropdownMenuItem onClick={exportExpenses}>Export Expenses (CSV)</DropdownMenuItem>
-            <DropdownMenuItem onClick={exportPnl}>Export P&L (CSV)</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="h-9 w-[160px]">
+              <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3m">Last 3 Months</SelectItem>
+              <SelectItem value="6m">Last 6 Months</SelectItem>
+              <SelectItem value="12m">Last 12 Months</SelectItem>
+            </SelectContent>
+          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm"><Download className="mr-1.5 h-4 w-4" /> Export</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportInvoices}>Export Invoices (CSV)</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportExpenses}>Export Expenses (CSV)</DropdownMenuItem>
+              <DropdownMenuItem onClick={exportPnl}>Export P&L (CSV)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {/* Summary cards by currency */}
+      {/* Summary cards */}
       {Object.entries(summaryByCurrency).map(([currency, data]) => (
         <div key={currency} className="mb-6">
           {currencies.length > 1 && (
@@ -258,7 +263,7 @@ export default function Reports() {
                 <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.bg} mb-3`}>
                   <s.icon className={`h-4 w-4 ${s.color}`} />
                 </div>
-                <p className="text-2xl font-semibold mono">{formatCurrency(s.value, currency as Currency)}</p>
+                <p className="text-2xl font-semibold">{formatCurrency(s.value, currency as Currency)}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
               </div>
             ))}
@@ -266,33 +271,32 @@ export default function Reports() {
         </div>
       ))}
 
-      {/* P&L Summary Cards */}
+      {/* P&L Summary */}
       <div className="mb-6">
-        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Profit & Loss (Last 6 Months)</h3>
+        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Profit & Loss ({rangeLabel})</h3>
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
             <p className="text-xs text-muted-foreground mb-1">Total Income</p>
-            <p className="text-2xl font-semibold mono text-success">{formatCurrency(totalIncome, primaryCurrency)}</p>
+            <p className="text-2xl font-semibold text-success">{formatCurrency(totalIncome, primaryCurrency)}</p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
             <p className="text-xs text-muted-foreground mb-1">Total Expenses</p>
-            <p className="text-2xl font-semibold mono text-destructive">{formatCurrency(totalExpensesAmt, primaryCurrency)}</p>
+            <p className="text-2xl font-semibold text-destructive">{formatCurrency(totalExpensesAmt, primaryCurrency)}</p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
             <p className="text-xs text-muted-foreground mb-1">Net Profit</p>
-            <p className={`text-2xl font-semibold mono ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(netProfit, primaryCurrency)}</p>
+            <p className={`text-2xl font-semibold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(netProfit, primaryCurrency)}</p>
           </div>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
-        {/* P&L Chart */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Income vs Expenses</h2>
           <ChartContainer config={chartConfig} className="h-[250px] w-full">
             <BarChart data={pnlData}>
               <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} tickFormatter={formatAxisValue} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="expenses" fill="var(--color-expenses)" radius={[4, 4, 0, 0]} />
@@ -300,13 +304,12 @@ export default function Reports() {
           </ChartContainer>
         </div>
 
-        {/* Revenue by Month */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Revenue by Month</h2>
           <ChartContainer config={chartConfig} className="h-[250px] w-full">
             <BarChart data={revenueByMonth}>
               <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} tickFormatter={formatAxisValue} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -315,7 +318,6 @@ export default function Reports() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
-        {/* Status Breakdown */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Invoice Status Breakdown</h2>
           {statusBreakdown.length === 0 ? (
@@ -326,9 +328,7 @@ export default function Reports() {
                 <ResponsiveContainer>
                   <PieChart>
                     <Pie data={statusBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
-                      {statusBreakdown.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
+                      {statusBreakdown.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
                     </Pie>
                     <ChartTooltip />
                   </PieChart>
@@ -346,7 +346,6 @@ export default function Reports() {
           )}
         </div>
 
-        {/* Top Customers */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Top Customers by Revenue</h2>
           {topCustomers.length === 0 ? (
@@ -359,7 +358,7 @@ export default function Reports() {
                   <div key={c.name}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium truncate max-w-[180px]">{c.name}</span>
-                      <span className="mono text-sm font-medium">{formatCurrency(c.total, c.currency)}</span>
+                      <span className="text-sm font-medium">{formatCurrency(c.total, c.currency)}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                       <div className="h-full rounded-full bg-primary/70 transition-all duration-500" style={{ width: `${pct}%` }} />
@@ -373,20 +372,18 @@ export default function Reports() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
-        {/* AR Aging */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4">Accounts Receivable Aging</h2>
           <ChartContainer config={{ amount: { label: 'Amount', color: 'hsl(var(--warning))' } }} className="h-[250px] w-full">
             <BarChart data={aging}>
               <XAxis dataKey="range" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} tickFormatter={formatAxisValue} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="amount" fill="var(--color-amount)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ChartContainer>
         </div>
 
-        {/* Tax Summary */}
         <div className="rounded-xl border border-border/50 bg-card p-5 invoice-shadow">
           <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
             <Receipt className="h-4 w-4" /> Tax Summary (Paid Invoices)
@@ -394,7 +391,7 @@ export default function Reports() {
           <ChartContainer config={chartConfig} className="h-[250px] w-full">
             <BarChart data={taxSummary}>
               <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} tickFormatter={formatAxisValue} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="tax" fill="var(--color-tax)" radius={[4, 4, 0, 0]} />
             </BarChart>
