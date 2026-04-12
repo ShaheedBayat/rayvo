@@ -274,7 +274,10 @@ export default function InvoiceView() {
     setSendEmailOpen(false);
   };
 
-  const markApproveAndSend = async () => {
+  const handleApproveAndSend = async () => {
+    if (approveSending) return;
+    setApproveSending(true);
+    
     const result = await safeExecuteAction({
       actionName: 'Approve & send invoice',
       actionFn: () => updateInvoice({ ...invoice, status: 'sent' }),
@@ -287,9 +290,42 @@ export default function InvoiceView() {
     if (result) {
       await createVatEntries(invoice);
       await logActivity('invoice', invoice.id, 'approved_and_sent', `Invoice ${invoice.invoiceNumber} approved & sent`);
-      toast.success('Invoice approved & sent');
+
+      // Send email to specified addresses
+      const emails = approveEmailAddresses.split(',').map(e => e.trim()).filter(Boolean);
+      if (emails.length > 0) {
+        let token = invoice.shareToken;
+        if (!token) {
+          token = crypto.randomUUID();
+          await updateInvoice({ ...invoice, status: 'sent', shareToken: token });
+        }
+        const publicUrl = `${window.location.origin}/public/invoice/${invoice.id}?token=${token}`;
+        const { error } = await supabase.functions.invoke('send-invoice-email', {
+          body: {
+            emails,
+            invoiceNumber: invoice.invoiceNumber,
+            clientName: invoice.clientName,
+            amount: total.toFixed(2),
+            currency: invoice.currency,
+            dueDate: invoice.dueDate,
+            publicUrl,
+            companyName: company?.name || '',
+          },
+        });
+        if (error) {
+          toast.error('Invoice approved but email failed to send');
+          console.error(error);
+        } else {
+          await logActivity('invoice', invoice.id, 'emailed', `Emailed to ${emails.join(', ')}`);
+          toast.success(`Invoice approved & emailed to ${emails.join(', ')}`);
+        }
+      } else {
+        toast.success('Invoice approved & sent');
+      }
       fetchLogs('invoice', invoice.id).then(setActivityLogs);
     }
+    setApproveSending(false);
+    setApproveAndSendOpen(false);
   };
 
   const submitForApproval = async () => {
@@ -529,7 +565,7 @@ export default function InvoiceView() {
               </Button>
             )}
             {permissions.canApproveInvoice && (invoice.status === 'draft' || invoice.status === 'approved' || invoice.status === 'awaiting_approval') && (
-              <Button variant="outline" size="sm" onClick={() => setSendConfirmOpen(true)} className="text-info border-info/30 hover:bg-info/10">
+              <Button variant="outline" size="sm" onClick={() => setApproveAndSendOpen(true)} className="text-info border-info/30 hover:bg-info/10">
                 <Send className="mr-1.5 h-4 w-4" /> Approve & Send
               </Button>
             )}
@@ -622,22 +658,36 @@ export default function InvoiceView() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Send confirmation */}
-      <AlertDialog open={sendConfirmOpen} onOpenChange={setSendConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send invoice to {invoice.clientName}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will approve and mark {invoice.invoiceNumber} as sent ({formatCurrency(total, invoice.currency)}).
-              {invoice.clientEmail ? ` An email notification can be sent to ${invoice.clientEmail}.` : ' No email is configured for this customer.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setSendConfirmOpen(false); markApproveAndSend(); }}>Approve & Send</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Approve & Send dialog */}
+      <Dialog open={approveAndSendOpen} onOpenChange={setApproveAndSendOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Approve & Send Invoice</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="rounded-lg bg-muted/40 p-3 text-sm">
+              <p className="font-medium">{invoice.invoiceNumber} — {invoice.clientName}</p>
+              <p className="text-muted-foreground">{formatCurrency(total, invoice.currency)} — Due {formatDate(invoice.dueDate)}</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              This will approve the invoice and mark it as sent. You can also email it to the client and additional recipients.
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Email addresses (comma-separated, leave empty to skip emailing)</Label>
+              <Textarea
+                value={approveEmailAddresses}
+                onChange={e => setApproveEmailAddresses(e.target.value)}
+                placeholder="client@example.com, accounts@example.com"
+                rows={2}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setApproveAndSendOpen(false)}>Cancel</Button>
+              <Button onClick={handleApproveAndSend} disabled={approveSending} className="bg-info text-info-foreground hover:bg-info/90">
+                <Send className="mr-1.5 h-4 w-4" /> {approveSending ? 'Sending...' : 'Approve & Send'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Send Email dialog */}
       <Dialog open={sendEmailOpen} onOpenChange={setSendEmailOpen}>
