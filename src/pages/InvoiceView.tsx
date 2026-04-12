@@ -55,7 +55,7 @@ export default function InvoiceView() {
   const { settings } = useGlobalSettings();
   const { payments, addPayment, deletePayment, totalPaid } = usePayments(id);
   const { createVatEntries, reverseVatEntries } = useVatLedger();
-  const { creditNotes } = useCreditNotes();
+  const { creditNotes, addCreditNote, updateCreditNote, refetch: refetchCreditNotes } = useCreditNotes();
   const { logActivity, fetchLogs } = useActivityLog();
   const { attachments, uploadAttachment, deleteAttachment, getPublicUrl } = useAttachments('invoice', id || '');
   const docRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,10 @@ export default function InvoiceView() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
-
+  const [applyCreditOpen, setApplyCreditOpen] = useState(false);
+  const [selectedCreditNoteId, setSelectedCreditNoteId] = useState('');
+  const [applyCreditAmount, setApplyCreditAmount] = useState('');
+  const [applyingCredit, setApplyingCredit] = useState(false);
   // Payment form state
   const [payAmount, setPayAmount] = useState('');
   const [payDate, setPayDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -126,6 +129,85 @@ export default function InvoiceView() {
   }, 0);
 
   const amountDue = total - totalPaid - totalCredits;
+
+  // Available credit notes for this customer (not linked to this invoice, status = available)
+  const availableCustomerCredits = creditNotes.filter(cn =>
+    cn.clientName === invoice.clientName &&
+    cn.companyId === invoice.companyId &&
+    (cn.status === 'available' || cn.status === 'partially_applied') &&
+    cn.invoiceId !== invoice.id
+  );
+  const customerCreditBalance = availableCustomerCredits.reduce((sum, cn) => {
+    const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+    return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+  }, 0);
+
+  const handleApplyCredit = async () => {
+    if (applyingCredit) return;
+    const cn = creditNotes.find(c => c.id === selectedCreditNoteId);
+    if (!cn) { toast.error('Select a credit note'); return; }
+    const applyAmt = parseFloat(applyCreditAmount);
+    if (!applyAmt || applyAmt <= 0) { toast.error('Enter a valid amount'); return; }
+
+    const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+    const cnTotal = calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+
+    if (applyAmt > cnTotal + 0.01) { toast.error('Amount exceeds credit note value'); return; }
+    if (applyAmt > amountDue + 0.01) { toast.error('Amount exceeds invoice balance due'); return; }
+
+    setApplyingCredit(true);
+
+    // Create a new credit note linked to this invoice for the applied amount
+    const { v4: uuidv4 } = await import('uuid');
+    const cnId = uuidv4();
+    const d = new Date(); d.setDate(d.getDate() + 30);
+    const appliedCN = await addCreditNote({
+      id: cnId,
+      companyId: invoice.companyId,
+      invoiceId: invoice.id,
+      clientName: invoice.clientName,
+      clientEmail: invoice.clientEmail,
+      clientAddress: invoice.clientAddress,
+      items: [{ id: uuidv4(), description: `Credit applied from ${cn.creditNoteNumber}`, quantity: 1, unitPrice: applyAmt }],
+      taxRate: 0,
+      currency: invoice.currency,
+      status: 'approved',
+      notes: `Applied from credit note ${cn.creditNoteNumber}`,
+      dueDate: d.toISOString().split('T')[0],
+    });
+
+    if (appliedCN) {
+      // Update original credit note status
+      const remaining = cnTotal - applyAmt;
+      const newStatus = remaining <= 0.01 ? 'applied' : 'partially_applied';
+      // If partially applied, update the items to reflect remaining amount
+      if (newStatus === 'partially_applied') {
+        await updateCreditNote({
+          ...cn,
+          items: [{ id: cn.items[0]?.id || uuidv4(), description: cn.items[0]?.description || 'Credit balance', quantity: 1, unitPrice: remaining }],
+          status: 'partially_applied',
+        });
+      } else {
+        await updateCreditNote({ ...cn, status: 'applied' });
+      }
+
+      // Recalculate invoice status
+      await recalculateAndUpdateStatus(total, {
+        action: 'credit_applied',
+        details: `Credit of ${formatCurrency(applyAmt, invoice.currency)} applied from ${cn.creditNoteNumber}`,
+      });
+
+      await logActivity('invoice', invoice.id, 'credit_applied', `Credit of ${formatCurrency(applyAmt, invoice.currency)} applied from ${cn.creditNoteNumber}`);
+      toast.success(`Credit of ${formatCurrency(applyAmt, invoice.currency)} applied`);
+      await refetchCreditNotes();
+      fetchLogs('invoice', invoice.id).then(setActivityLogs);
+    }
+
+    setApplyingCredit(false);
+    setApplyCreditOpen(false);
+    setSelectedCreditNoteId('');
+    setApplyCreditAmount('');
+  };
 
   const handleExportPdf = async () => {
     const element = document.getElementById('invoice-document');
@@ -328,7 +410,7 @@ export default function InvoiceView() {
     if (dbInvoice.status === 'voided') { toast.error('Cannot record payment on a voided invoice'); return; }
     if (dbInvoice.status === 'draft') { toast.error('Cannot record payment on a draft invoice'); return; }
 
-    if (amount > amountDue + 0.01) { toast.error(`Amount exceeds balance due of ${formatCurrency(amountDue, invoice.currency)}`); return; }
+    const overpaymentAmount = amount - amountDue;
 
     setPaymentProcessing(true);
     const result = await safeExecuteAction({
@@ -349,21 +431,44 @@ export default function InvoiceView() {
     });
 
     if (result) {
+      // Auto-create credit note for overpayment
+      if (overpaymentAmount > 0.01) {
+        const { v4: uuidv4 } = await import('uuid');
+        const cnId = uuidv4();
+        const d = new Date(); d.setDate(d.getDate() + 30);
+        const creditNote = await addCreditNote({
+          id: cnId,
+          companyId: invoice.companyId,
+          invoiceId: invoice.id,
+          clientName: invoice.clientName,
+          clientEmail: invoice.clientEmail,
+          clientAddress: invoice.clientAddress,
+          items: [{ id: uuidv4(), description: `Overpayment on ${invoice.invoiceNumber}`, quantity: 1, unitPrice: overpaymentAmount }],
+          taxRate: 0,
+          currency: invoice.currency,
+          status: 'available',
+          notes: `Auto-generated from overpayment on invoice ${invoice.invoiceNumber}`,
+          dueDate: d.toISOString().split('T')[0],
+        });
+        if (creditNote) {
+          await logActivity('credit_note', cnId, 'created', `Credit note ${creditNote.creditNoteNumber} auto-created for overpayment of ${formatCurrency(overpaymentAmount, invoice.currency)} on ${invoice.invoiceNumber}`);
+          toast.info(`Credit note ${creditNote.creditNoteNumber} created for overpayment of ${formatCurrency(overpaymentAmount, invoice.currency)}`);
+        }
+      }
+
       // Refetch payments & recalculate status from DB
-      const newTotalPaid = totalPaid + amount;
-      const remaining = total - newTotalPaid;
       const statusOk = await recalculateAndUpdateStatus(total, {
-        action: newTotalPaid >= total ? 'paid' : 'partial_payment',
-        details: newTotalPaid >= total
-          ? `Full payment received. Total: ${formatCurrency(newTotalPaid, invoice.currency)}`
-          : `Payment of ${formatCurrency(amount, invoice.currency)} recorded. Remaining: ${formatCurrency(remaining, invoice.currency)}`,
+        action: amount >= amountDue ? 'paid' : 'partial_payment',
+        details: amount >= amountDue
+          ? `Full payment received. Amount: ${formatCurrency(amount, invoice.currency)}`
+          : `Payment of ${formatCurrency(amount, invoice.currency)} recorded.`,
       });
 
       if (statusOk) {
         toast.success(
-          newTotalPaid >= total
+          amount >= amountDue
             ? `Payment recorded. Invoice fully paid!`
-            : `Payment recorded. Remaining balance: ${formatCurrency(remaining, invoice.currency)}`
+            : `Payment recorded. Remaining balance: ${formatCurrency(amountDue - amount, invoice.currency)}`
         );
       }
       setPaymentOpen(false);
@@ -409,6 +514,11 @@ export default function InvoiceView() {
             {canRecordPayment && (
               <Button variant="outline" size="sm" onClick={() => { setPayAmount(amountDue.toFixed(2)); setPaymentOpen(true); }} className="text-success border-success/30 hover:bg-success/10">
                 <CreditCard className="mr-1.5 h-4 w-4" /> Record Payment
+              </Button>
+            )}
+            {canRecordPayment && availableCustomerCredits.length > 0 && amountDue > 0.01 && (
+              <Button variant="outline" size="sm" onClick={() => setApplyCreditOpen(true)} className="text-info border-info/30 hover:bg-info/10">
+                <Receipt className="mr-1.5 h-4 w-4" /> Apply Credit
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleShare}>
@@ -593,7 +703,54 @@ export default function InvoiceView() {
         </DialogContent>
       </Dialog>
 
-      {/* Financial Summary Banner */}
+      {/* Apply Credit dialog */}
+      <Dialog open={applyCreditOpen} onOpenChange={setApplyCreditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Apply Credit to Invoice</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="rounded-lg bg-muted/40 p-3 text-sm space-y-1">
+              <div className="flex justify-between"><span className="text-muted-foreground">Amount Due</span><span className="mono font-semibold text-primary">{formatCurrency(amountDue, invoice.currency)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Customer Credit Balance</span><span className="mono font-medium text-info">{formatCurrency(customerCreditBalance, invoice.currency)}</span></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Select Credit Note</Label>
+              <Select value={selectedCreditNoteId} onValueChange={(v) => {
+                setSelectedCreditNoteId(v);
+                const cn = availableCustomerCredits.find(c => c.id === v);
+                if (cn) {
+                  const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+                  const cnTotal = calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+                  setApplyCreditAmount(Math.min(cnTotal, amountDue).toFixed(2));
+                }
+              }}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Select credit note..." /></SelectTrigger>
+                <SelectContent>
+                  {availableCustomerCredits.map(cn => {
+                    const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
+                    const cnTotal = calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
+                    return (
+                      <SelectItem key={cn.id} value={cn.id}>
+                        {cn.creditNoteNumber} — {formatCurrency(cnTotal, cn.currency)} ({cn.status})
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Amount to Apply</Label>
+              <Input type="number" step="0.01" min="0.01" value={applyCreditAmount} onChange={e => setApplyCreditAmount(e.target.value)} className="h-9" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setApplyCreditOpen(false)} disabled={applyingCredit}>Cancel</Button>
+              <Button onClick={handleApplyCredit} disabled={applyingCredit || !selectedCreditNoteId}>
+                {applyingCredit ? 'Applying...' : 'Apply Credit'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {(() => {
         const isOverdue = !isVoided && invoice.status !== 'paid' && new Date(invoice.dueDate) < new Date();
         const isPaid = invoice.status === 'paid';
@@ -693,6 +850,12 @@ export default function InvoiceView() {
                   <span className="font-semibold">Remaining Balance</span>
                   <span className="mono font-bold text-lg">{formatCurrency(Math.max(0, amountDue), invoice.currency)}</span>
                 </div>
+                {customerCreditBalance > 0 && amountDue > 0.01 && (
+                  <div className="flex justify-between mt-1">
+                    <span className="text-info text-xs">Customer has available credit</span>
+                    <span className="mono text-xs text-info">{formatCurrency(customerCreditBalance, invoice.currency)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </>
