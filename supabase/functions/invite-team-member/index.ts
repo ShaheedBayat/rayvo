@@ -77,7 +77,8 @@ serve(async (req) => {
 
     const safeCompanyName = escapeHtml(companyName);
     const safeRole = escapeHtml(role || "staff");
-    const safeInviteUrl = inviteUrl.toString();
+    const inviteUrlString = inviteUrl.toString();
+    const safeInviteUrl = escapeHtml(inviteUrlString);
 
     // Build HTML inline (avoids needing React Email + JSX in this function)
     const html = `
@@ -154,7 +155,7 @@ serve(async (req) => {
         sender_domain: SENDER_DOMAIN,
         subject: `You've been invited to join ${companyName} on ${SITE_NAME}`,
         html,
-        text: `You've been invited to join ${companyName} as a ${role}. Accept your invitation here: ${safeInviteUrl}`,
+        text: `You've been invited to join ${companyName} as a ${role}. Accept your invitation here: ${inviteUrlString}`,
         purpose: "transactional",
         label: "team-invite",
         idempotency_key: idempotencyKey,
