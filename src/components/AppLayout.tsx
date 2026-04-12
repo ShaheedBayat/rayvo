@@ -256,7 +256,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }`}
       >
         <LogoSection isCollapsed={collapsed} />
-        <SidebarContent collapsed={collapsed} isActive={isActive} salesNav={salesNav} manageNav={manageNav} />
+        <SidebarContent collapsed={collapsed} isActive={isActive} salesNav={salesNav} manageNav={manageNav} badges={badges} />
         <div className="border-t border-border/40 p-3">
           <button
             onClick={() => setCollapsed(!collapsed)}
@@ -281,7 +281,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="w-64 p-0 bg-sidebar border-sidebar-border">
                 <LogoSection isCollapsed={false} />
-                <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} salesNav={salesNav} manageNav={manageNav} />
+                <SidebarContent collapsed={false} isActive={isActive} onNavigate={() => setMobileOpen(false)} salesNav={salesNav} manageNav={manageNav} badges={badges} />
               </SheetContent>
             </Sheet>
 
@@ -315,6 +315,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Search / Command Palette trigger */}
+            <Button variant="ghost" size="sm" className="hidden sm:flex items-center gap-2 h-9 rounded-lg text-muted-foreground hover:text-foreground border border-border/60 px-3" onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}>
+              <Search className="h-3.5 w-3.5" />
+              <span className="text-xs">Search...</span>
+              <kbd className="ml-2 pointer-events-none hidden sm:inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                ⌘K
+              </kbd>
+            </Button>
+
             <Button variant="ghost" size="icon" onClick={toggleTheme} title="Toggle theme" className="h-9 w-9 rounded-lg">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
@@ -328,9 +337,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild><Link to="/invoices/new"><FileText className="mr-2 h-4 w-4" /> New Invoice</Link></DropdownMenuItem>
-                  {permissions.canManageRecurring && (
-                    <DropdownMenuItem asChild><Link to="/invoices/recurring/new"><Receipt className="mr-2 h-4 w-4" /> New Recurring Invoice</Link></DropdownMenuItem>
-                  )}
                   <DropdownMenuSeparator />
                   {permissions.canCreateCustomer && (
                     <DropdownMenuItem asChild><Link to="/customers"><Users className="mr-2 h-4 w-4" /> New Customer</Link></DropdownMenuItem>
