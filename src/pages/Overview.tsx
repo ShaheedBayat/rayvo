@@ -226,7 +226,7 @@ export default function Overview() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
           {stats.map((s, idx) => (
-            <div key={s.label} className={`rounded-xl border-y border-r border-border/50 bg-card px-5 pt-5 pb-2 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-${idx + 1}`} style={{ borderLeft: statBorders[idx] }}>
+            <Link key={s.label} to={s.link} className={`block rounded-xl border-y border-r border-border/50 bg-card px-5 pt-5 pb-5 invoice-shadow hover:invoice-shadow-lg transition-shadow cursor-pointer stagger-${idx + 1}`} style={{ borderLeft: statBorders[idx] }}>
               <div className="flex items-center justify-between mb-2">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.bg}`}>
                   <s.icon className={`h-5 w-5 ${s.color}`} />
@@ -235,8 +235,7 @@ export default function Overview() {
               </div>
               <p className="text-3xl font-bold">{s.value}</p>
               <p className="text-[11px] text-muted-foreground">{s.label}</p>
-              <Sparkline data={sparkDataArrays[idx]} color={sparkColors[idx]} />
-            </div>
+            </Link>
           ))}
         </div>
       )}
@@ -251,15 +250,14 @@ export default function Overview() {
           <p className="text-2xl font-bold text-warning">{formatMultiCurrency(outstandingByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{sent.length} invoice{sent.length !== 1 ? 's' : ''} pending</p>
         </div>
-        <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 pt-5 pb-2 invoice-shadow stagger-3" style={{ borderLeft: '3px solid hsl(152 56% 42%)' }}>
+        <Link to="/invoices?status=paid" className="block rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow hover:invoice-shadow-lg transition-shadow stagger-3" style={{ borderLeft: '3px solid hsl(152 56% 42%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
             <p className="text-xs font-medium text-muted-foreground">Received</p>
           </div>
           <p className="text-2xl font-bold text-success">{formatMultiCurrency(paidByCurrency)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{paid.length} invoice{paid.length !== 1 ? 's' : ''} paid</p>
-          <Sparkline data={revenueSparkline} color="hsl(152, 56%, 42%)" />
-        </div>
+        </Link>
         <div className="rounded-xl border-y border-r border-border/50 bg-card px-5 py-5 invoice-shadow stagger-4" style={{ borderLeft: '3px solid hsl(0 72% 51%)' }}>
           <div className="flex items-center gap-2 mb-1">
             <AlertCircle className="h-3.5 w-3.5 text-overdue" />
