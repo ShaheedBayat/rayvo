@@ -369,7 +369,7 @@ export default function InvoiceSettings() {
         </div>
       )}
 
-
+      {activeTab === 'latefees' && (
         <div className="max-w-lg rounded-xl border bg-card p-6 space-y-6">
           <div>
             <h3 className="text-lg font-medium flex items-center gap-2">
