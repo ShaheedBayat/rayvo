@@ -11,7 +11,7 @@ import { useRecurringInvoices } from '@/hooks/useRecurringInvoices';
 import { useExpenses } from '@/hooks/useExpenses';
 import type { Invoice, InvoiceItem, Currency, InvoiceType, DepositType } from '@/types/invoice';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Send, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,12 +28,15 @@ import CustomerCombobox from '@/components/invoice/CustomerCombobox';
 import PaymentTermsSelect from '@/components/invoice/PaymentTermsSelect';
 import BillableExpenses from '@/components/invoice/BillableExpenses';
 import CurrencySelect from '@/components/invoice/CurrencySelect';
+import InvoiceDatePicker from '@/components/invoice/InvoiceDatePicker';
+import InvoiceLivePreview from '@/components/invoice/InvoiceLivePreview';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
 import { useActivityLog } from '@/hooks/useActivityLog';
 
 export default function CreateInvoice() {
   const [saving, setSaving] = useState(false);
+  const [saveAction, setSaveAction] = useState<'draft' | 'send'>('draft');
   const navigate = useNavigate();
   const location = useLocation();
   const permissions = usePermissions();
@@ -50,14 +53,11 @@ export default function CreateInvoice() {
   const pricingMode = activeCompany?.pricingMode || 'exclusive';
   const { taxRates, ensureDefaults } = useTaxRates(companyId);
 
-  // Ensure default tax rates exist when VAT registered
   useEffect(() => {
     if (isVatRegistered && companyId) ensureDefaults();
   }, [isVatRegistered, companyId, ensureDefaults]);
 
-  // Support duplicate: pre-populate from location state
   const dupState = location.state as Partial<Invoice> | null;
-
   const defaultRate = isVatRegistered ? (activeCompany?.vatRate ?? 15) : 0;
 
   const [currency, setCurrency] = useState<Currency>(dupState?.currency || activeCompany?.defaultCurrency || 'ZAR');
@@ -73,12 +73,10 @@ export default function CreateInvoice() {
   });
   const [taxRate, setTaxRate] = useState(dupState?.taxRate ?? defaultRate);
 
-  // Recurring toggle state
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
   const [dayOfMonth, setDayOfMonth] = useState(1);
 
-  // Deposit invoice state
   const [invoiceType, setInvoiceType] = useState<InvoiceType>('standard');
   const [depositType, setDepositType] = useState<DepositType>('percentage');
   const [depositValue, setDepositValue] = useState(50);
@@ -86,16 +84,8 @@ export default function CreateInvoice() {
   const computeNextRunDate = (freq: string, dom: number): string => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (freq === 'weekly') {
-      const d = new Date(today);
-      d.setDate(d.getDate() + 7);
-      return d.toISOString().split('T')[0];
-    }
-    if (freq === 'yearly') {
-      const d = new Date(today);
-      d.setFullYear(d.getFullYear() + 1);
-      return d.toISOString().split('T')[0];
-    }
+    if (freq === 'weekly') { const d = new Date(today); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; }
+    if (freq === 'yearly') { const d = new Date(today); d.setFullYear(d.getFullYear() + 1); return d.toISOString().split('T')[0]; }
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const maxDayThis = new Date(thisMonth.getFullYear(), thisMonth.getMonth() + 1, 0).getDate();
     const targetDayThis = Math.min(dom, maxDayThis);
@@ -133,7 +123,6 @@ export default function CreateInvoice() {
     dupState?.items?.map(i => ({ ...i, id: uuidv4() })) || [makeDefaultItem()]
   );
 
-  // Update initial item's tax rate once tax rates load
   useEffect(() => {
     if (isVatRegistered && taxRates.length > 0 && !dupState?.items) {
       setItems(prev => prev.map(item => {
@@ -146,7 +135,6 @@ export default function CreateInvoice() {
     }
   }, [isVatRegistered, taxRates, dupState]);
 
-  // Credit limit tracking
   const [selectedCustomer, setSelectedCustomer] = useState<typeof customers[0] | null>(null);
   const [outstandingBalance, setOutstandingBalance] = useState(0);
 
@@ -190,24 +178,16 @@ export default function CreateInvoice() {
     fetchBalance();
   }, [selectedCustomer, companyId]);
 
-  const addItem = () => {
-    setItems((prev) => [...prev, makeDefaultItem()]);
-  };
-
-  const removeItem = (id: string) => {
-    if (items.length === 1) return;
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  };
-
+  const addItem = () => setItems(prev => [...prev, makeDefaultItem()]);
+  const removeItem = (id: string) => { if (items.length === 1) return; setItems(prev => prev.filter(i => i.id !== id)); };
   const updateItem = (id: string, field: keyof InvoiceItem, value: string | number) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
+    setItems(prev => prev.map(i => (i.id === id ? { ...i, [field]: value } : i)));
   };
 
   const handleAddBillableExpenses = (newItems: InvoiceItem[], expenseIds: string[]) => {
     setItems(prev => [...prev, ...newItems]);
     setPendingBilledExpenseIds(prev => [...prev, ...expenseIds]);
   };
-
 
   const handleCustomerSelect = (customer: { name: string; email: string; address: string; taxRate?: number; currency?: string; dueDays?: number }) => {
     setClientName(customer.name);
@@ -220,47 +200,30 @@ export default function CreateInvoice() {
       d.setDate(d.getDate() + customer.dueDays);
       setDueDate(d.toISOString().split('T')[0]);
     }
-    // Track selected customer for credit limit checks
     const found = customers.find(c => c.name === customer.name);
     setSelectedCustomer(found || null);
   };
 
   const totals = calculateSmartTotals(items, taxRate, pricingMode, isVatRegistered);
-
   const hasLineItems = items.some(i => i.description.trim() && i.unitPrice > 0);
   const canSave = clientName.trim() !== '' && hasLineItems && !(creditLimitExceeded && selectedCustomer?.blockOnCreditLimit);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
-    if (!companyId) {
-      toast.error('Please add a company first in the Companies section.');
-      return;
-    }
+    if (!companyId) { toast.error('Please add a company first in the Companies section.'); return; }
     if (selectedCustomer && selectedCustomer.creditLimit > 0 && creditLimitExceeded) {
-      if (selectedCustomer.blockOnCreditLimit) {
-        toast.error('Customer has exceeded credit limit. Cannot create invoice.');
-        return;
-      }
+      if (selectedCustomer.blockOnCreditLimit) { toast.error('Customer has exceeded credit limit. Cannot create invoice.'); return; }
     }
     setSaving(true);
 
     if (!isRecurring) {
       const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
       const invoice: Invoice = {
-        id: uuidv4(),
-        invoiceNumber: '',
-        companyId,
-        clientName,
-        clientEmail,
-        clientAddress,
-        currency,
-        items: finalItems,
-        taxRate: isVatRegistered ? taxRate : 0,
-        notes,
-        status: 'draft',
-        createdAt: new Date().toISOString(),
-        dueDate,
-        invoiceType,
+        id: uuidv4(), invoiceNumber: '', companyId, clientName, clientEmail, clientAddress, currency,
+        items: finalItems, taxRate: isVatRegistered ? taxRate : 0, notes,
+        status: saveAction === 'send' ? 'sent' : 'draft',
+        createdAt: new Date().toISOString(), dueDate, invoiceType,
         depositType: invoiceType === 'deposit' ? depositType : undefined,
         depositValue: invoiceType === 'deposit' ? depositValue : undefined,
       };
@@ -269,41 +232,24 @@ export default function CreateInvoice() {
         actionName: 'Create invoice',
         actionFn: () => addInvoice(invoice),
         verifyFn: async (created) => {
-          const { data } = await supabase
-            .from('invoices')
-            .select('id')
-            .eq('id', created.id)
-            .maybeSingle();
+          const { data } = await supabase.from('invoices').select('id').eq('id', created.id).maybeSingle();
           return !!data;
         },
         successMessage: `Invoice created successfully`,
         onSuccess: async (created) => {
-          // Mark billable expenses as billed
-          for (const expId of pendingBilledExpenseIds) {
-            await markExpenseAsBilled(expId, created.id);
-          }
+          for (const expId of pendingBilledExpenseIds) await markExpenseAsBilled(expId, created.id);
           if (pendingBilledExpenseIds.length > 0) await refetchExpenses();
           await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
-          toast.success(`Invoice ${created.invoiceNumber} created successfully`);
+          toast.success(`Invoice ${created.invoiceNumber} ${saveAction === 'send' ? 'created & sent' : 'created'} successfully`);
           navigate(`/invoices/${created.id}`);
         },
       });
     } else {
       const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
       const result = await addRecurring({
-        companyId,
-        clientName,
-        clientEmail,
-        clientAddress,
-        currency,
-        items: finalItems,
-        taxRate: isVatRegistered ? taxRate : 0,
-        notes,
-        frequency,
-        dayOfMonth,
-        nextRunDate,
-        endDate: null,
-        isActive: true,
+        companyId, clientName, clientEmail, clientAddress, currency,
+        items: finalItems, taxRate: isVatRegistered ? taxRate : 0, notes,
+        frequency, dayOfMonth, nextRunDate, endDate: null, isActive: true,
       });
       if (result) {
         await logActivity('recurring', result.id, 'created', `Recurring template created for ${clientName} (${frequency})`);
@@ -330,97 +276,142 @@ export default function CreateInvoice() {
     <AppLayout>
       <button
         onClick={() => navigate('/invoices')}
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" /> Back to invoices
       </button>
 
       <form onSubmit={handleSubmit}>
-        <div className="flex items-start justify-between mb-8">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold">{isRecurring ? 'New Recurring Invoice' : 'New Invoice'}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : isRecurring ? 'Set up automatic invoicing for this customer.' : 'Fill in the details below to create a new invoice.'}
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {isRecurring ? 'New Recurring Invoice' : 'New Invoice'}
+            </h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {!clientName ? 'Select a customer to begin.' : !hasLineItems ? 'Add at least one line item.' : isRecurring ? 'Set up automatic invoicing.' : 'Fill in the details below.'}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 mr-2">
-              <Switch
-                id="recurring-toggle"
-                checked={isRecurring}
-                onCheckedChange={(v) => { setIsRecurring(v); if (v) setInvoiceType('standard'); }}
-              />
-              <Label htmlFor="recurring-toggle" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
-                <RefreshCw className="h-3.5 w-3.5" />
-                Recurring
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mr-3 px-3 py-1.5 rounded-md bg-muted/50">
+              <Switch id="recurring-toggle" checked={isRecurring} onCheckedChange={(v) => { setIsRecurring(v); if (v) setInvoiceType('standard'); }} />
+              <Label htmlFor="recurring-toggle" className="text-xs font-medium flex items-center gap-1 cursor-pointer">
+                <RefreshCw className="h-3 w-3" /> Recurring
               </Label>
             </div>
             {!isRecurring && (
-              <div className="flex items-center gap-2 mr-2">
-                <Switch
-                  id="deposit-toggle"
-                  checked={invoiceType === 'deposit'}
-                  onCheckedChange={(v) => setInvoiceType(v ? 'deposit' : 'standard')}
-                />
-                <Label htmlFor="deposit-toggle" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+              <div className="flex items-center gap-2 mr-3 px-3 py-1.5 rounded-md bg-muted/50">
+                <Switch id="deposit-toggle" checked={invoiceType === 'deposit'} onCheckedChange={(v) => setInvoiceType(v ? 'deposit' : 'standard')} />
+                <Label htmlFor="deposit-toggle" className="text-xs font-medium flex items-center gap-1 cursor-pointer">
                   💰 Deposit
                 </Label>
               </div>
             )}
-            <Button type="button" variant="outline" onClick={() => navigate('/invoices')}>Cancel</Button>
-            <Button type="submit" disabled={!canSave || saving}>
-              {saving ? 'Saving...' : isRecurring ? 'Create Recurring' : 'Save as Draft'}
+            <Button type="button" variant="outline" size="sm" onClick={() => navigate('/invoices')}>Cancel</Button>
+            <Button type="submit" variant="outline" size="sm" disabled={!canSave || saving} onClick={() => setSaveAction('draft')}>
+              <Save className="mr-1.5 h-3.5 w-3.5" />
+              {saving && saveAction === 'draft' ? 'Saving...' : isRecurring ? 'Create Recurring' : 'Save Draft'}
             </Button>
+            {!isRecurring && (
+              <Button type="submit" size="sm" disabled={!canSave || saving} onClick={() => setSaveAction('send')}>
+                <Send className="mr-1.5 h-3.5 w-3.5" />
+                {saving && saveAction === 'send' ? 'Sending...' : 'Save & Send'}
+              </Button>
+            )}
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="space-y-6">
-            <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Invoice Details</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Company</Label>
-                  <p className="h-9 flex items-center px-3 rounded-md border bg-muted/50 text-sm font-medium">
-                    {activeCompany?.name || 'No company selected'}
-                  </p>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Invoice Number</Label>
-                  <p className="h-9 flex items-center px-3 rounded-md border bg-muted/50 text-sm mono text-muted-foreground">Auto-generated on save</p>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Payment Terms</Label>
-                  <PaymentTermsSelect value={paymentTerms} onChange={(terms, date) => { setPaymentTerms(terms); if (date) setDueDate(date); }} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Due Date</Label>
-                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-9" />
-                  {dueDate && (() => {
-                    const days = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000);
-                    return days > 0 ? (
-                      <p className="text-xs text-muted-foreground mt-1">Due in {days} day{days !== 1 ? 's' : ''}</p>
-                    ) : days === 0 ? (
-                      <p className="text-xs text-warning mt-1">Due today</p>
-                    ) : (
-                      <p className="text-xs text-destructive mt-1">Already {Math.abs(days)} day{Math.abs(days) !== 1 ? 's' : ''} past</p>
-                    );
-                  })()}
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Currency</Label>
-                  <CurrencySelect value={currency} onChange={setCurrency} />
+        {/* Split pane: Form left, Preview right */}
+        <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+          {/* LEFT: Form */}
+          <div className="space-y-5">
+            {/* Customer + Invoice Details side by side */}
+            <div className="grid gap-5 md:grid-cols-2">
+              {/* Bill To */}
+              <div className="rounded-lg border bg-card p-5">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Bill To</h2>
+                <CustomerCombobox
+                  customers={customers}
+                  clientName={clientName}
+                  clientEmail={clientEmail}
+                  clientAddress={clientAddress}
+                  onSelect={handleCustomerSelect}
+                  onNameChange={setClientName}
+                  onEmailChange={setClientEmail}
+                  onAddressChange={setClientAddress}
+                  onCreateNew={() => navigate('/customers')}
+                />
+                {creditLimitExceeded && selectedCustomer && (
+                  <Alert variant="destructive" className="mt-3">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Credit limit exceeded ({formatCurrency(selectedCustomer.creditLimit, currency)}).
+                      {selectedCustomer.blockOnCreditLimit ? ' Blocked.' : ' Proceed with caution.'}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {creditLimitWarning && selectedCustomer && (
+                  <Alert className="mt-3 border-yellow-500/50 bg-yellow-500/10">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-700 dark:text-yellow-400">
+                      Approaching credit limit ({formatCurrency(outstandingBalance, currency)} / {formatCurrency(selectedCustomer.creditLimit, currency)}).
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+
+              {/* Invoice Details */}
+              <div className="rounded-lg border bg-card p-5">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Invoice Details</h2>
+                <div className="space-y-3">
+                  <div className="grid gap-3 grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Company</Label>
+                      <p className="h-9 flex items-center px-3 rounded-md border bg-muted/50 text-sm font-medium truncate">
+                        {activeCompany?.name || 'No company'}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Invoice #</Label>
+                      <p className="h-9 flex items-center px-3 rounded-md border bg-muted/50 text-sm font-mono text-muted-foreground">Auto</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Payment Terms</Label>
+                    <PaymentTermsSelect value={paymentTerms} onChange={(terms, date) => { setPaymentTerms(terms); if (date) setDueDate(date); }} />
+                  </div>
+                  <div className="grid gap-3 grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Due Date</Label>
+                      <InvoiceDatePicker value={dueDate} onChange={setDueDate} placeholder="Due date" />
+                      {dueDate && (() => {
+                        const days = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000);
+                        return days > 0 ? (
+                          <p className="text-xs text-muted-foreground mt-0.5">Due in {days} day{days !== 1 ? 's' : ''}</p>
+                        ) : days === 0 ? (
+                          <p className="text-xs text-yellow-600 mt-0.5">Due today</p>
+                        ) : (
+                          <p className="text-xs text-destructive mt-0.5">{Math.abs(days)} day{Math.abs(days) !== 1 ? 's' : ''} past</p>
+                        );
+                      })()}
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Currency</Label>
+                      <CurrencySelect value={currency} onChange={setCurrency} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
+            {/* Recurring Settings */}
             {isRecurring && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-6 invoice-shadow">
-                <h2 className="text-sm font-medium uppercase tracking-wider text-primary mb-4 flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4" /> Recurring Settings
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-primary mb-3 flex items-center gap-2">
+                  <RefreshCw className="h-3.5 w-3.5" /> Recurring Settings
                 </h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1">
                     <Label className="text-xs">Frequency</Label>
                     <Select value={frequency} onValueChange={v => handleFrequencyChange(v as any)}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
@@ -432,37 +423,30 @@ export default function CreateInvoice() {
                     </Select>
                   </div>
                   {frequency === 'monthly' && (
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       <Label className="text-xs">Day of Month</Label>
                       <Input type="number" min={1} max={28} value={dayOfMonth} onChange={e => handleDayOfMonthChange(parseInt(e.target.value) || 1)} className="h-9" />
                     </div>
                   )}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Start Date (Next Run)</Label>
-                    <Input type="date" value={nextRunDate} onChange={e => setNextRunDate(e.target.value)} className="h-9" />
-                    {nextRunDate && (() => {
-                      const days = Math.ceil((new Date(nextRunDate).getTime() - Date.now()) / 86400000);
-                      return days > 0 ? (
-                        <p className="text-xs text-muted-foreground mt-1">First invoice in {days} day{days !== 1 ? 's' : ''}</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground mt-1">Will run immediately</p>
-                      );
-                    })()}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Start Date</Label>
+                    <InvoiceDatePicker value={nextRunDate} onChange={setNextRunDate} placeholder="Next run" />
                   </div>
                 </div>
               </div>
             )}
 
+            {/* Deposit Settings */}
             {invoiceType === 'deposit' && !isRecurring && (
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-6 invoice-shadow">
-                <h2 className="text-sm font-medium uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-4 flex items-center gap-2">
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-2">
                   💰 Deposit Settings
                 </h2>
-                <p className="text-xs text-muted-foreground mb-4">
-                  A deposit invoice charges a portion upfront. When fully paid, a balance invoice is automatically created for the remainder.
+                <p className="text-xs text-muted-foreground mb-3">
+                  A deposit invoice charges a portion upfront. When fully paid, a balance invoice is auto-created.
                 </p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
                     <Label className="text-xs">Deposit Type</Label>
                     <Select value={depositType} onValueChange={v => setDepositType(v as DepositType)}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
@@ -472,44 +456,31 @@ export default function CreateInvoice() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">{depositType === 'percentage' ? 'Deposit %' : `Deposit Amount (${currency})`}</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={depositType === 'percentage' ? 99 : undefined}
-                      step={depositType === 'percentage' ? 1 : 0.01}
-                      value={depositValue}
-                      onChange={e => setDepositValue(parseFloat(e.target.value) || 0)}
-                      className="h-9"
-                    />
+                  <div className="space-y-1">
+                    <Label className="text-xs">{depositType === 'percentage' ? 'Deposit %' : `Amount (${currency})`}</Label>
+                    <Input type="number" min={1} max={depositType === 'percentage' ? 99 : undefined} step={depositType === 'percentage' ? 1 : 0.01} value={depositValue} onChange={e => setDepositValue(parseFloat(e.target.value) || 0)} className="h-9" />
                   </div>
                 </div>
                 {totals.total > 0 && (
-                  <div className="mt-4 rounded-md bg-card border p-3 text-sm space-y-1">
+                  <div className="mt-3 rounded-md bg-card border p-3 text-sm space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Full Invoice Total</span>
-                      <span className="mono font-medium">{formatCurrency(totals.total, currency)}</span>
+                      <span className="text-muted-foreground">Full Total</span>
+                      <span className="font-medium">{formatCurrency(totals.total, currency)}</span>
                     </div>
                     <div className="flex justify-between text-amber-700 dark:text-amber-400 font-medium">
-                      <span>Deposit Amount</span>
-                      <span className="mono">{formatCurrency(
-                        depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total),
-                        currency
-                      )}</span>
+                      <span>Deposit</span>
+                      <span>{formatCurrency(depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total), currency)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground border-t pt-1">
-                      <span>Balance (auto-invoiced later)</span>
-                      <span className="mono">{formatCurrency(
-                        totals.total - (depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total)),
-                        currency
-                      )}</span>
+                      <span>Balance (auto)</span>
+                      <span>{formatCurrency(totals.total - (depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total)), currency)}</span>
                     </div>
                   </div>
                 )}
               </div>
             )}
 
+            {/* Billable Expenses */}
             <BillableExpenses
               clientName={clientName}
               customerId={selectedCustomer?.id || null}
@@ -517,8 +488,9 @@ export default function CreateInvoice() {
               onAddItems={handleAddBillableExpenses}
             />
 
-            <div className="rounded-lg border bg-card p-6 invoice-shadow" style={{ overflow: 'visible' }}>
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Line Items</h2>
+            {/* Line Items */}
+            <div className="rounded-lg border bg-card p-5" style={{ overflow: 'visible' }}>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Line Items</h2>
               <InvoiceLineItems
                 items={items}
                 currency={currency}
@@ -530,80 +502,42 @@ export default function CreateInvoice() {
                 onUpdate={updateItem}
                 onCreateNewProduct={() => navigate('/products')}
               />
-            <div className="mt-6 border-t pt-4">
+              <div className="mt-5 border-t pt-4">
                 <InvoiceSummary
-                    items={items}
-                    taxRate={taxRate}
-                    currency={currency}
-                    onTaxRateChange={setTaxRate}
-                    isVatRegistered={isVatRegistered}
-                    pricingMode={pricingMode}
+                  items={items}
+                  taxRate={taxRate}
+                  currency={currency}
+                  onTaxRateChange={setTaxRate}
+                  isVatRegistered={isVatRegistered}
+                  pricingMode={pricingMode}
                 />
               </div>
             </div>
 
-            <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Notes & Terms</h2>
+            {/* Notes */}
+            <div className="rounded-lg border bg-card p-5">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Notes & Terms</h2>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Payment terms, bank details, thank you message..." rows={3} />
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-lg border bg-card p-6 invoice-shadow">
-              <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Bill To</h2>
-              <CustomerCombobox
-                customers={customers}
+          {/* RIGHT: Live Preview */}
+          <div className="hidden xl:block">
+            <div className="sticky top-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Live Preview</p>
+              <InvoiceLivePreview
+                company={activeCompany as any}
                 clientName={clientName}
                 clientEmail={clientEmail}
                 clientAddress={clientAddress}
-                onSelect={handleCustomerSelect}
-                onNameChange={setClientName}
-                onEmailChange={setClientEmail}
-                onAddressChange={setClientAddress}
-                onCreateNew={() => navigate('/customers')}
-               />
-              {creditLimitExceeded && selectedCustomer && (
-                <Alert variant="destructive" className="mt-3">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Customer has exceeded credit limit ({formatCurrency(selectedCustomer.creditLimit, currency)}).
-                    Outstanding: {formatCurrency(outstandingBalance, currency)}.
-                    {selectedCustomer.blockOnCreditLimit ? ' Invoice creation is blocked.' : ' Proceed with caution.'}
-                  </AlertDescription>
-                </Alert>
-              )}
-              {creditLimitWarning && selectedCustomer && (
-                <Alert className="mt-3 border-yellow-500/50 bg-yellow-500/10">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-700 dark:text-yellow-400">
-                    Customer is approaching credit limit ({formatCurrency(outstandingBalance, currency)} / {formatCurrency(selectedCustomer.creditLimit, currency)}).
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-
-            <div className="rounded-lg border bg-primary/5 p-6 invoice-shadow">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Invoice Summary</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Items</span>
-                  <span>{items.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="mono">{formatCurrency(totals.subtotal, currency)}</span>
-                </div>
-                {isVatRegistered && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">VAT</span>
-                    <span className="mono">{formatCurrency(totals.tax, currency)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-semibold text-base border-t pt-2">
-                  <span>Total</span>
-                  <span className="mono text-primary">{formatCurrency(totals.total, currency)}</span>
-                </div>
-              </div>
+                dueDate={dueDate}
+                items={items}
+                taxRate={taxRate}
+                currency={currency}
+                notes={notes}
+                isVatRegistered={isVatRegistered}
+                pricingMode={pricingMode}
+              />
             </div>
           </div>
         </div>
