@@ -62,7 +62,7 @@ export default function InvoiceView() {
   const docRef = useRef<HTMLDivElement>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [voidOpen, setVoidOpen] = useState(false);
-  const [sendConfirmOpen, setSendConfirmOpen] = useState(false);
+  const [approveAndSendOpen, setApproveAndSendOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
@@ -81,7 +81,9 @@ export default function InvoiceView() {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   // Send email state
   const [emailAddresses, setEmailAddresses] = useState('');
+  const [approveEmailAddresses, setApproveEmailAddresses] = useState('');
   const [sending, setSending] = useState(false);
+  const [approveSending, setApproveSending] = useState(false);
 
   const invoice = getInvoice(id || '');
 
@@ -92,7 +94,10 @@ export default function InvoiceView() {
   }, [id, fetchLogs]);
 
   useEffect(() => {
-    if (invoice?.clientEmail) setEmailAddresses(invoice.clientEmail);
+    if (invoice?.clientEmail) {
+      setEmailAddresses(invoice.clientEmail);
+      setApproveEmailAddresses(invoice.clientEmail);
+    }
   }, [invoice?.clientEmail]);
 
   if (!invoice) {
