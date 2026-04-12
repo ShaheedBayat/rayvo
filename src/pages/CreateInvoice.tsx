@@ -42,6 +42,8 @@ export default function CreateInvoice() {
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
   const { products } = useProducts();
+  const { markExpenseAsBilled, refetch: refetchExpenses } = useExpenses();
+  const [pendingBilledExpenseIds, setPendingBilledExpenseIds] = useState<string[]>([]);
   const companyId = activeCompany?.id || '';
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
   const pricingMode = activeCompany?.pricingMode || 'exclusive';
