@@ -331,34 +331,35 @@ export default function InvoiceView() {
 
       // Send email to specified addresses
       const emails = approveEmailAddresses.split(',').map(e => e.trim()).filter(Boolean);
-      if (emails.length > 0) {
-        let token = invoice.shareToken;
-        if (!token) {
-          token = crypto.randomUUID();
-          await updateInvoice({ ...invoice, status: 'sent', shareToken: token });
-        }
-        const publicUrl = `${window.location.origin}/public/invoice/${invoice.id}?token=${token}`;
-        const { error } = await supabase.functions.invoke('send-invoice-email', {
-          body: {
-            emails,
-            invoiceNumber: invoice.invoiceNumber,
-            clientName: invoice.clientName,
-            amount: total.toFixed(2),
-            currency: invoice.currency,
-            dueDate: invoice.dueDate,
-            publicUrl,
-            companyName: company?.name || '',
-          },
-        });
-        if (error) {
-          toast.error('Invoice approved but email failed to send');
-          console.error(error);
-        } else {
-          await logActivity('invoice', invoice.id, 'emailed', `Emailed to ${emails.join(', ')}`);
-          toast.success(`Invoice approved & emailed to ${emails.join(', ')}`);
-        }
+      if (emails.length === 0) {
+        toast.error('Please enter at least one email address to send the invoice');
+        setApproveSending(false);
+        return;
+      }
+      let token = invoice.shareToken;
+      if (!token) {
+        token = crypto.randomUUID();
+        await updateInvoice({ ...invoice, status: 'sent', shareToken: token });
+      }
+      const publicUrl = `${window.location.origin}/public/invoice/${invoice.id}?token=${token}`;
+      const { error } = await supabase.functions.invoke('send-invoice-email', {
+        body: {
+          emails,
+          invoiceNumber: invoice.invoiceNumber,
+          clientName: invoice.clientName,
+          amount: total.toFixed(2),
+          currency: invoice.currency,
+          dueDate: invoice.dueDate,
+          publicUrl,
+          companyName: company?.name || '',
+        },
+      });
+      if (error) {
+        toast.error('Invoice approved but email failed to send');
+        console.error(error);
       } else {
-        toast.success('Invoice approved & sent');
+        await logActivity('invoice', invoice.id, 'emailed', `Emailed to ${emails.join(', ')}`);
+        toast.success(`Invoice approved & emailed to ${emails.join(', ')}`);
       }
       fetchLogs('invoice', invoice.id).then(setActivityLogs);
     }
