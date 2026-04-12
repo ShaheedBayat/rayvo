@@ -957,7 +957,32 @@ export default function InvoiceView() {
               </div>
             )}
 
-            <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {/* Deposit/Balance invoice info banner */}
+            {invoice.invoiceType === 'deposit' && (
+              <div className="mb-4 rounded-lg border-2 border-amber-500/30 bg-amber-500/5 p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">
+                    💰 Deposit Invoice — {invoice.depositType === 'percentage' ? `${invoice.depositValue}%` : formatCurrency(invoice.depositValue || 0, invoice.currency)} of total
+                  </span>
+                </div>
+                {linkedBalanceInvoice && (
+                  <Link to={`/invoices/${linkedBalanceInvoice.id}`} className="text-xs text-primary hover:underline font-medium">
+                    View Balance Invoice → {linkedBalanceInvoice.invoiceNumber}
+                  </Link>
+                )}
+              </div>
+            )}
+            {invoice.invoiceType === 'balance' && linkedDepositInvoice && (
+              <div className="mb-4 rounded-lg border-2 border-blue-500/30 bg-blue-500/5 p-3 flex items-center justify-between">
+                <span className="text-blue-700 dark:text-blue-400 font-semibold text-sm">
+                  📋 Balance Invoice — remainder from deposit
+                </span>
+                <Link to={`/invoices/${linkedDepositInvoice.id}`} className="text-xs text-primary hover:underline font-medium">
+                  View Deposit Invoice → {linkedDepositInvoice.invoiceNumber}
+                </Link>
+              </div>
+            )}
+
               <div className="rounded-lg border bg-card p-4 invoice-shadow">
                 <p className="text-xs text-muted-foreground mb-1">Customer</p>
                 <p className="text-sm font-medium truncate">{invoice.clientName}</p>
