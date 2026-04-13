@@ -35,6 +35,7 @@ import ActivityLog from "./pages/ActivityLog";
 import Team from "./pages/Team";
 import Onboarding from "./pages/Onboarding";
 import Unsubscribe from "./pages/Unsubscribe";
+import ResetPassword from "./pages/ResetPassword";
 import { toast } from "sonner";
 import SmartHelp from "@/components/SmartHelp";
 
@@ -202,6 +203,7 @@ const App = () => (
               <Route path="/settings" element={<ProtectedRoute><CompanyRequired><AdminRoute><SettingsPage /></AdminRoute></CompanyRequired></ProtectedRoute>} />
               <Route path="/activity" element={<ProtectedRoute><CompanyRequired><AdminRoute><ActivityLog /></AdminRoute></CompanyRequired></ProtectedRoute>} />
               <Route path="/team" element={<ProtectedRoute><CompanyRequired><AdminRoute><Team /></AdminRoute></CompanyRequired></ProtectedRoute>} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
