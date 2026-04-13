@@ -12,43 +12,90 @@ const SITE_NAME = "RayVo";
 const SENDER_DOMAIN = "notify.hivepayadmin.com";
 const FROM_DOMAIN = "notify.hivepayadmin.com";
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function buildInvoiceHtml(invoiceNumber: string, clientName: string, amount: string, currency: string, dueDate: string, publicUrl: string, companyName: string) {
+  const safeInvoiceNumber = escapeHtml(invoiceNumber);
+  const safeClientName = escapeHtml(clientName);
+  const safeAmount = escapeHtml(amount);
+  const safeCurrency = escapeHtml(currency);
+  const safeDueDate = escapeHtml(dueDate || "On receipt");
+  const safePublicUrl = escapeHtml(publicUrl);
+  const safeCompanyName = escapeHtml(companyName);
+
   return `
-    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-      <h1 style="font-size: 24px; font-weight: 700; color: #1a1a1a; text-align: center; margin: 0 0 30px;">${companyName}</h1>
-      <div style="background: #f8f9fa; border-radius: 12px; padding: 30px; margin-bottom: 24px; text-align: center;">
-        <p style="color: #666; font-size: 14px; margin: 0 0 8px;">Invoice <strong style="color: #1a1a1a;">${invoiceNumber}</strong></p>
-        <p style="color: #1a1a1a; font-size: 32px; font-weight: 700; margin: 0 0 8px;">${currency} ${amount}</p>
-        <p style="color: #666; font-size: 14px; margin: 0;">Due: ${dueDate}</p>
+    <div style="background:#ffffff;margin:0;padding:32px 0;font-family:'Inter',Arial,sans-serif;">
+      <div style="max-width:640px;margin:0 auto;padding:0 16px;">
+        <div style="background:#f7fbfc;border:1px solid #d8e7eb;border-radius:24px;padding:36px 32px;">
+          <p style="margin:0 0 12px;color:hsl(192,75%,36%);font-size:12px;font-weight:700;letter-spacing:0.2em;">RAYVO</p>
+          <h1 style="margin:0 0 12px;color:hsl(200,30%,8%);font-size:32px;line-height:1.15;font-weight:700;">Your invoice is ready</h1>
+          <p style="margin:0 0 24px;color:hsl(200,15%,35%);font-size:15px;line-height:1.7;">Hi ${safeClientName}, ${safeCompanyName} has shared invoice <strong>${safeInvoiceNumber}</strong> with you.</p>
+
+          <div style="background:#ffffff;border:1px solid #d8e7eb;border-radius:20px;padding:24px;margin:0 0 18px;">
+            <p style="margin:0 0 8px;color:hsl(200,15%,35%);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Amount due</p>
+            <p style="margin:0 0 8px;color:hsl(200,30%,8%);font-size:34px;line-height:1.1;font-weight:700;">${safeCurrency} ${safeAmount}</p>
+            <p style="margin:0;color:hsl(200,15%,35%);font-size:14px;">Due date: ${safeDueDate}</p>
+          </div>
+
+          <div style="padding:14px 0;border-bottom:1px solid #d8e7eb;">
+            <p style="margin:0 0 4px;color:hsl(200,15%,35%);font-size:13px;">Invoice number</p>
+            <p style="margin:0;color:hsl(200,30%,8%);font-size:15px;font-weight:600;">${safeInvoiceNumber}</p>
+          </div>
+          <div style="padding:14px 0 0;">
+            <p style="margin:0 0 4px;color:hsl(200,15%,35%);font-size:13px;">Issued by</p>
+            <p style="margin:0;color:hsl(200,30%,8%);font-size:15px;font-weight:600;">${safeCompanyName}</p>
+          </div>
+
+          <div style="text-align:center;margin:28px 0 18px;">
+            <a href="${safePublicUrl}" style="display:inline-block;background:hsl(192,75%,36%);color:#ffffff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;">Review invoice</a>
+          </div>
+
+          <p style="margin:0 0 12px;color:hsl(200,15%,35%);font-size:14px;line-height:1.6;">You can view the invoice online and download a PDF from the secure link above.</p>
+          <p style="margin:0;color:hsl(200,15%,35%);font-size:13px;line-height:1.7;">If the button does not work, open this link in your browser:<br /><a href="${safePublicUrl}" style="color:hsl(192,75%,36%);word-break:break-all;">${safePublicUrl}</a></p>
+
+          <hr style="border-color:#d8e7eb;margin:24px 0 16px;" />
+          <p style="margin:0;color:hsl(200,15%,35%);font-size:12px;text-align:center;">Professional invoicing made simple.</p>
+        </div>
       </div>
-      <p style="font-size: 15px; color: #444; line-height: 1.6; margin: 0 0 16px;">
-        Hi ${clientName},
-      </p>
-      <p style="font-size: 15px; color: #444; line-height: 1.6; margin: 0 0 16px;">
-        Please find your invoice from <strong>${companyName}</strong>. You can view the full invoice and download a PDF by clicking the button below.
-      </p>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${publicUrl}" style="display: inline-block; background: hsl(192, 75%, 36%); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
-          View Invoice
-        </a>
-      </div>
-      <hr style="border-color: #eee; margin: 30px 0;" />
-      <p style="font-size: 12px; color: #999; text-align: center;">Sent via ${SITE_NAME}</p>
     </div>
   `;
 }
 
 function buildFeedbackHtml(reportText: string, userEmail: string, page: string) {
+  const safeReportText = escapeHtml(reportText);
+  const safeUserEmail = escapeHtml(userEmail);
+  const safePage = escapeHtml(page || "Unknown page");
+  const safeTimestamp = escapeHtml(new Date().toISOString());
+
   return `
-    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-      <h1 style="font-size: 24px; font-weight: 700; color: #1a1a1a; margin: 0 0 20px;">🐛 Bug / Feedback Report</h1>
-      <div style="background: #fff3cd; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-        <p style="font-size: 13px; color: #856404; margin: 0;"><strong>From:</strong> ${userEmail}</p>
-        <p style="font-size: 13px; color: #856404; margin: 4px 0 0;"><strong>Page:</strong> ${page}</p>
-        <p style="font-size: 13px; color: #856404; margin: 4px 0 0;"><strong>Time:</strong> ${new Date().toISOString()}</p>
-      </div>
-      <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; white-space: pre-wrap; font-size: 14px; color: #333; line-height: 1.6;">
-${reportText}
+    <div style="background:#ffffff;margin:0;padding:32px 0;font-family:'Inter',Arial,sans-serif;">
+      <div style="max-width:640px;margin:0 auto;padding:0 16px;">
+        <div style="background:#f7fbfc;border:1px solid #d8e7eb;border-radius:24px;padding:36px 32px;">
+          <p style="margin:0 0 12px;color:hsl(192,75%,36%);font-size:12px;font-weight:700;letter-spacing:0.2em;">RAYVO FEEDBACK</p>
+          <h1 style="margin:0 0 12px;color:hsl(200,30%,8%);font-size:32px;line-height:1.15;font-weight:700;">New customer report received</h1>
+          <p style="margin:0 0 24px;color:hsl(200,15%,35%);font-size:15px;line-height:1.7;">A user submitted feedback from inside the app.</p>
+
+          <div style="background:#ffffff;border:1px solid #d8e7eb;border-radius:20px;padding:24px;margin:0 0 18px;">
+            <p style="margin:0 0 8px;color:hsl(200,15%,35%);font-size:13px;">From</p>
+            <p style="margin:0 0 16px;color:hsl(200,30%,8%);font-size:16px;font-weight:600;">${safeUserEmail}</p>
+            <p style="margin:0 0 8px;color:hsl(200,15%,35%);font-size:13px;">Page</p>
+            <p style="margin:0 0 16px;color:hsl(200,30%,8%);font-size:15px;font-weight:600;">${safePage}</p>
+            <p style="margin:0 0 8px;color:hsl(200,15%,35%);font-size:13px;">Submitted at</p>
+            <p style="margin:0;color:hsl(200,30%,8%);font-size:15px;font-weight:600;">${safeTimestamp}</p>
+          </div>
+
+          <div style="background:#ffffff;border:1px solid #d8e7eb;border-radius:20px;padding:24px;white-space:pre-wrap;color:hsl(200,30%,8%);font-size:14px;line-height:1.7;">${safeReportText}</div>
+
+          <hr style="border-color:#d8e7eb;margin:24px 0 16px;" />
+          <p style="margin:0;color:hsl(200,15%,35%);font-size:12px;text-align:center;">Professional invoicing made simple.</p>
+        </div>
       </div>
     </div>
   `;
@@ -69,18 +116,17 @@ serve(async (req) => {
       });
     }
 
-    // Determine if this is a feedback report or invoice email
-    const isFeedback = invoiceNumber === 'FEEDBACK';
+    const isFeedback = invoiceNumber === "FEEDBACK";
     const name = companyName || SITE_NAME;
-    
+
     let subject: string;
     let html: string;
     let textContent: string;
-    
+
     if (isFeedback) {
       subject = `[RayVo Feedback] from ${clientName}`;
-      html = buildFeedbackHtml(customHtml || '', clientName, publicUrl || '');
-      textContent = `Feedback from ${clientName}: ${customHtml || ''}`;
+      html = buildFeedbackHtml(customHtml || "", clientName, publicUrl || "");
+      textContent = `Feedback from ${clientName}: ${customHtml || ""}`;
     } else {
       html = buildInvoiceHtml(invoiceNumber, clientName, amount, currency, dueDate, publicUrl, name);
       subject = `Invoice ${invoiceNumber} from ${name} — ${currency} ${amount}`;

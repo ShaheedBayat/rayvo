@@ -34,7 +34,6 @@ serve(async (req) => {
       });
     }
 
-    // Validate user via their JWT using getClaims
     const userSupabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -47,7 +46,6 @@ serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const user = { id: claimsData.claims.sub, email: claimsData.claims.email };
 
     const { email, role, inviteId, companyId } = await req.json();
 
@@ -57,7 +55,6 @@ serve(async (req) => {
       });
     }
 
-    // Look up company name
     let companyName = SITE_NAME;
     if (companyId) {
       const { data: company } = await userSupabase
@@ -80,30 +77,37 @@ serve(async (req) => {
     const inviteUrlString = inviteUrl.toString();
     const safeInviteUrl = escapeHtml(inviteUrlString);
 
-    // Build HTML inline (avoids needing React Email + JSX in this function)
     const html = `
-      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="font-size: 22px; font-weight: 700; color: #1a1a1a; margin: 0 0 20px;">Team Invitation</h1>
-        <p style="font-size: 15px; color: #444; line-height: 1.6; margin: 0 0 16px;">
-          You've been invited to join <strong>${safeCompanyName}</strong> as a <strong>${safeRole}</strong>.
-        </p>
-        <p style="font-size: 15px; color: #444; line-height: 1.6; margin: 0 0 16px;">
-          Create your account to join the company and go straight into the app.
-        </p>
-        <a href="${safeInviteUrl}" style="display: inline-block; margin: 8px 0 0; padding: 12px 20px; border-radius: 10px; background: #111827; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none;">Accept invitation</a>
-        <p style="font-size: 13px; color: #666; line-height: 1.6; margin: 16px 0 0;">
-          Or open this link in your browser:<br />
-          <a href="${safeInviteUrl}" style="color: #111827; word-break: break-all;">${safeInviteUrl}</a>
-        </p>
-        <hr style="border-color: #eee; margin: 30px 0;" />
-        <p style="font-size: 12px; color: #999; margin-top: 30px;">Sent via ${SITE_NAME}</p>
+      <div style="background:#ffffff;margin:0;padding:32px 0;font-family:'Inter',Arial,sans-serif;">
+        <div style="max-width:640px;margin:0 auto;padding:0 16px;">
+          <div style="background:#f7fbfc;border:1px solid #d8e7eb;border-radius:24px;padding:36px 32px;">
+            <p style="margin:0 0 12px;color:hsl(192,75%,36%);font-size:12px;font-weight:700;letter-spacing:0.2em;">RAYVO</p>
+            <h1 style="margin:0 0 12px;color:hsl(200,30%,8%);font-size:32px;line-height:1.15;font-weight:700;">You’ve been invited to the team</h1>
+            <p style="margin:0 0 24px;color:hsl(200,15%,35%);font-size:15px;line-height:1.7;">Join <strong>${safeCompanyName}</strong> on RayVo as a <strong>${safeRole}</strong> and start collaborating right away.</p>
+
+            <div style="background:#ffffff;border:1px solid #d8e7eb;border-radius:20px;padding:24px;margin:0 0 24px;">
+              <p style="margin:0 0 8px;color:hsl(200,15%,35%);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Your role</p>
+              <p style="margin:0 0 8px;color:hsl(200,30%,8%);font-size:28px;font-weight:700;text-transform:capitalize;">${safeRole}</p>
+              <p style="margin:0;color:hsl(200,15%,35%);font-size:14px;">Workspace: ${safeCompanyName}</p>
+            </div>
+
+            <div style="text-align:center;margin:0 0 18px;">
+              <a href="${safeInviteUrl}" style="display:inline-block;background:hsl(192,75%,36%);color:#ffffff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;">Accept invitation</a>
+            </div>
+
+            <p style="margin:0 0 12px;color:hsl(200,15%,35%);font-size:14px;line-height:1.6;">This link will take you straight to sign up and join the workspace.</p>
+            <p style="margin:0;color:hsl(200,15%,35%);font-size:13px;line-height:1.7;">If the button does not work, open this link in your browser:<br /><a href="${safeInviteUrl}" style="color:hsl(192,75%,36%);word-break:break-all;">${safeInviteUrl}</a></p>
+
+            <hr style="border-color:#d8e7eb;margin:24px 0 16px;" />
+            <p style="margin:0;color:hsl(200,15%,35%);font-size:12px;text-align:center;">Professional invoicing made simple.</p>
+          </div>
+        </div>
       </div>
     `;
 
     const messageId = crypto.randomUUID();
     const idempotencyKey = `team-invite-${inviteId || email}-${Date.now()}`;
 
-    // Use service role to enqueue directly
     const adminSupabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -137,7 +141,6 @@ serve(async (req) => {
       });
     }
 
-    // Log pending
     await adminSupabase.from("email_send_log").insert({
       message_id: messageId,
       template_name: "team-invite",
@@ -145,7 +148,6 @@ serve(async (req) => {
       status: "pending",
     });
 
-    // Enqueue via RPC
     const { error: enqueueError } = await adminSupabase.rpc("enqueue_email", {
       queue_name: "transactional_emails",
       payload: {
