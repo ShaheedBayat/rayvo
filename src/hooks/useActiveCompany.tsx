@@ -6,8 +6,6 @@ import type { Company } from '@/types/invoice';
 
 const SUPERUSER_EMAILS = [
   'shaheedbayat1@gmail.com',
-  'mo@rayn.co.za',
-  'owencrowie@gmail.com',
 ];
 
 type CompanyRole = 'admin' | 'staff' | 'viewer' | null;
