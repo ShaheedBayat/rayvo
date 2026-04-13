@@ -52,9 +52,10 @@ const LoadingScreen = () => (
  * Waits for auth to load before making any decision.
  */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isPasswordRecovery } = useAuth();
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/auth" replace />;
+  if (isPasswordRecovery) return <Navigate to="/reset-password" replace />;
   return <>{children}</>;
 }
 
@@ -126,8 +127,9 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
  * If already logged in → redirect to app.
  */
 function AuthRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isPasswordRecovery } = useAuth();
   if (loading) return <LoadingScreen />;
+  if (isPasswordRecovery) return <Navigate to="/reset-password" replace />;
   if (user) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
