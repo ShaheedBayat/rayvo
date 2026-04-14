@@ -208,7 +208,7 @@ export function useCompanies() {
     return true;
   }, [user]);
 
-  const updateCompany = useCallback(async (company: Company) => {
+  const updateCompany = useCallback(async (company: Company): Promise<boolean> => {
     const { error } = await supabase.from('companies').update({
       name: company.name,
       email: company.email,
@@ -223,7 +223,12 @@ export function useCompanies() {
       pricing_mode: company.pricingMode || 'exclusive',
       default_currency: company.defaultCurrency || 'ZAR',
     }).eq('id', company.id);
-    if (!error) setCompanies(prev => prev.map(c => c.id === company.id ? company : c));
+    if (error) {
+      console.error('Failed to update company:', error);
+      return false;
+    }
+    setCompanies(prev => prev.map(c => c.id === company.id ? company : c));
+    return true;
   }, []);
 
   const deleteCompany = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
