@@ -294,9 +294,9 @@ function CompanyCreateForm({
           )}
         </div>
         <div>
-          <Label className="cursor-pointer text-sm text-primary hover:underline">
-            Upload Logo
-            <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+          <Label className={cn("cursor-pointer text-sm text-primary hover:underline", uploading && "opacity-50 pointer-events-none")}>
+            {uploading ? 'Uploading...' : 'Upload Logo'}
+            <input type="file" accept="image/*" className="hidden" onChange={handleLogo} disabled={uploading} />
           </Label>
           <p className="text-xs text-muted-foreground mt-0.5">PNG or JPG, max 2MB</p>
         </div>
