@@ -114,13 +114,11 @@ function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean, ca
     { to: '/customer-statements', label: 'Statements', icon: FileText },
     { to: '/products', label: 'Products', icon: Package },
     { to: '/online-payments', label: 'Online Payments', icon: CreditCard },
-    { to: '/expenses', label: 'Expenses', icon: Wallet },
   ];
 
   const manageNav = [
     ...(canManageCompanies ? [{ to: '/companies', label: 'Companies', icon: Building2 }] : []),
     { to: '/reports', label: 'Reports', icon: BarChart3 },
-    { to: '/vat-report', label: 'VAT Report', icon: Receipt },
     ...(canAccessSettings ? [{ to: '/team', label: 'Team', icon: UsersRound }] : []),
     ...(canAccessSettings ? [{ to: '/activity', label: 'Activity Log', icon: Activity }] : []),
     ...(canAccessSettings ? [{ to: '/settings', label: 'Settings', icon: Settings }] : []),
