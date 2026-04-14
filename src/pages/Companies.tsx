@@ -86,9 +86,12 @@ function CompanyEditPanel({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isVatRegistered && !taxNumber.trim()) return;
+    if (isVatRegistered && !taxNumber.trim()) {
+      toast.error('Please enter a VAT/Tax number when VAT registered is enabled.');
+      return;
+    }
     onSave({
       id: initial.id,
       name, email, phone, address, city, country, taxNumber, logo,
