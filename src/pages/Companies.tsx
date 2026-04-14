@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import type { Company, PricingMode, Currency } from '@/types/invoice';
@@ -56,12 +57,33 @@ function CompanyEditPanel({
   const [pricingMode, setPricingMode] = useState<PricingMode>(initial.pricingMode || 'exclusive');
   const [defaultCurrency, setDefaultCurrency] = useState<Currency>(initial.defaultCurrency || 'ZAR');
 
-  const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploading, setUploading] = useState(false);
+
+  const handleLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setLogo(reader.result as string);
-    reader.readAsDataURL(file);
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be under 2MB');
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${initial.id}/${uuidv4()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(path);
+      setLogo(urlData.publicUrl);
+      toast.success('Logo uploaded');
+    } catch (err: any) {
+      toast.error('Failed to upload logo: ' + (err.message || 'Unknown error'));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -147,9 +169,9 @@ function CompanyEditPanel({
       </div>
 
       <div className="flex items-center gap-4">
-        <Label className="cursor-pointer text-sm text-primary hover:underline">
-          Upload Logo
-          <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+        <Label className={cn("cursor-pointer text-sm text-primary hover:underline", uploading && "opacity-50 pointer-events-none")}>
+          {uploading ? 'Uploading...' : 'Upload Logo'}
+          <input type="file" accept="image/*" className="hidden" onChange={handleLogo} disabled={uploading} />
         </Label>
         <p className="text-xs text-muted-foreground">PNG or JPG, max 2MB</p>
       </div>
@@ -217,12 +239,34 @@ function CompanyCreateForm({
   const [pricingMode, setPricingMode] = useState<PricingMode>('exclusive');
   const [defaultCurrency, setDefaultCurrency] = useState<Currency>('ZAR');
 
-  const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploading, setUploading] = useState(false);
+  const tempId = useMemo(() => uuidv4(), []);
+
+  const handleLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setLogo(reader.result as string);
-    reader.readAsDataURL(file);
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be under 2MB');
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${tempId}/${uuidv4()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(path);
+      setLogo(urlData.publicUrl);
+      toast.success('Logo uploaded');
+    } catch (err: any) {
+      toast.error('Failed to upload logo: ' + (err.message || 'Unknown error'));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -250,9 +294,9 @@ function CompanyCreateForm({
           )}
         </div>
         <div>
-          <Label className="cursor-pointer text-sm text-primary hover:underline">
-            Upload Logo
-            <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+          <Label className={cn("cursor-pointer text-sm text-primary hover:underline", uploading && "opacity-50 pointer-events-none")}>
+            {uploading ? 'Uploading...' : 'Upload Logo'}
+            <input type="file" accept="image/*" className="hidden" onChange={handleLogo} disabled={uploading} />
           </Label>
           <p className="text-xs text-muted-foreground mt-0.5">PNG or JPG, max 2MB</p>
         </div>
