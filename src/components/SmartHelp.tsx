@@ -100,6 +100,23 @@ export default function SmartHelp() {
         },
       });
       if (error) throw error;
+
+      try {
+        fetch("https://aevsyfframpdejeurmci.supabase.co/functions/v1/feedback-ingest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source_app: "rayvo",
+            type: "bug",
+            page_label: location.pathname,
+            page_path: location.pathname,
+            body: reportText,
+            submitted_by_email: user?.email || null,
+            submitted_by_name: user?.email || null,
+          }),
+        });
+      } catch (_) {}
+
       toast.success('Feedback sent! Thank you for helping us improve.');
       setReportMode(false);
       setReportText('');
