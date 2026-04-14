@@ -85,21 +85,6 @@ export default function SmartHelp() {
     setSendingReport(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.functions.invoke('send-invoice-email', {
-        body: {
-          emails: ['shaheedbayat1@gmail.com'],
-          invoiceNumber: 'FEEDBACK',
-          clientName: user?.email || 'Anonymous User',
-          amount: 'N/A',
-          currency: '',
-          dueDate: new Date().toISOString().split('T')[0],
-          publicUrl: `${window.location.origin}${location.pathname}`,
-          companyName: `Bug/Feedback Report — Page: ${location.pathname}`,
-          customSubject: 'Bug/Feedback Report',
-          customHtml: reportText.trim(),
-        },
-      });
-      if (error) throw error;
 
       try {
         fetch("https://aevsyfframpdejeurmci.supabase.co/functions/v1/feedback-ingest", {
@@ -116,6 +101,22 @@ export default function SmartHelp() {
           }),
         });
       } catch (_) {}
+
+      const { error } = await supabase.functions.invoke('send-invoice-email', {
+        body: {
+          emails: ['shaheedbayat1@gmail.com'],
+          invoiceNumber: 'FEEDBACK',
+          clientName: user?.email || 'Anonymous User',
+          amount: 'N/A',
+          currency: '',
+          dueDate: new Date().toISOString().split('T')[0],
+          publicUrl: `${window.location.origin}${location.pathname}`,
+          companyName: `Bug/Feedback Report — Page: ${location.pathname}`,
+          customSubject: 'Bug/Feedback Report',
+          customHtml: reportText.trim(),
+        },
+      });
+      if (error) throw error;
 
       toast.success('Feedback sent! Thank you for helping us improve.');
       setReportMode(false);
