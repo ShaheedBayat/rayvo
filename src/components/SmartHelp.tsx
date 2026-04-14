@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { X, Send, Loader2, Sparkles, Bug } from 'lucide-react';
+import { X, Send, Loader2, Sparkles, Bug, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
