@@ -113,14 +113,18 @@ function CompanyEditPanel({
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed bg-secondary overflow-hidden">
-          {logo ? (
-            <img src={logo} alt="Logo" className="h-full w-full object-contain" />
-          ) : (
-            <Upload className="h-5 w-5 text-muted-foreground" />
-          )}
-        </div>
+      <div className="flex items-start gap-4">
+        <label className={cn("cursor-pointer flex flex-col items-center gap-1.5 shrink-0", uploading && "opacity-50 pointer-events-none")}>
+          <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed bg-secondary overflow-hidden hover:border-primary/50 transition-colors">
+            {logo ? (
+              <img src={logo} alt="Logo" className="h-full w-full object-contain" />
+            ) : (
+              <Upload className="h-6 w-6 text-muted-foreground" />
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground">{uploading ? 'Uploading...' : 'Upload Logo'}</span>
+          <input type="file" accept="image/*" className="hidden" onChange={handleLogo} disabled={uploading} />
+        </label>
         <div className="flex-1">
           <Label>Company Name <span className="text-destructive">*</span></Label>
           <Input required value={name} onChange={e => setName(e.target.value)} className="mt-1" />
@@ -168,13 +172,6 @@ function CompanyEditPanel({
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Label className={cn("cursor-pointer text-sm text-primary hover:underline", uploading && "opacity-50 pointer-events-none")}>
-          {uploading ? 'Uploading...' : 'Upload Logo'}
-          <input type="file" accept="image/*" className="hidden" onChange={handleLogo} disabled={uploading} />
-        </Label>
-        <p className="text-xs text-muted-foreground">PNG or JPG, max 2MB</p>
-      </div>
 
       <div className="space-y-1.5">
         <Label>Default Currency</Label>
@@ -285,22 +282,17 @@ function CompanyCreateForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed bg-secondary overflow-hidden">
+      <label className={cn("cursor-pointer flex flex-col items-center gap-1.5 self-start", uploading && "opacity-50 pointer-events-none")}>
+        <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed bg-secondary overflow-hidden hover:border-primary/50 transition-colors">
           {logo ? (
             <img src={logo} alt="Logo" className="h-full w-full object-contain" />
           ) : (
-            <Upload className="h-5 w-5 text-muted-foreground" />
+            <Upload className="h-6 w-6 text-muted-foreground" />
           )}
         </div>
-        <div>
-          <Label className={cn("cursor-pointer text-sm text-primary hover:underline", uploading && "opacity-50 pointer-events-none")}>
-            {uploading ? 'Uploading...' : 'Upload Logo'}
-            <input type="file" accept="image/*" className="hidden" onChange={handleLogo} disabled={uploading} />
-          </Label>
-          <p className="text-xs text-muted-foreground mt-0.5">PNG or JPG, max 2MB</p>
-        </div>
-      </div>
+        <span className="text-xs text-muted-foreground">{uploading ? 'Uploading...' : 'Upload Logo'}</span>
+        <input type="file" accept="image/*" className="hidden" onChange={handleLogo} disabled={uploading} />
+      </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label>Company Name <span className="text-destructive">*</span></Label>
