@@ -125,7 +125,7 @@ export default function SmartHelp() {
           className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
           title="Need help?"
         >
-          <Sparkles className="h-5 w-5" />
+          <HelpCircle className="h-5 w-5" />
         </button>
       )}
 
