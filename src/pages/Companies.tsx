@@ -392,11 +392,15 @@ export default function Companies() {
   }, [companies, search]);
 
   const handleSave = async (c: Company) => {
-    await updateCompany(c);
-    toast.success('Company updated');
-    localStorage.setItem('lastUsedCompanyId', c.id);
-    setExpandedId(null);
-    refetchCompanies();
+    const success = await updateCompany(c);
+    if (success) {
+      toast.success('Company updated');
+      localStorage.setItem('lastUsedCompanyId', c.id);
+      setExpandedId(null);
+      refetchCompanies();
+    } else {
+      toast.error('Failed to update company. Please try again.');
+    }
   };
 
   const handleCreate = async (c: Company) => {
