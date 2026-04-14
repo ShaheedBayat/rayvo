@@ -114,7 +114,6 @@ function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean, ca
     { to: '/customer-statements', label: 'Statements', icon: FileText },
     { to: '/products', label: 'Products', icon: Package },
     { to: '/online-payments', label: 'Online Payments', icon: CreditCard },
-    { to: '/expenses', label: 'Expenses', icon: Wallet },
   ];
 
   const manageNav = [
