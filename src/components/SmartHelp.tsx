@@ -86,37 +86,19 @@ export default function SmartHelp() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      try {
-        fetch("https://aevsyfframpdejeurmci.supabase.co/functions/v1/feedback-ingest", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            source_app: "rayvo",
-            type: "bug",
-            page_label: location.pathname,
-            page_path: location.pathname,
-            body: reportText,
-            submitted_by_email: user?.email || null,
-            submitted_by_name: user?.email || null,
-          }),
-        });
-      } catch (_) {}
-
-      const { error } = await supabase.functions.invoke('send-invoice-email', {
-        body: {
-          emails: ['shaheedbayat1@gmail.com'],
-          invoiceNumber: 'FEEDBACK',
-          clientName: user?.email || 'Anonymous User',
-          amount: 'N/A',
-          currency: '',
-          dueDate: new Date().toISOString().split('T')[0],
-          publicUrl: `${window.location.origin}${location.pathname}`,
-          companyName: `Bug/Feedback Report — Page: ${location.pathname}`,
-          customSubject: 'Bug/Feedback Report',
-          customHtml: reportText.trim(),
-        },
+      await fetch("https://aevsyfframpdejeurmci.supabase.co/functions/v1/feedback-ingest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source_app: "rayvo",
+          type: "bug",
+          page_label: location.pathname,
+          page_path: location.pathname,
+          body: reportText,
+          submitted_by_email: user?.email || null,
+          submitted_by_name: user?.email || null,
+        }),
       });
-      if (error) throw error;
 
       toast.success('Feedback sent! Thank you for helping us improve.');
       setReportMode(false);
