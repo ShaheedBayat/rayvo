@@ -217,11 +217,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const LogoSection = ({ isCollapsed }: { isCollapsed: boolean }) => (
-    <div className="flex h-14 items-center gap-2 px-4">
+    <div className="flex h-20 items-center gap-2 px-4">
       {isCollapsed ? (
-        <img src={rayvoLogo} alt="Rayvo" className="h-8 w-8 object-contain shrink-0" />
+        <img src={rayvoLogo} alt="Rayvo" className="h-10 w-10 object-contain shrink-0" />
       ) : (
-        <img src={rayvoWordmark} alt="Rayvo" className="h-8 w-auto object-contain shrink-0" />
+        <img src={rayvoWordmark} alt="Rayvo" className="h-14 w-auto object-contain shrink-0" />
       )}
     </div>
   );
