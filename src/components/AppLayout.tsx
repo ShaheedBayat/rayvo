@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import raynLogo from '@/assets/rayn-logo.png';
+import rayvoLogo from '@/assets/rayvo-logo.png';
+import rayvoWordmark from '@/assets/rayvo-wordmark.png';
 import {
   LayoutDashboard, FileText, Users, Package, Building2, BarChart3, Settings,
   Plus, LogOut, Sun, Moon, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
@@ -217,30 +218,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const LogoSection = ({ isCollapsed }: { isCollapsed: boolean }) => (
     <div className="flex h-14 items-center gap-2 px-4">
-      {displayName ? (
-        <>
-          {displayLogo ? (
-            <img src={displayLogo} alt={displayName} className="h-8 w-8 rounded-lg object-contain shrink-0" />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary text-sm font-semibold shrink-0">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
-          {!isCollapsed && (
-            <span className="text-sm font-semibold text-sidebar-accent-foreground tracking-tight truncate">
-              {displayName}
-            </span>
-          )}
-        </>
+      {isCollapsed ? (
+        <img src={rayvoLogo} alt="Rayvo" className="h-8 w-8 object-contain shrink-0" />
       ) : (
-        <>
-          <img src={raynLogo} alt="RayVo" className="h-9 w-auto shrink-0" />
-          {!isCollapsed && (
-            <span className="text-base font-semibold text-sidebar-accent-foreground tracking-tight">
-              RayVo
-            </span>
-          )}
-        </>
+        <img src={rayvoWordmark} alt="Rayvo" className="h-8 w-auto object-contain shrink-0" />
       )}
     </div>
   );
