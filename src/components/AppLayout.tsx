@@ -354,8 +354,16 @@ export default function AppLayout({ children, fullWidth = false }: { children: R
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-4 md:px-8 py-6 md:py-10 animate-fade-in">
-          <div className={fullWidth ? 'mx-auto w-full' : 'mx-auto max-w-7xl'}>{children}</div>
+        <main className="flex-1 px-4 md:px-8 py-6 md:py-10">
+          {/* Re-key on route change so every navigation triggers a refined
+              fade-in-up. Feels intentional and gives the app a polished,
+              app-like cadence between pages. */}
+          <div
+            key={location.pathname}
+            className={`${fullWidth ? 'mx-auto w-full' : 'mx-auto max-w-7xl'} animate-fade-in-up`}
+          >
+            {children}
+          </div>
         </main>
       </div>
     </div>
