@@ -240,7 +240,39 @@ export default function CreateInvoice() {
           for (const expId of pendingBilledExpenseIds) await markExpenseAsBilled(expId, created.id);
           if (pendingBilledExpenseIds.length > 0) await refetchExpenses();
           await logActivity('invoice', created.id, 'created', `Invoice ${created.invoiceNumber} created`);
-          toast.success(`Invoice ${created.invoiceNumber} ${saveAction === 'send' ? 'created & sent' : 'created'} successfully`);
+          if (saveAction === 'send') {
+            const emails = (clientEmail || '').split(',').map(e => e.trim()).filter(Boolean);
+            if (emails.length === 0) {
+              toast.warning(`Invoice ${created.invoiceNumber} created, but no client email — nothing to send.`);
+            } else {
+              const token = created.shareToken || crypto.randomUUID();
+              if (!created.shareToken) {
+                await supabase.from('invoices').update({ share_token: token }).eq('id', created.id);
+              }
+              const publicUrl = `${window.location.origin}/public/invoice/${created.id}?token=${token}`;
+              const { error: emailErr } = await supabase.functions.invoke('send-invoice-email', {
+                body: {
+                  emails,
+                  invoiceNumber: created.invoiceNumber,
+                  clientName: created.clientName,
+                  amount: totals.total.toFixed(2),
+                  currency: created.currency,
+                  dueDate: created.dueDate,
+                  publicUrl,
+                  companyName: '',
+                },
+              });
+              if (emailErr) {
+                toast.error(`Invoice ${created.invoiceNumber} created, but email failed to send`);
+                console.error('[CreateInvoice] send-invoice-email error', emailErr);
+              } else {
+                await logActivity('invoice', created.id, 'emailed', `Emailed to ${emails.join(', ')}`);
+                toast.success(`Invoice ${created.invoiceNumber} created & emailed to ${emails.join(', ')}`);
+              }
+            }
+          } else {
+            toast.success(`Invoice ${created.invoiceNumber} created successfully`);
+          }
           navigate(`/invoices/${created.id}`);
         },
       });
