@@ -335,7 +335,7 @@ export default function CreateInvoice() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout fullWidth>
       <button
         onClick={() => navigate('/invoices')}
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -384,9 +384,9 @@ export default function CreateInvoice() {
         </div>
 
         {/* Split pane: Form left, Preview right */}
-        <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">
           {/* LEFT: Form */}
-          <div className="space-y-5">
+          <div className="space-y-5 min-w-0">
             {/* Customer + Invoice Details side by side */}
             <div className="grid gap-5 md:grid-cols-2">
               {/* Bill To */}
@@ -584,7 +584,7 @@ export default function CreateInvoice() {
           </div>
 
           {/* RIGHT: Live Preview */}
-          <div className="hidden xl:block">
+          <div className="hidden lg:block">
             <div className="sticky top-4 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Live Preview</p>
               <InvoiceLivePreview
