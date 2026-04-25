@@ -46,6 +46,7 @@ export default function Quotes() {
     .filter(q => !search || q.quoteNumber.toLowerCase().includes(search.toLowerCase()) || q.clientName.toLowerCase().includes(search.toLowerCase()));
 
   const handleConvertToInvoice = async (q: typeof quotes[0]) => {
+    if (q.status === 'rejected' || q.status === 'converted') return;
     if (converting) return;
     setConverting(q.id);
     try {
@@ -82,7 +83,7 @@ export default function Quotes() {
           return !!data;
         },
         onSuccess: async (created: any) => {
-          await updateQuote({ ...q, status: 'converted' });
+          await updateQuote({ ...q, status: 'converted', convertedInvoiceId: invoiceId });
           await logActivity('quote', q.id, 'converted', `Quote ${q.quoteNumber} converted to Invoice ${created?.invoiceNumber || ''}`);
           await logActivity('invoice', invoiceId, 'created', `Invoice ${created?.invoiceNumber || ''} created from Quote ${q.quoteNumber}`);
           await refetch();
@@ -174,6 +175,7 @@ export default function Quotes() {
           sending={sending}
           onEdit={(q) => navigate(`/quotes/${q.id}/edit`)}
           onConvert={handleConvertToInvoice}
+          onViewInvoice={(invoiceId) => navigate(`/invoices/${invoiceId}`)}
           onSend={handleSend}
           onShowReason={(q) => setReasonQuote(q)}
           onUpdateStatus={async (q, status) => {
