@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction, safeDeleteAction } from '@/lib/safeExecuteAction';
+import { calculateInvoiceCredits } from '@/lib/customerStatement';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
@@ -184,10 +185,7 @@ export default function InvoiceView() {
 
   // Calculate total credits from credit notes linked to this invoice
   const invoiceCreditNotes = creditNotes.filter(cn => cn.invoiceId === invoice.id);
-  const totalCredits = invoiceCreditNotes.reduce((sum, cn) => {
-    const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
-    return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
-  }, 0);
+  const totalCredits = calculateInvoiceCredits(invoiceCreditNotes, company);
 
   const amountDue = total - totalPaid - totalCredits;
 
@@ -467,14 +465,10 @@ export default function InvoiceView() {
     // Refetch credit notes from DB
     const { data: dbCreditNotes } = await supabase
       .from('credit_notes')
-      .select('items, tax_rate')
+      .select('items, tax_rate, status, notes')
       .eq('invoice_id', invoice.id)
       .is('deleted_at', null);
-    const dbTotalCredits = (dbCreditNotes || []).reduce((sum, cn) => {
-      const cnItems = ((cn.items as unknown) as InvoiceItem[]) || [];
-      const cnCo = company;
-      return sum + calculateSmartTotals(cnItems, Number(cn.tax_rate), cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
-    }, 0);
+    const dbTotalCredits = calculateInvoiceCredits(dbCreditNotes || [], company);
 
     const remaining = invoiceTotal - dbTotalPaid - dbTotalCredits;
 

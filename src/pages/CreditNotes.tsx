@@ -21,6 +21,7 @@ import CurrencySelect from '@/components/invoice/CurrencySelect';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
+import { calculateInvoiceCredits } from '@/lib/customerStatement';
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   draft: { label: 'Draft', className: 'bg-muted text-muted-foreground' },
@@ -100,12 +101,10 @@ export default function CreditNotes() {
     const invoiceTotal = calculateSmartTotals(inv.items, inv.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
 
     // Sum existing approved/sent credit notes for this invoice
-    const existingCredits = creditNotes
-      .filter(cn => cn.invoiceId === invId && cn.id !== editingCN?.id)
-      .reduce((sum, cn) => {
-        const cnCo = cn.companyId ? getCompany(cn.companyId) : undefined;
-        return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
-      }, 0);
+    const existingCredits = calculateInvoiceCredits(
+      creditNotes.filter(cn => cn.invoiceId === invId && cn.id !== editingCN?.id),
+      co
+    );
 
     return Math.max(0, invoiceTotal - existingCredits);
   };
@@ -201,14 +200,11 @@ export default function CreditNotes() {
         // Get all credit notes for this invoice (including the one just created)
         const { data: dbCreditNotes } = await supabase
           .from('credit_notes')
-          .select('items, tax_rate')
+          .select('items, tax_rate, status, notes')
           .eq('invoice_id', linkedInvoice.id)
           .is('deleted_at', null);
 
-        const totalCredits = (dbCreditNotes || []).reduce((sum, cn) => {
-          const cnItems = ((cn.items as unknown) as InvoiceItem[]) || [];
-          return sum + calculateSmartTotals(cnItems, Number(cn.tax_rate), invCo?.pricingMode || 'exclusive', invCo?.isVatRegistered ?? false).total;
-        }, 0);
+        const totalCredits = calculateInvoiceCredits(dbCreditNotes || [], invCo);
 
         const remaining = invoiceTotal - totalPaid - totalCredits;
 
