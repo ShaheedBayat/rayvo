@@ -219,13 +219,43 @@ export default function CreateInvoice() {
 
     if (!isRecurring) {
       const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
+
+      // For deposit invoices, replace the line items with a single "deposit" line
+      // for the deposit amount only. The full job total is preserved in jobTotal
+      // so the balance invoice can be auto-created when the deposit is paid.
+      let invoiceItems = finalItems;
+      let invoiceTaxRate = isVatRegistered ? taxRate : 0;
+      let jobTotal: number | undefined = undefined;
+
+      if (invoiceType === 'deposit') {
+        const fullJobTotal = totals.total;
+        const depositAmount = depositType === 'percentage'
+          ? fullJobTotal * (depositValue / 100)
+          : Math.min(depositValue, fullJobTotal);
+        const roundedDeposit = Math.round(depositAmount * 100) / 100;
+        const depositLabel = depositType === 'percentage'
+          ? `${depositValue}% deposit — Job total ${formatCurrency(fullJobTotal, currency)}`
+          : `Deposit payment — Job total ${formatCurrency(fullJobTotal, currency)}`;
+        invoiceItems = [{
+          id: uuidv4(),
+          description: depositLabel,
+          quantity: 1,
+          unitPrice: roundedDeposit,
+        }];
+        // Tax was already accounted for in the job total computation; set to 0 to
+        // avoid double-taxing the deposit line.
+        invoiceTaxRate = 0;
+        jobTotal = fullJobTotal;
+      }
+
       const invoice: Invoice = {
         id: uuidv4(), invoiceNumber: '', companyId, clientName, clientEmail, clientAddress, currency,
-        items: finalItems, taxRate: isVatRegistered ? taxRate : 0, notes,
+        items: invoiceItems, taxRate: invoiceTaxRate, notes,
         status: saveAction === 'send' ? 'sent' : 'draft',
         createdAt: new Date().toISOString(), dueDate, invoiceType,
         depositType: invoiceType === 'deposit' ? depositType : undefined,
         depositValue: invoiceType === 'deposit' ? depositValue : undefined,
+        jobTotal,
       };
 
       await safeExecuteAction({
@@ -475,7 +505,7 @@ export default function CreateInvoice() {
                   💰 Deposit Settings
                 </h2>
                 <p className="text-xs text-muted-foreground mb-3">
-                  A deposit invoice charges a portion upfront. When fully paid, a balance invoice is auto-created.
+                  This invoice will be created for the <strong>deposit amount only</strong>. When it's fully paid, a separate <strong>balance invoice</strong> is auto-generated for the remainder.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1">
@@ -496,15 +526,15 @@ export default function CreateInvoice() {
                 {totals.total > 0 && (
                   <div className="mt-3 rounded-md bg-card border p-3 text-sm space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Full Total</span>
+                      <span className="text-muted-foreground">Full Job Total</span>
                       <span className="font-medium">{formatCurrency(totals.total, currency)}</span>
                     </div>
                     <div className="flex justify-between text-amber-700 dark:text-amber-400 font-medium">
-                      <span>Deposit</span>
+                      <span>This Invoice (Deposit)</span>
                       <span>{formatCurrency(depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total), currency)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground border-t pt-1">
-                      <span>Balance (auto)</span>
+                      <span>Balance Invoice (auto, after deposit paid)</span>
                       <span>{formatCurrency(totals.total - (depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total)), currency)}</span>
                     </div>
                   </div>

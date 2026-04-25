@@ -986,6 +986,7 @@ export type Database = {
           invoice_number: string
           invoice_type: string
           items: Json
+          job_total: number | null
           notes: string | null
           owner_id: string
           parent_invoice_id: string | null
@@ -1009,6 +1010,7 @@ export type Database = {
           invoice_number: string
           invoice_type?: string
           items?: Json
+          job_total?: number | null
           notes?: string | null
           owner_id: string
           parent_invoice_id?: string | null
@@ -1032,6 +1034,7 @@ export type Database = {
           invoice_number?: string
           invoice_type?: string
           items?: Json
+          job_total?: number | null
           notes?: string | null
           owner_id?: string
           parent_invoice_id?: string | null
