@@ -1,4 +1,4 @@
-import { MoreHorizontal, Edit, ArrowRight, Trash2, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Edit, ArrowRight, Trash2, Loader2, Send, MessageSquareWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -11,15 +11,18 @@ interface QuoteTableProps {
   statusConfig: Record<string, { label: string; className: string }>;
   getCompany: (id: string) => Company | undefined;
   converting: string | null;
+  sending: string | null;
   onEdit: (q: Quote) => void;
   onConvert: (q: Quote) => void;
+  onSend: (q: Quote) => void;
+  onShowReason: (q: Quote) => void;
   onUpdateStatus: (q: Quote, status: Quote['status']) => void;
   onDelete: (id: string) => void;
 }
 
 export default function QuoteTable({
-  quotes, statusConfig, getCompany, converting,
-  onEdit, onConvert, onUpdateStatus, onDelete,
+  quotes, statusConfig, getCompany, converting, sending,
+  onEdit, onConvert, onSend, onShowReason, onUpdateStatus, onDelete,
 }: QuoteTableProps) {
   return (
     <div className="rounded-xl border border-border/50 bg-card invoice-shadow overflow-hidden">
@@ -47,7 +50,17 @@ export default function QuoteTable({
                 <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell">{new Date(q.validUntil).toLocaleDateString()}</td>
                 <td className="px-4 py-3.5 text-right mono font-medium">{formatCurrency(total, q.currency)}</td>
                 <td className="px-4 py-3.5 text-center">
-                  <Badge variant="outline" className={`${cfg.className} text-[11px]`}>{cfg.label}</Badge>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <Badge variant="outline" className={`${cfg.className} text-[11px]`}>{cfg.label}</Badge>
+                    {q.status === 'rejected' && q.rejectionReason && (
+                      <button
+                        onClick={() => onShowReason(q)}
+                        className="text-[11px] text-destructive underline hover:no-underline"
+                      >
+                        See reason
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3.5">
                   <DropdownMenu>
@@ -58,6 +71,20 @@ export default function QuoteTable({
                       {q.status === 'draft' && (
                         <DropdownMenuItem onClick={() => onEdit(q)}>
                           <Edit className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                      )}
+                      {(q.status === 'draft' || q.status === 'sent') && q.clientEmail && (
+                        <DropdownMenuItem onClick={() => onSend(q)} disabled={sending === q.id}>
+                          {sending === q.id ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</>
+                          ) : (
+                            <><Send className="mr-2 h-4 w-4" /> {q.status === 'sent' ? 'Resend Email' : 'Send to Customer'}</>
+                          )}
+                        </DropdownMenuItem>
+                      )}
+                      {q.status === 'rejected' && q.rejectionReason && (
+                        <DropdownMenuItem onClick={() => onShowReason(q)}>
+                          <MessageSquareWarning className="mr-2 h-4 w-4" /> View Rejection Reason
                         </DropdownMenuItem>
                       )}
                       {q.status !== 'converted' && (

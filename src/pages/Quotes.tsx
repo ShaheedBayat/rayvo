@@ -5,12 +5,15 @@ import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import type { Currency } from '@/types/invoice';
+import { calculateSmartTotals } from '@/types/invoice';
+import type { Quote } from '@/hooks/useQuotes';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { safeExecuteAction } from '@/lib/safeExecuteAction';
@@ -27,7 +30,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export default function Quotes() {
   const navigate = useNavigate();
-  const { quotes, updateQuote, deleteQuote, refetch } = useQuotes();
+  const { quotes, updateQuote, deleteQuote, sendQuote, refetch } = useQuotes();
   const { addInvoice } = useInvoices();
   const { logActivity } = useActivityLog();
   const { activeCompanyId } = useActiveCompany();
@@ -35,6 +38,8 @@ export default function Quotes() {
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [converting, setConverting] = useState<string | null>(null);
+  const [sending, setSending] = useState<string | null>(null);
+  const [reasonQuote, setReasonQuote] = useState<Quote | null>(null);
 
   const filtered = quotes
     .filter(q => !activeCompanyId || q.companyId === activeCompanyId)
@@ -109,6 +114,28 @@ export default function Quotes() {
     setDeleteId(null);
   };
 
+  const handleSend = async (q: Quote) => {
+    if (!q.clientEmail) {
+      toast.error('This quote has no customer email');
+      return;
+    }
+    setSending(q.id);
+    try {
+      const co = q.companyId ? getCompany(q.companyId) : undefined;
+      const totals = calculateSmartTotals(q.items, q.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false);
+      const res = await sendQuote(q, co?.name || 'Your company', totals.total);
+      if ((res as any)?.error) {
+        toast.error((res as any).error || 'Failed to send quote');
+      } else {
+        await logActivity('quote', q.id, 'sent', `Quote ${q.quoteNumber} sent to ${q.clientEmail}`);
+        await refetch();
+        toast.success(`Quote sent to ${q.clientEmail}`);
+      }
+    } finally {
+      setSending(null);
+    }
+  };
+
   return (
     <AppLayout>
       <div className="mb-6 flex items-center justify-between">
@@ -144,8 +171,11 @@ export default function Quotes() {
           statusConfig={statusConfig}
           getCompany={getCompany}
           converting={converting}
+          sending={sending}
           onEdit={(q) => navigate(`/quotes/${q.id}/edit`)}
           onConvert={handleConvertToInvoice}
+          onSend={handleSend}
+          onShowReason={(q) => setReasonQuote(q)}
           onUpdateStatus={async (q, status) => {
             await updateQuote({ ...q, status });
             await logActivity('quote', q.id, 'status_updated', `Quote ${q.quoteNumber} status changed to ${status}`);
@@ -168,6 +198,23 @@ export default function Quotes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!reasonQuote} onOpenChange={(open) => !open && setReasonQuote(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rejection reason</DialogTitle>
+            <DialogDescription>
+              {reasonQuote?.clientName} rejected quote {reasonQuote?.quoteNumber}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border bg-muted/30 p-4 text-sm whitespace-pre-wrap">
+            {reasonQuote?.rejectionReason || 'No reason provided.'}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setReasonQuote(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

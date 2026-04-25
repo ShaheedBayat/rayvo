@@ -1211,6 +1211,7 @@ export type Database = {
           client_email: string | null
           client_name: string
           company_id: string | null
+          converted_invoice_id: string | null
           created_at: string
           currency: string
           id: string
@@ -1218,6 +1219,9 @@ export type Database = {
           notes: string | null
           owner_id: string
           quote_number: string
+          rejection_reason: string | null
+          responded_at: string | null
+          share_token: string | null
           status: string
           tax_rate: number
           updated_at: string
@@ -1228,6 +1232,7 @@ export type Database = {
           client_email?: string | null
           client_name: string
           company_id?: string | null
+          converted_invoice_id?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -1235,6 +1240,9 @@ export type Database = {
           notes?: string | null
           owner_id: string
           quote_number?: string
+          rejection_reason?: string | null
+          responded_at?: string | null
+          share_token?: string | null
           status?: string
           tax_rate?: number
           updated_at?: string
@@ -1245,6 +1253,7 @@ export type Database = {
           client_email?: string | null
           client_name?: string
           company_id?: string | null
+          converted_invoice_id?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -1252,6 +1261,9 @@ export type Database = {
           notes?: string | null
           owner_id?: string
           quote_number?: string
+          rejection_reason?: string | null
+          responded_at?: string | null
+          share_token?: string | null
           status?: string
           tax_rate?: number
           updated_at?: string
@@ -1688,6 +1700,15 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      respond_to_quote: {
+        Args: {
+          _action: string
+          _quote_id: string
+          _reason?: string
+          _token: string
+        }
+        Returns: Json
       }
       soft_delete_invoice: { Args: { p_invoice_id: string }; Returns: Json }
       unblock_user: { Args: { p_user_id: string }; Returns: boolean }
