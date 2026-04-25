@@ -18,6 +18,8 @@ export interface TeamMember {
   displayName: string;
   role: string;
   createdAt: string;
+  isBlocked: boolean;
+  blockedReason: string;
 }
 
 function mapInvite(row: any): TeamInvite {
@@ -53,13 +55,21 @@ export function useTeam() {
       const userIds = membersRes.data.map(r => r.user_id);
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, display_name')
+        .select('user_id, display_name, is_blocked, blocked_reason')
         .in('user_id', userIds);
       
-      const profileMap = new Map((profiles || []).map(p => [p.user_id, p.display_name || 'Unknown']));
+      const profileMap = new Map(
+        (profiles || []).map(p => [p.user_id, {
+          displayName: p.display_name || 'Unknown',
+          isBlocked: !!p.is_blocked,
+          blockedReason: p.blocked_reason || '',
+        }])
+      );
       setMembers(membersRes.data.map(r => ({
         userId: r.user_id,
-        displayName: profileMap.get(r.user_id) || 'Unknown',
+        displayName: profileMap.get(r.user_id)?.displayName || 'Unknown',
+        isBlocked: profileMap.get(r.user_id)?.isBlocked || false,
+        blockedReason: profileMap.get(r.user_id)?.blockedReason || '',
         role: r.role,
         createdAt: r.created_at,
       })));
@@ -156,5 +166,16 @@ export function useTeam() {
     return false;
   }, [activeCompanyId]);
 
-  return { invites, members, loading, sendInvite, deleteInvite, revokeInvite, resendInvite, updateMemberRole, removeMember, refetch: fetchTeam };
+  const unblockMember = useCallback(async (userId: string) => {
+    const { error } = await supabase.rpc('unblock_user', { p_user_id: userId });
+    if (!error) {
+      setMembers(prev => prev.map(m =>
+        m.userId === userId ? { ...m, isBlocked: false, blockedReason: '' } : m
+      ));
+      return true;
+    }
+    return false;
+  }, []);
+
+  return { invites, members, loading, sendInvite, deleteInvite, revokeInvite, resendInvite, updateMemberRole, removeMember, unblockMember, refetch: fetchTeam };
 }
