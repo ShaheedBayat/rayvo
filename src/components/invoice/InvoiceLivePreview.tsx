@@ -77,10 +77,10 @@ export default function InvoiceLivePreview({
             <thead>
               <tr className="border-b border-border">
                 <th className="py-1.5 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Item</th>
-                <th className="py-1.5 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground w-8">Qty</th>
-                <th className="py-1.5 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground w-16">Price</th>
-                {hasDiscount && <th className="py-1.5 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground w-10">Disc</th>}
-                <th className="py-1.5 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground w-16">Amount</th>
+                <th className="py-1.5 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground w-10">Qty</th>
+                <th className="py-1.5 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground w-20">Price</th>
+                {hasDiscount && <th className="py-1.5 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground w-12">Disc</th>}
+                <th className="py-1.5 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground w-20">Amount</th>
               </tr>
             </thead>
             <tbody>
