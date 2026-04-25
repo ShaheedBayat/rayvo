@@ -51,8 +51,9 @@ export default function CustomerStatement() {
     const fromDate = dateFrom;
     const toDate = dateTo + 'T23:59:59';
 
-    // Fetch invoices for this customer (by name match, excluding voided/deleted)
-    const { data: invoices } = await supabase
+    // Fetch invoices for this customer — scoped to the customer's company
+    // (the same client name can exist across multiple companies)
+    let invoicesQuery = supabase
       .from('invoices')
       .select('id, invoice_number, company_id, client_name, items, tax_rate, currency, status, created_at, due_date')
       .eq('client_name', customer.name)
@@ -61,6 +62,10 @@ export default function CustomerStatement() {
       .gte('created_at', fromDate)
       .lte('created_at', toDate)
       .order('created_at', { ascending: true });
+    if (customer.companyId) {
+      invoicesQuery = invoicesQuery.eq('company_id', customer.companyId);
+    }
+    const { data: invoices } = await invoicesQuery;
 
     const safeInvoices = invoices || [];
     setDbInvoices(safeInvoices);
@@ -81,8 +86,8 @@ export default function CustomerStatement() {
       setDbPayments([]);
     }
 
-    // Fetch credit notes for this customer
-    const { data: creditNotes } = await supabase
+    // Fetch credit notes for this customer — also scoped to the customer's company
+    let creditNotesQuery = supabase
       .from('credit_notes')
       .select('id, credit_note_number, company_id, invoice_id, client_name, items, tax_rate, currency, status, created_at')
       .eq('client_name', customer.name)
@@ -90,6 +95,10 @@ export default function CustomerStatement() {
       .gte('created_at', fromDate)
       .lte('created_at', toDate)
       .order('created_at', { ascending: true });
+    if (customer.companyId) {
+      creditNotesQuery = creditNotesQuery.eq('company_id', customer.companyId);
+    }
+    const { data: creditNotes } = await creditNotesQuery;
     setDbCreditNotes(creditNotes || []);
 
     setLoading(false);
