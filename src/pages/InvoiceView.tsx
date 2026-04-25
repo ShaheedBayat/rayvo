@@ -971,10 +971,21 @@ export default function InvoiceView() {
 
             {/* Deposit/Balance invoice info banner */}
             {invoice.invoiceType === 'deposit' && (
-              <div className="mb-4 rounded-lg border-2 border-amber-500/30 bg-amber-500/5 p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="mb-4 rounded-lg border-2 border-amber-500/30 bg-amber-500/5 p-3 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
                   <span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">
-                    💰 Deposit Invoice — {invoice.depositType === 'percentage' ? `${invoice.depositValue}%` : formatCurrency(invoice.depositValue || 0, invoice.currency)} of total
+                    💰 Deposit Invoice — {formatCurrency(total, invoice.currency)}
+                    {invoice.jobTotal && invoice.jobTotal > 0 && (
+                      <span className="font-normal text-muted-foreground ml-1">
+                        ({invoice.depositType === 'percentage' ? `${invoice.depositValue}% of ` : 'of '}
+                        {formatCurrency(invoice.jobTotal, invoice.currency)} job)
+                      </span>
+                    )}
+                    {!linkedBalanceInvoice && (
+                      <span className="font-normal text-muted-foreground ml-1">
+                        — balance invoice will be created when paid
+                      </span>
+                    )}
                   </span>
                 </div>
                 {linkedBalanceInvoice && (
