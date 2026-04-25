@@ -1,66 +1,116 @@
-## The problem
+# UI/UX Polish Pass
 
-You paid R100 against a 50% deposit invoice on a R200 job — but the invoice still says R100 outstanding. That's because the system is currently storing the **full R200** on the deposit invoice and only treating the 50% as metadata. So to the system, your invoice is for R200, you've paid R100, and R100 is still owed on it.
+A focused polish round to make Rayvo feel premium and easy to use. Three issues are confirmed bugs (sidebar scrollbar, status filter, live preview disappearing). The rest is an app-wide polish sweep.
 
-## What industry standard does (Xero, QuickBooks, FreshBooks)
+---
 
-A **deposit invoice is its own invoice for the deposit amount only**. They're two standalone documents that happen to be linked:
+## 1. Confirmed bug fixes
 
-- **INV-00005 (Deposit)** — Total: R100, Due: R100. Customer pays R100 → marked **Paid** ✅
-- **INV-00006 (Balance)** — auto-created for the remaining R100. Customer pays R100 → marked **Paid** ✅
+### a) Ugly white scrollbar on the sidebar (Windows / some browsers)
+The sidebar `<nav>` uses `overflow-y-auto` with no scrollbar styling, so Windows renders the default white system scrollbar against the dark sidebar.
 
-Together they cover the R200 job. Each invoice's total = what's actually owed on that document. No phantom outstanding balances.
+**Fix:** Add a styled custom scrollbar utility (`.scrollbar-subtle`) in `src/index.css` that:
+- Uses thin width (`scrollbar-width: thin` for Firefox)
+- Tints the thumb with `--sidebar-border` and the track to transparent for WebKit
+- Fades the thumb in only on hover for a clean look
+Apply it to the sidebar nav and any other internal scrollable areas (command palette list, dropdowns, table containers).
 
-## Plan
+### b) Status filter pills look bad and scroll awkwardly
+On the Invoices page (and similar lists) the status filters are pills inside a horizontal scroll container. They wrap awkwardly, get cut off, and there's no affordance for hidden options.
 
-### 1. Change deposit invoice to store the deposit amount only
+**Fix — switch to a Tabs-style segmented control with smart overflow:**
+- Replace pills with a single underlined tab strip that uses the existing shadcn `Tabs` styling language (filled active tab, muted inactive, no border-radius mismatch).
+- On wide screens: render all statuses inline with no scroll.
+- On narrow screens: show the first ~4 most-used (`All`, `Draft`, `Awaiting Payment`, `Paid`) inline, and roll the rest into a "More ▾" dropdown (Overdue, Awaiting Approval, Partially Paid, Void, Deleted). This removes horizontal scroll entirely.
+- Add subtle counts next to each label (e.g. `Draft 3`) — already calculated in `AppLayout`, just reuse the logic per-status.
 
-In `CreateInvoice.tsx`, when "Deposit" is toggled on:
-- Calculate the deposit amount (% of job OR fixed) once at creation
-- Save the invoice with **a single line item for the deposit amount** (e.g. `"50% deposit — Job total R200"` @ R100)
-- Keep the line items the user entered stashed in `notes` or a new `parent_total` column so the balance invoice can be built later. Simplest path: store the original full-job items in the deposit invoice's `notes` JSON or add a `job_total` numeric column to `invoices`.
+Apply the same treatment to Quotes and Credit Notes status filters for consistency.
 
-Recommended: add a `job_total` column on `invoices` (nullable numeric). For deposit invoices, this holds the original full-job total. Standard invoices leave it null.
+### c) Live preview disappears around 1257px viewport
+`CreateInvoice.tsx` hides the preview with `hidden xl:block` (xl = 1280px). Because `AppLayout` also caps content at `max-w-6xl` (1152px), the preview only appears on very wide screens — and on the user's 1257px viewport it's gone.
 
-### 2. Update balance auto-creation logic
+**Fix:**
+- Lower the breakpoint to `lg:block` (1024px) so the preview appears whenever there is enough room.
+- Remove the `max-w-6xl` cap on the invoice/quote create+edit pages (let those pages use full width — they have a 2-column layout that needs room). Other pages keep the cap.
+- Tighten the form column widths so the right preview pane gets ~360px, and make the preview pane itself slightly narrower text but proportionally readable.
 
-In `InvoiceView.tsx` `recalculateAndUpdateStatus`, when the deposit invoice is fully paid:
-- Balance amount = `job_total − deposit invoice total` (which is exactly the remainder, e.g. R200 − R100 = R100)
-- Create the balance invoice for that amount (already works, just sourcing the number differently)
+### d) Line item description gets cut off in the preview
+`InvoiceLivePreview.tsx` uses `truncate max-w-[120px]` on the item description and a fixed `w-44` totals column.
 
-### 3. Update the deposit settings UI in CreateInvoice
+**Fix:**
+- Remove the hard `max-w-[120px]` and let description wrap to 2 lines with `line-clamp-2` and `break-words`.
+- Drop the `font-mono` on numbers in the preview to a tabular-nums approach (`tabular-nums`) so numbers still align without looking technical.
+- Loosen the totals column to `w-48` and right-align with `tabular-nums`.
+- Increase preview base font from `text-[11px]` to `text-xs` (12px) — still compact but readable.
 
-The "Deposit Settings" preview already shows Deposit / Balance breakdown — keep it, but make it crystal clear:
-> "This invoice will be created for **R100** (the deposit). When paid, a separate balance invoice for **R100** will be auto-generated."
+---
 
-### 4. Update the deposit banner on InvoiceView
+## 2. App-wide polish sweep (high-impact, low-risk)
 
-Currently says: "💰 Deposit Invoice — 50% of total". Change to:
-> "💰 Deposit Invoice — R100 (50% of R200 job). Balance invoice will be created when paid."
+Group these into a single pass so everything feels consistent.
 
-### 5. Backfill / migration handling
+### Layout & density
+- **Page container width:** Bump `AppLayout`'s `max-w-6xl` to `max-w-7xl` so dashboards/tables breathe on 13"+ screens, and let create/edit pages opt out (full width).
+- **Consistent page header pattern:** Title + subtitle + actions right-aligned, with a thin divider below. Audit Overview, Invoices, Customers, Products, Quotes, Reports, Settings to use the same spacing rhythm (mb-6, gap-3).
+- **Card padding:** Standardize all `rounded-lg border bg-card` cards to `p-5` (currently a mix of `p-4`, `p-5`, `p-6`).
 
-For your existing INV-00005 (the broken one):
-- Option A: Delete it and recreate (cleanest, since it's a draft/sent test)
-- Option B: One-off SQL to fix that specific record
+### Sidebar
+- Add the styled scrollbar (above).
+- Active-item indicator: replace the `-ml-[2px]` left border hack with a clean `before:` pseudo-bar that doesn't shift content.
+- Add a subtle hover background transition (150ms) so navigation feels more responsive.
+- Group labels (Sales, Manage) get a touch more letter-spacing and a hairline divider above.
 
-I'd recommend Option A since you're testing — just void/delete INV-00005 and create a fresh one with the new logic.
+### Forms (Create/Edit Invoice, Quote, Credit Note)
+- **Sticky action bar:** The "Cancel / Save Draft / Save & Send" buttons should stick to the top header on scroll for long forms.
+- **Inline validation:** Mark required fields with a red dot, surface errors under the field instead of toast-only.
+- **Better empty states:** When no line items are added yet, show a soft empty-state row with "Add your first item" instead of just an Add button.
+- **Date pickers:** Audit `InvoiceDatePicker` for keyboard accessibility and ensure the popover doesn't get clipped.
 
-### 6. Files affected
+### Tables (Invoices, Quotes, Customers, Products, Credit Notes)
+- **Row hover:** Subtle `hover:bg-muted/40` instead of the current accent.
+- **Sticky headers** when the table is taller than viewport.
+- **Empty-state illustrations:** Replace plain "No invoices found" with a friendly icon + CTA ("Create your first invoice").
+- **Mobile cards:** On `< sm`, switch tables to stacked cards (already done in some places, audit for consistency).
 
-- `supabase` migration: add `job_total numeric` column to `invoices`
-- `src/types/invoice.ts`: add `jobTotal?: number` to `Invoice` type
-- `src/hooks/useInvoiceStore.ts`: map the new column
-- `src/pages/CreateInvoice.tsx`: build deposit invoice with deposit-only line item + store `jobTotal`
-- `src/pages/InvoiceView.tsx`: balance creation reads `jobTotal`; deposit banner copy updated
-- `src/components/invoice/InvoiceDocument.tsx`: optional — show "Deposit (50% of R200)" label on the printable PDF
+### Buttons & focus
+- All interactive elements get a consistent focus ring (`focus-visible:ring-2 ring-ring ring-offset-2`).
+- Primary buttons get a subtle hover lift (translate-y-[-1px] + shadow).
+- Loading states on every async button (spinner + disabled).
 
-## Result
+### Typography
+- Standardize headings to a clear scale: `text-2xl font-semibold` (page), `text-lg font-medium` (section), `text-xs uppercase tracking-wider text-muted-foreground` (labels).
+- Use `tabular-nums` on every monetary figure across the app for clean column alignment.
 
-After the fix:
-- Create R200 job, 50% deposit → **INV-0005 created for R100**
-- Pay R100 → **INV-0005 marked Paid** ✅
-- **INV-0006 auto-created for R100** (the balance)
-- Pay R100 on INV-0006 → **Paid** ✅
+### Micro-delight
+- Subtle entry animations on cards (already partially there with `stagger-*` — apply to Invoices/Quotes lists).
+- Toast styling: align toast border with status color (success green, error red, info blue) — currently all neutral.
+- Command palette (Cmd+K): add a small "tip" footer showing keyboard shortcuts.
 
-No more phantom outstanding balance. Matches what Xero/QuickBooks do.
+---
+
+## Technical details
+
+**Files touched (approximate):**
+- `src/index.css` — add `.scrollbar-subtle` utility, focus-ring refinements, tabular-nums helper.
+- `src/components/AppLayout.tsx` — apply scrollbar utility, clean active indicator, bump container max-width, allow per-page opt-out.
+- `src/components/invoice/InvoiceLivePreview.tsx` — break-words description, larger base font, tabular-nums.
+- `src/pages/Invoices.tsx`, `src/pages/Quotes.tsx`, `src/pages/CreditNotes.tsx` — replace pill scroller with tab + overflow dropdown filter; sticky table header; row-hover polish; empty states.
+- `src/pages/CreateInvoice.tsx`, `src/pages/EditInvoice.tsx`, `src/pages/CreateQuote.tsx`, `src/pages/EditQuote.tsx` — `lg:block` for preview, full-width opt-out, sticky action bar, inline validation hints.
+- `src/components/invoice/InvoiceLineItems.tsx` — empty-state row.
+- Smaller tweaks across `src/pages/Overview.tsx`, `src/pages/Customers.tsx`, `src/pages/Products.tsx`, `src/pages/Reports.tsx` for spacing/typography consistency.
+
+**No DB / backend changes.** No migrations. Pure UI work.
+
+**Suggested order of execution:**
+1. CSS utilities + sidebar scrollbar (foundational).
+2. Status filter component refactor.
+3. Live preview restoration + line-item layout fix.
+4. App-wide spacing/typography pass.
+5. Polish details (sticky bars, empty states, toast colors).
+
+---
+
+## Out of scope (call out separately if you want them)
+- New features (e.g. dashboard widgets, new reports).
+- Theme palette changes — keeping current Ocean/Slate/Forest themes as-is.
+- Mobile-only redesigns beyond the table-to-card pattern already in place.
