@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useInvoices } from '@/hooks/useInvoiceStore';
@@ -8,12 +8,34 @@ import { useCompanies } from '@/hooks/useInvoiceStore';
 import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { FileText } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function CustomerStatements() {
   const { customers } = useCustomers();
   const { invoices } = useInvoices();
   const { getCompany } = useCompanies();
   const { creditNotes } = useCreditNotes();
+  const [paymentsByInvoice, setPaymentsByInvoice] = useState<Record<string, number>>({});
+
+  // Fetch payments for the currently visible invoices and aggregate per invoice
+  useEffect(() => {
+    const ids = invoices.map(i => i.id);
+    if (ids.length === 0) { setPaymentsByInvoice({}); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('payments')
+        .select('invoice_id, amount')
+        .in('invoice_id', ids);
+      if (cancelled) return;
+      const map: Record<string, number> = {};
+      (data || []).forEach(p => {
+        map[p.invoice_id] = (map[p.invoice_id] || 0) + Number(p.amount);
+      });
+      setPaymentsByInvoice(map);
+    })();
+    return () => { cancelled = true; };
+  }, [invoices]);
 
   const customerBalances = useMemo(() => {
     return customers.map(c => {
@@ -28,13 +50,14 @@ export default function CustomerStatements() {
         const cnCompany = cn.companyId ? getCompany(cn.companyId) : undefined;
         return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCompany?.pricingMode || 'exclusive', cnCompany?.isVatRegistered ?? false).total;
       }, 0);
-      const balance = invoiceTotal - creditTotal;
+      const paymentsTotal = custInvoices.reduce((sum, i) => sum + (paymentsByInvoice[i.id] || 0), 0);
+      const balance = invoiceTotal - paymentsTotal - creditTotal;
       const currency = (custInvoices[0]?.currency || 'ZAR') as Currency;
       const invoiceCount = custInvoices.length;
 
       return { ...c, balance, currency, invoiceCount };
     }).filter(c => c.invoiceCount > 0);
-  }, [customers, invoices, creditNotes]);
+  }, [customers, invoices, creditNotes, paymentsByInvoice, getCompany]);
 
   return (
     <AppLayout>
