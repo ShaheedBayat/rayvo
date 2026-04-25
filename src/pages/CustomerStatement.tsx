@@ -4,24 +4,14 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useCompanies } from '@/hooks/useInvoiceStore';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
-import type { Currency, InvoiceItem } from '@/types/invoice';
+import { formatCurrency } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
-import { countsAsStatementCredit, normalizeStatementName } from '@/lib/customerStatement';
+import { buildCustomerStatement, normalizeStatementName } from '@/lib/customerStatement';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Download, AlertTriangle, Loader2 } from 'lucide-react';
-
-interface StatementEntry {
-  date: string;
-  ref: string;
-  type: 'Invoice' | 'Payment' | 'Credit Note';
-  amount: number; // positive = adds to balance, negative = reduces
-  currency: Currency;
-  sortAt: string;
-}
 
 export default function CustomerStatement() {
   const { id } = useParams<{ id: string }>();
@@ -50,9 +40,6 @@ export default function CustomerStatement() {
     if (!user || !customer) { setLoading(false); return; }
     setLoading(true);
 
-    const fromDate = dateFrom;
-    const toDate = dateTo + 'T23:59:59';
-
     // Look up the customer's company_id to scope the statement correctly
     // (the same client name can exist in multiple companies)
     const { data: customerRow } = await supabase
@@ -71,8 +58,6 @@ export default function CustomerStatement() {
       .is('deleted_at', null)
       .neq('status', 'voided')
       .neq('status', 'draft')
-      .gte('created_at', fromDate)
-      .lte('created_at', toDate)
       .order('created_at', { ascending: true });
     if (customerCompanyId) {
       invoicesQuery = invoicesQuery.eq('company_id', customerCompanyId);
@@ -97,8 +82,6 @@ export default function CustomerStatement() {
         .from('payments')
         .select('id, invoice_id, amount, payment_date, reference, created_at')
         .in('invoice_id', invoiceIds)
-        .gte('payment_date', fromDate)
-        .lte('payment_date', toDate)
         .order('payment_date', { ascending: true });
       setDbPayments(payments || []);
     } else {
@@ -112,8 +95,6 @@ export default function CustomerStatement() {
       .ilike('client_name', customer.name.trim())
       .is('deleted_at', null)
       .neq('status', 'draft')
-      .gte('created_at', fromDate)
-      .lte('created_at', toDate)
       .order('created_at', { ascending: true });
     if (customerCompanyId) {
       creditNotesQuery = creditNotesQuery.eq('company_id', customerCompanyId);
@@ -122,9 +103,7 @@ export default function CustomerStatement() {
     }
     const { data: creditNotes } = await creditNotesQuery;
     setDbCreditNotes(
-      (creditNotes || [])
-        .filter(cn => normalizeStatementName(cn.client_name) === targetName && cn.company_id === customerCompanyId)
-        .filter(cn => countsAsStatementCredit(cn, creditNotes || []))
+      (creditNotes || []).filter(cn => normalizeStatementName(cn.client_name) === targetName && cn.company_id === customerCompanyId)
     );
 
     setLoading(false);
@@ -134,74 +113,21 @@ export default function CustomerStatement() {
   useEffect(() => { fetchAllData(); }, [fetchAllData]);
 
   /** Build statement entries from raw DB data — compute totals from line items */
-  const { entries, totalInvoices, totalPayments, totalCredits } = useMemo(() => {
-    const items: StatementEntry[] = [];
-    let sumInvoices = 0;
-    let sumPayments = 0;
-    let sumCredits = 0;
+  const statement = useMemo(() => buildCustomerStatement({
+    customerName: customer?.name || '',
+    companyId: customer?.companyId || null,
+    invoices: dbInvoices,
+    payments: dbPayments,
+    creditNotes: dbCreditNotes,
+    getCompany,
+    dateFrom,
+    dateTo,
+  }), [customer, dbInvoices, dbPayments, dbCreditNotes, getCompany, dateFrom, dateTo]);
 
-    // Invoices: compute total from line items + tax
-    dbInvoices.forEach(inv => {
-      const co = getCompany(inv.company_id);
-      const lineItems = ((inv.items as unknown) as InvoiceItem[]) || [];
-      const computed = calculateSmartTotals(lineItems, Number(inv.tax_rate), co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false);
-      sumInvoices += computed.total;
-      items.push({
-        date: inv.created_at,
-        ref: inv.invoice_number,
-        type: 'Invoice',
-        amount: computed.total,
-        currency: inv.currency as Currency,
-        sortAt: inv.created_at,
-      });
-    });
-
-    // Payments: use raw amount from DB
-    dbPayments.forEach(p => {
-      const inv = dbInvoices.find(i => i.id === p.invoice_id);
-      const amount = Number(p.amount);
-      sumPayments += amount;
-      items.push({
-        date: p.payment_date,
-        ref: p.reference || `Payment (${inv?.invoice_number || 'N/A'})`,
-        type: 'Payment',
-        amount: -amount,
-        currency: (inv?.currency as Currency) || 'ZAR',
-        sortAt: p.created_at || p.payment_date,
-      });
-    });
-
-    // Credit notes: compute total from line items + tax
-    dbCreditNotes.forEach(cn => {
-      const co = cn.company_id ? getCompany(cn.company_id) : undefined;
-      const lineItems = ((cn.items as unknown) as InvoiceItem[]) || [];
-      const computed = calculateSmartTotals(lineItems, Number(cn.tax_rate), co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false);
-      sumCredits += computed.total;
-      items.push({
-        date: cn.created_at,
-        ref: cn.credit_note_number,
-        type: 'Credit Note',
-        amount: -computed.total,
-        currency: cn.currency as Currency,
-        sortAt: cn.created_at,
-      });
-    });
-
-    // Sort chronologically
-    items.sort((a, b) => new Date(a.sortAt).getTime() - new Date(b.sortAt).getTime());
-
-    return { entries: items, totalInvoices: sumInvoices, totalPayments: sumPayments, totalCredits: sumCredits };
-  }, [dbInvoices, dbPayments, dbCreditNotes, getCompany]);
+  const { entries, runningBalances, totalInvoices, totalPayments, totalCredits } = statement;
 
   /** Validate: running balance must equal independent calculation */
   const expectedBalance = totalInvoices - totalPayments - totalCredits;
-  const runningBalances = useMemo(() => {
-    let balance = 0;
-    return entries.map(e => {
-      balance += e.amount;
-      return balance;
-    });
-  }, [entries]);
   const finalRunningBalance = runningBalances.length > 0 ? runningBalances[runningBalances.length - 1] : 0;
 
   // Mismatch detection — compare with tolerance
