@@ -66,6 +66,11 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   const fetchCompanies = useCallback(async () => {
     if (!user) { setCompanies([]); setLoading(false); return; }
 
+    // Mark as loading at the START of the fetch so dataReady doesn't flash
+    // true between user-change and fetch-completion (which previously caused
+    // a brief redirect to /onboarding right after sign-in).
+    setLoading(true);
+
     const emailIsSuperuser = SUPERUSER_EMAILS.includes(user.email?.toLowerCase() || '');
     setIsSuperAdmin(emailIsSuperuser);
 

@@ -51,7 +51,7 @@ export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const permissions = usePermissions();
-  const { getInvoice, updateInvoice, softDeleteInvoice, voidInvoice, addInvoice, invoices } = useInvoices();
+  const { getInvoice, updateInvoice, softDeleteInvoice, voidInvoice, addInvoice, invoices, loading: invoicesLoading } = useInvoices();
   const { getCompany } = useCompanies();
   const { settings } = useGlobalSettings();
   const { payments, addPayment, deletePayment, totalPaid } = usePayments(id);
@@ -137,6 +137,21 @@ export default function InvoiceView() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoice?.id, invoice?.status, settings]);
+
+  // While invoices are still loading, show a skeleton instead of the
+  // "Invoice not found" message — otherwise users see a flash of the
+  // not-found state on first render before the data arrives.
+  if (invoicesLoading) {
+    return (
+      <AppLayout>
+        <div className="space-y-4 animate-pulse">
+          <div className="h-8 w-40 rounded bg-muted/60" />
+          <div className="h-32 rounded-xl bg-muted/40" />
+          <div className="h-64 rounded-xl bg-muted/40" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!invoice) {
     return (

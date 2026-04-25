@@ -32,7 +32,7 @@ export default function EditInvoice() {
   const location = useLocation();
   const lateFeeState = (location.state as any)?.addLateFee;
   const permissions = usePermissions();
-  const { getInvoice, updateInvoice } = useInvoices();
+  const { getInvoice, updateInvoice, loading: invoicesLoading } = useInvoices();
   const { logActivity } = useActivityLog();
   const { activeCompany } = useActiveCompany();
   const { customers } = useCustomers();
@@ -89,6 +89,17 @@ export default function EditInvoice() {
       setLoaded(true);
     }
   }, [invoice, loaded, lateFeeState]);
+
+  if (invoicesLoading) {
+    return (
+      <AppLayout>
+        <div className="space-y-4 animate-pulse">
+          <div className="h-8 w-40 rounded bg-muted/60" />
+          <div className="h-64 rounded-xl bg-muted/40" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!invoice) {
     return (
