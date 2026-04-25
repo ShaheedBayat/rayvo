@@ -86,9 +86,9 @@ function NavItem({ to, label, icon: Icon, active, collapsed, badge, children, on
       to={to}
       onClick={onNavigate}
       title={collapsed ? label : undefined}
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-premium ${
         active
-          ? 'bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-sidebar-primary -ml-[2px]'
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-full before:bg-sidebar-primary before:content-[""]'
           : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
       }`}
     >
@@ -232,7 +232,7 @@ export default function AppLayout({ children, fullWidth = false }: { children: R
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside
-        className={`sticky top-0 h-screen hidden md:flex flex-col border-r border-border/50 bg-sidebar transition-all duration-200 ${
+        className={`sticky top-0 h-screen hidden md:flex flex-col border-r border-border/50 bg-sidebar transition-[width] duration-300 ease-premium ${
           collapsed ? 'w-16' : 'w-60'
         }`}
       >
@@ -354,8 +354,16 @@ export default function AppLayout({ children, fullWidth = false }: { children: R
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-4 md:px-8 py-6 md:py-10 animate-fade-in">
-          <div className={fullWidth ? 'mx-auto w-full' : 'mx-auto max-w-7xl'}>{children}</div>
+        <main className="flex-1 px-4 md:px-8 py-6 md:py-10">
+          {/* Re-key on route change so every navigation triggers a refined
+              fade-in-up. Feels intentional and gives the app a polished,
+              app-like cadence between pages. */}
+          <div
+            key={location.pathname}
+            className={`${fullWidth ? 'mx-auto w-full' : 'mx-auto max-w-7xl'} animate-fade-in-up`}
+          >
+            {children}
+          </div>
         </main>
       </div>
     </div>

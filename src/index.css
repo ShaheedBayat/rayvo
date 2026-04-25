@@ -432,12 +432,103 @@
     border-radius: var(--theme-card-radius, 0.5rem);
   }
 
-  .stagger-1 { animation: fade-in 0.4s ease-out 0ms both; }
-  .stagger-2 { animation: fade-in 0.4s ease-out 80ms both; }
-  .stagger-3 { animation: fade-in 0.4s ease-out 160ms both; }
-  .stagger-4 { animation: fade-in 0.4s ease-out 240ms both; }
-  .stagger-5 { animation: fade-in 0.4s ease-out 320ms both; }
-  .stagger-6 { animation: fade-in 0.4s ease-out 400ms both; }
+  /* Stagger system — uses the premium easing from tailwind config so child
+     elements ease in with a refined, intentional cadence. The keyframe matches
+     the new fade-in-up animation. */
+  .stagger-1 { animation: fade-in-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0ms both; }
+  .stagger-2 { animation: fade-in-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 60ms both; }
+  .stagger-3 { animation: fade-in-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 120ms both; }
+  .stagger-4 { animation: fade-in-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 180ms both; }
+  .stagger-5 { animation: fade-in-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 240ms both; }
+  .stagger-6 { animation: fade-in-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 300ms both; }
+  .stagger-7 { animation: fade-in-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 360ms both; }
+  .stagger-8 { animation: fade-in-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) 420ms both; }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Subtle hover lift for interactive cards */
+  .hover-lift {
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -8px hsl(var(--foreground) / 0.12),
+                0 2px 6px -2px hsl(var(--foreground) / 0.06);
+  }
+
+  /* Press affordance — buttons feel tactile */
+  .press {
+    transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  /* Animated underline link */
+  .link-animated {
+    position: relative;
+    display: inline-block;
+  }
+  .link-animated::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .link-animated:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  /* Skeleton shimmer */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted) / 0.4) 0%,
+      hsl(var(--muted) / 0.7) 50%,
+      hsl(var(--muted) / 0.4) 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+
+  /* Smooth, intentional defaults for common interactive elements.
+     Uses the same premium easing as the keyframes so the whole app feels
+     consistent. Scoped to the elements that benefit most — we don't apply
+     `transition: all` globally because that hurts perf and bleeds into
+     things that shouldn't animate. */
+  button, a, [role="button"], [role="tab"], [role="menuitem"] {
+    transition-property: color, background-color, border-color, box-shadow,
+                         transform, opacity;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    transition-duration: 180ms;
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 
   .scrollbar-hide {
     -ms-overflow-style: none;
