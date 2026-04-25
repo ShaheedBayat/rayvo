@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
 import type { Currency, InvoiceItem } from '@/types/invoice';
 import { formatDate } from '@/lib/formatDate';
+import { countsAsStatementCredit, normalizeStatementName } from '@/lib/customerStatement';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,17 +20,8 @@ interface StatementEntry {
   type: 'Invoice' | 'Payment' | 'Credit Note';
   amount: number; // positive = adds to balance, negative = reduces
   currency: Currency;
+  sortAt: string;
 }
-
-const countsAsStatementCredit = (creditNote: { status?: string; notes?: string }) => {
-  const notes = (creditNote.notes || '').toLowerCase();
-  return creditNote.status !== 'draft' &&
-    !notes.includes('auto-generated from overpayment') &&
-    !notes.startsWith('applied from credit note');
-};
-
-const normalizeName = (s: string | undefined | null) =>
-  (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 export default function CustomerStatement() {
   const { id } = useParams<{ id: string }>();
@@ -90,9 +82,9 @@ export default function CustomerStatement() {
     const { data: invoices } = await invoicesQuery;
 
     // Defensive client-side filter: normalize names + enforce company match
-    const targetName = normalizeName(customer.name);
+    const targetName = normalizeStatementName(customer.name);
     const safeInvoices = (invoices || []).filter(i =>
-      normalizeName(i.client_name) === targetName &&
+      normalizeStatementName(i.client_name) === targetName &&
       i.company_id === customerCompanyId
     );
     setDbInvoices(safeInvoices);
@@ -103,7 +95,7 @@ export default function CustomerStatement() {
     if (invoiceIds.length > 0) {
       const { data: payments } = await supabase
         .from('payments')
-        .select('id, invoice_id, amount, payment_date, reference')
+        .select('id, invoice_id, amount, payment_date, reference, created_at')
         .in('invoice_id', invoiceIds)
         .gte('payment_date', fromDate)
         .lte('payment_date', toDate)
@@ -131,8 +123,8 @@ export default function CustomerStatement() {
     const { data: creditNotes } = await creditNotesQuery;
     setDbCreditNotes(
       (creditNotes || [])
-        .filter(cn => normalizeName(cn.client_name) === targetName && cn.company_id === customerCompanyId)
-        .filter(countsAsStatementCredit)
+        .filter(cn => normalizeStatementName(cn.client_name) === targetName && cn.company_id === customerCompanyId)
+        .filter(cn => countsAsStatementCredit(cn, creditNotes || []))
     );
 
     setLoading(false);
@@ -160,6 +152,7 @@ export default function CustomerStatement() {
         type: 'Invoice',
         amount: computed.total,
         currency: inv.currency as Currency,
+        sortAt: inv.created_at,
       });
     });
 
@@ -174,6 +167,7 @@ export default function CustomerStatement() {
         type: 'Payment',
         amount: -amount,
         currency: (inv?.currency as Currency) || 'ZAR',
+        sortAt: p.created_at || p.payment_date,
       });
     });
 
@@ -189,11 +183,12 @@ export default function CustomerStatement() {
         type: 'Credit Note',
         amount: -computed.total,
         currency: cn.currency as Currency,
+        sortAt: cn.created_at,
       });
     });
 
     // Sort chronologically
-    items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    items.sort((a, b) => new Date(a.sortAt).getTime() - new Date(b.sortAt).getTime());
 
     return { entries: items, totalInvoices: sumInvoices, totalPayments: sumPayments, totalCredits: sumCredits };
   }, [dbInvoices, dbPayments, dbCreditNotes, getCompany]);
