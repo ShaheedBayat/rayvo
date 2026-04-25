@@ -15,7 +15,7 @@ export interface CustomerContact {
 
 export interface Customer {
   id: string;
-  companyId: string;
+  companyId?: string;
   type: 'individual' | 'company';
   name: string;
   email: string;
