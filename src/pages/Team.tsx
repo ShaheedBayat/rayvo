@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Users, Trash2, Mail, Plus, Send, RefreshCw, ChevronRight, ChevronDown, Shield, Clock } from 'lucide-react';
+import { Users, Trash2, Mail, Plus, Send, RefreshCw, ChevronRight, ChevronDown, Shield, Clock, ShieldOff, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -29,6 +29,12 @@ const ownerBadgeStyle: React.CSSProperties = {
   background: 'hsl(192 75% 36% / 0.08)',
   color: 'hsl(192 75% 28%)',
   border: '1px solid hsl(192 75% 36% / 0.2)',
+};
+
+const blockedBadgeStyle: React.CSSProperties = {
+  background: 'hsl(0 84% 50% / 0.1)',
+  color: 'hsl(0 72% 42%)',
+  border: '1px solid hsl(0 84% 50% / 0.25)',
 };
 
 const badgeBase: React.CSSProperties = { fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', textTransform: 'capitalize' as const };
@@ -253,7 +259,7 @@ function isInviteExpired(invite: { expiresAt: string | null; status: string }) {
 export default function Team() {
   const { user } = useAuth();
   const permissions = usePermissions();
-  const { members, invites, loading, sendInvite, revokeInvite, resendInvite, updateMemberRole, removeMember } = useTeam();
+  const { members, invites, loading, sendInvite, revokeInvite, resendInvite, updateMemberRole, removeMember, unblockMember } = useTeam();
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('staff');
   const [matrixOpen, setMatrixOpen] = useState(false);
@@ -291,6 +297,12 @@ export default function Team() {
     const ok = await removeMember(userId);
     if (ok) toast.success(`${name} removed from team`);
     else toast.error('Failed to remove member');
+  };
+
+  const handleUnblock = async (userId: string, name: string) => {
+    const ok = await unblockMember(userId);
+    if (ok) toast.success(`${name} has been unblocked`);
+    else toast.error('Failed to unblock — only Super Admins or Company Admins can unblock users.');
   };
 
   const handleRevoke = async (id: string) => {
@@ -374,14 +386,54 @@ export default function Team() {
                                 <span style={{ ...ownerBadgeStyle, ...badgeBase }}>Owner</span>
                               </>
                             )}
+                            {m.isBlocked && (
+                              <span
+                                style={{ ...blockedBadgeStyle, ...badgeBase }}
+                                className="inline-flex items-center gap-1"
+                                title={m.blockedReason || 'Account blocked'}
+                              >
+                                <Ban className="h-3 w-3" />
+                                Blocked
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs text-muted-foreground">Joined {formatDate(m.createdAt)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {m.isBlocked && m.blockedReason
+                              ? m.blockedReason
+                              : `Joined ${formatDate(m.createdAt)}`}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2.5 shrink-0" onClick={e => e.stopPropagation()}>
                         <span style={{ ...roleBadgeStyle(m.role), ...badgeBase }}>{m.role}</span>
                         {!isCurrentUser && (
                           <>
+                            {m.isBlocked && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                                    <ShieldOff className="h-3.5 w-3.5" />
+                                    Unblock
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Unblock {m.displayName}?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {m.blockedReason || 'This user is currently blocked from deleting invoices.'}
+                                      <br /><br />
+                                      Unblocking will restore full access. They will be re-blocked automatically if they delete 3+ invoices within 5 minutes.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleUnblock(m.userId, m.displayName)}>
+                                      Unblock
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                             <Select value={m.role} onValueChange={(val) => handleRoleChange(m.userId, val)}>
                               <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
