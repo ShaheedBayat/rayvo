@@ -102,6 +102,7 @@ export function useQuotes() {
       status: q.status,
       notes: q.notes,
       valid_until: q.validUntil,
+      converted_invoice_id: q.convertedInvoiceId ?? null,
     }).eq('id', q.id);
     if (!error) setQuotes(prev => prev.map(c => c.id === q.id ? q : c));
   }, []);
