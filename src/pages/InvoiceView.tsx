@@ -465,14 +465,10 @@ export default function InvoiceView() {
     // Refetch credit notes from DB
     const { data: dbCreditNotes } = await supabase
       .from('credit_notes')
-      .select('items, tax_rate')
+      .select('items, tax_rate, status, notes')
       .eq('invoice_id', invoice.id)
       .is('deleted_at', null);
-    const dbTotalCredits = (dbCreditNotes || []).reduce((sum, cn) => {
-      const cnItems = ((cn.items as unknown) as InvoiceItem[]) || [];
-      const cnCo = company;
-      return sum + calculateSmartTotals(cnItems, Number(cn.tax_rate), cnCo?.pricingMode || 'exclusive', cnCo?.isVatRegistered ?? false).total;
-    }, 0);
+    const dbTotalCredits = calculateInvoiceCredits(dbCreditNotes || [], company);
 
     const remaining = invoiceTotal - dbTotalPaid - dbTotalCredits;
 
