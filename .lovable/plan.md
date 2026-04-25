@@ -1,153 +1,66 @@
+## The problem
 
+You paid R100 against a 50% deposit invoice on a R200 job — but the invoice still says R100 outstanding. That's because the system is currently storing the **full R200** on the deposit invoice and only treating the 50% as metadata. So to the system, your invoice is for R200, you've paid R100, and R100 is still owed on it.
 
-# UI/UX Audit — Senior Product Design Assessment
+## What industry standard does (Xero, QuickBooks, FreshBooks)
 
-## Overall Impression
-The app has a solid functional foundation but feels like a **2023-era MVP** rather than a premium 2027 SaaS product. The bones are good — the sidebar layout, color theming, and data structure are all competent. But the details, interactions, and visual refinement are where it falls short.
+A **deposit invoice is its own invoice for the deposit amount only**. They're two standalone documents that happen to be linked:
 
----
+- **INV-00005 (Deposit)** — Total: R100, Due: R100. Customer pays R100 → marked **Paid** ✅
+- **INV-00006 (Balance)** — auto-created for the remaining R100. Customer pays R100 → marked **Paid** ✅
 
-## 1. SIDEBAR NAVIGATION
+Together they cover the R200 job. Each invoice's total = what's actually owed on that document. No phantom outstanding balances.
 
-**Issues:**
-- The sidebar is visually flat — nav items are plain text links with no visual grouping beyond the "SALES" / "MANAGE" labels
-- The "Invoices" submenu (Draft, Awaiting Payment, Paid, Overdue, Recurring Invoices) creates excessive clutter — these are filters, not pages. They belong as tabs/filters on the Invoices list page, not as sidebar navigation items
-- No badge counts on nav items (e.g., "3 overdue", "2 drafts") — a missed opportunity for at-a-glance awareness
-- The collapse button (<<) at the bottom feels disconnected
-- Active state is just a filled background — no left border accent or icon highlight
-- "Products & Services" is too long for a nav label; should be "Products" or "Catalog"
+## Plan
 
-**What premium looks like:** Collapsible icon-only mode with tooltips, badge counters, subtle hover animations, grouped sections with collapsible headers
+### 1. Change deposit invoice to store the deposit amount only
 
----
+In `CreateInvoice.tsx`, when "Deposit" is toggled on:
+- Calculate the deposit amount (% of job OR fixed) once at creation
+- Save the invoice with **a single line item for the deposit amount** (e.g. `"50% deposit — Job total R200"` @ R100)
+- Keep the line items the user entered stashed in `notes` or a new `parent_total` column so the balance invoice can be built later. Simplest path: store the original full-job items in the deposit invoice's `notes` JSON or add a `job_total` numeric column to `invoices`.
 
-## 2. OVERVIEW / DASHBOARD PAGE
+Recommended: add a `job_total` column on `invoices` (nullable numeric). For deposit invoices, this holds the original full-job total. Standard invoices leave it null.
 
-**Issues:**
-- The status cards (Draft, Awaiting Payment, Overdue, Paid, Total) use colored left borders that look dated — feels like Bootstrap 3
-- The monospace font (`JetBrains Mono`) on the financial summary cards (Outstanding R0.00, Received R1,000.00) feels jarring and out of place for a SaaS dashboard. Monospace should be reserved for invoice numbers and codes, not for currency displays
-- "Recent Invoices" section is a single flat row — no hover state, no visual hierarchy
-- "Customers Owing Most" shows "No outstanding balances" with no visual treatment — just plain text centered in a card
-- No date range selector or time period filter for the overview data
-- No sparklines or mini-charts in the summary cards
-- No "welcome back" or contextual greeting
-- The page feels static — no sense of real-time or freshness
+### 2. Update balance auto-creation logic
 
-**What premium looks like:** Animated counters, sparkline trends in cards, interactive date range picker, activity feed with timestamps, revenue trend chart
+In `InvoiceView.tsx` `recalculateAndUpdateStatus`, when the deposit invoice is fully paid:
+- Balance amount = `job_total − deposit invoice total` (which is exactly the remainder, e.g. R200 − R100 = R100)
+- Create the balance invoice for that amount (already works, just sourcing the number differently)
 
----
+### 3. Update the deposit settings UI in CreateInvoice
 
-## 3. INVOICES LIST PAGE
+The "Deposit Settings" preview already shows Deposit / Balance breakdown — keep it, but make it crystal clear:
+> "This invoice will be created for **R100** (the deposit). When paid, a separate balance invoice for **R100** will be auto-generated."
 
-**Issues:**
-- The filter pills (All, Draft, Awaiting Approval, etc.) overflow horizontally without any scroll indicator or wrapping — "Deleted" is barely visible
-- Too many filter states visible at once (9 pills) — should be a dropdown or collapsible
-- The table is plain with no row hover effects visible
-- The "..." menu only shows "View" — for a paid invoice this makes sense, but for draft invoices it should show Edit, Delete, Duplicate, etc.
-- Invoice number uses monospace which is good, but the date below it creates an odd two-line cell
-- No bulk actions (select multiple, bulk delete, bulk send)
-- No sort indicators on column headers
-- The "All Invoices" / "Recurring" tabs feel disconnected from the filter pills below
+### 4. Update the deposit banner on InvoiceView
 
-**What premium looks like:** Sortable columns with indicators, row hover with quick-action buttons, bulk selection checkboxes, inline status change, condensed/comfortable view toggle
+Currently says: "💰 Deposit Invoice — 50% of total". Change to:
+> "💰 Deposit Invoice — R100 (50% of R200 job). Balance invoice will be created when paid."
 
----
+### 5. Backfill / migration handling
 
-## 4. CREATE INVOICE PAGE
+For your existing INV-00005 (the broken one):
+- Option A: Delete it and recreate (cleanest, since it's a draft/sent test)
+- Option B: One-off SQL to fix that specific record
 
-**Issues:**
-- The "Recurring" and "Deposit" toggles at the top feel like afterthoughts — they're just floating switches next to the title
-- The two-column layout (Invoice Details + Bill To) is functional but the sections have no visual breathing room
-- "INVOICE DETAILS" and "BILL TO" and "LINE ITEMS" use uppercase tracking that looks like 2018 form design
-- The "Auto-generated on save" placeholder in Invoice Number is helpful but the grayed-out input looks disabled/broken
-- Payment Terms dropdown is truncated ("Sele...") — the select component is too narrow
-- The date input uses the native browser date picker which looks inconsistent across browsers
-- Currency selector is separate from the amount display — should be integrated
-- Line items table header ("DESCRIPTION QTY UNIT PRICE DISCOUNT AMOUNT") is cramped
-- No live preview of the invoice while editing
-- "Save as Draft" is the only primary action — should also show "Save & Send" prominently
+I'd recommend Option A since you're testing — just void/delete INV-00005 and create a fresh one with the new logic.
 
-**What premium looks like:** Split-pane with live invoice preview, inline product search with images, drag-to-reorder line items, auto-save indicator, step-based or wizard flow for first-time users
+### 6. Files affected
 
----
+- `supabase` migration: add `job_total numeric` column to `invoices`
+- `src/types/invoice.ts`: add `jobTotal?: number` to `Invoice` type
+- `src/hooks/useInvoiceStore.ts`: map the new column
+- `src/pages/CreateInvoice.tsx`: build deposit invoice with deposit-only line item + store `jobTotal`
+- `src/pages/InvoiceView.tsx`: balance creation reads `jobTotal`; deposit banner copy updated
+- `src/components/invoice/InvoiceDocument.tsx`: optional — show "Deposit (50% of R200)" label on the printable PDF
 
-## 5. INVOICE VIEW PAGE
+## Result
 
-**Issues:**
-- The action buttons (Email, Share, PDF, ...) are all on one line and compete for attention
-- The "Paid in Full" banner is green but uses the same rounded style as everything else — should feel more celebratory or final
-- The info cards (Customer, Issue Date, Due Date, Amount Due) use a dashed/light border that looks fragile
-- The "Financial Summary" section and the actual invoice document below it create visual redundancy — the user sees the same amounts twice
-- The invoice document preview has a teal top border that looks like a browser element, not part of the design
-- Date format inconsistency: the info cards show "27 Mar 2026" but the invoice document shows "3/27/2026"
+After the fix:
+- Create R200 job, 50% deposit → **INV-0005 created for R100**
+- Pay R100 → **INV-0005 marked Paid** ✅
+- **INV-0006 auto-created for R100** (the balance)
+- Pay R100 on INV-0006 → **Paid** ✅
 
-**What premium looks like:** Timeline/activity sidebar showing all events (created, sent, viewed, paid), consistent date formatting, a clear primary CTA based on invoice state, downloadable receipt for paid invoices
-
----
-
-## 6. CUSTOMERS PAGE
-
-**Issues:**
-- The action icons (statement, edit, delete) are always visible — should appear on hover
-- No customer avatar or initials circle
-- The "Individual" badge is visually heavy compared to the "active" badge
-- No quick-view/expand for customer details
-- Phone number column is missing
-
-**What premium looks like:** Avatar with initials, expandable row with recent activity, click-to-call/email links, customer health score or invoice summary
-
----
-
-## 7. SETTINGS PAGE
-
-**Issues:**
-- The "Banking Details" section shows all fields as a single paragraph in a gray box — this should be structured as labeled fields (Bank Name, Account Number, Branch Code each on their own line)
-- Theme selector cards are good but the "INTER" font label at the bottom of each card is meaningless to users — they don't know what "Inter" is
-- "Open Invoice Settings" is a link to a separate page — this should be inline or tabbed within settings
-- No profile/account section visible (name, email, password change)
-- No danger zone (delete account, export data)
-
----
-
-## 8. REPORTS PAGE
-
-**Issues:**
-- The summary cards (Total Revenue, Paid, Outstanding, Overdue) repeat the same pattern as the dashboard — feels like a copy-paste
-- The charts (Income vs Expenses, Revenue by Month) are basic bar charts with no interactivity
-- Y-axis labels show "1k, 1k, 1k, 0k, 0k" — clearly a rendering bug with duplicate tick labels
-- No date range filter
-- No ability to drill down into any number
-- No export options per chart
-
----
-
-## 9. GLOBAL ISSUES (Cross-cutting)
-
-- **No loading skeletons**: Pages flash from empty to loaded with no transition
-- **No keyboard shortcuts**: No Cmd+N for new invoice, no Cmd+K command palette
-- **No breadcrumbs**: Navigation relies entirely on back arrows and sidebar
-- **No empty state illustrations**: Empty pages show plain text with no visual personality
-- **No toast positioning consistency**: Toasts appear but placement varies
-- **Tables lack density controls**: No compact/comfortable/spacious toggle
-- **No dark mode refinement**: The dark mode toggle exists but the dark palette likely needs polish for contrast and hierarchy
-- **Monospace overuse**: `JetBrains Mono` is used for currency amounts throughout, making financial figures look like code output rather than business data
-- **Status badges**: The colored rectangles (Paid, Active) are basic — should use subtle pill badges with icons
-- **No onboarding for new users**: First-time experience just dumps you on the dashboard
-- **The "+ New" dropdown** in the header still shows "New Recurring Invoice" as a separate option — this is redundant since recurring is a toggle on the create invoice page
-- **No global search / command palette**: Missing Cmd+K or a search bar in the header
-
----
-
-## 10. PRIORITY RANKING — What Would Move the Needle Most
-
-1. **Command palette (Cmd+K)** — instant premium signal
-2. **Sidebar badge counts + collapsible icon mode** — daily usability
-3. **Remove monospace from currency; fix typography hierarchy** — visual polish
-4. **Invoice list: sortable columns, row hover actions, bulk select** — power user efficiency
-5. **Create Invoice: live preview pane, better form layout** — core workflow
-6. **Dashboard: sparklines, date range filter, activity feed** — first impression
-7. **Loading skeletons everywhere** — perceived performance
-8. **Fix the Reports chart axis bug** — credibility
-9. **Keyboard shortcuts** — power user retention
-10. **Structured banking details in Settings** — attention to detail
-
+No more phantom outstanding balance. Matches what Xero/QuickBooks do.
