@@ -30,7 +30,7 @@ export default function InvoiceLivePreview({
   };
 
   return (
-    <div className="bg-card rounded-lg border shadow-sm overflow-hidden text-[11px] leading-relaxed">
+    <div className="bg-card rounded-lg border shadow-sm overflow-hidden text-xs leading-relaxed">
       {/* Top accent */}
       <div className="h-1 bg-primary" />
       <div className="p-5">
@@ -89,11 +89,13 @@ export default function InvoiceLivePreview({
                 const amt = item.quantity * item.unitPrice * (1 - disc / 100);
                 return (
                   <tr key={item.id} className="border-b border-border/30">
-                    <td className="py-1.5 text-foreground truncate max-w-[120px]">{item.description}</td>
-                    <td className="py-1.5 text-right font-mono text-muted-foreground">{item.quantity}</td>
-                    <td className="py-1.5 text-right font-mono text-muted-foreground">{formatCurrency(item.unitPrice, currency)}</td>
-                    {hasDiscount && <td className="py-1.5 text-right font-mono text-muted-foreground">{disc > 0 ? `${disc}%` : '—'}</td>}
-                    <td className="py-1.5 text-right font-mono font-medium">{formatCurrency(amt, currency)}</td>
+                    <td className="py-1.5 pr-2 text-foreground break-words align-top">
+                      <span className="line-clamp-2">{item.description}</span>
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums text-muted-foreground align-top">{item.quantity}</td>
+                    <td className="py-1.5 text-right tabular-nums text-muted-foreground align-top whitespace-nowrap">{formatCurrency(item.unitPrice, currency)}</td>
+                    {hasDiscount && <td className="py-1.5 text-right tabular-nums text-muted-foreground align-top">{disc > 0 ? `${disc}%` : '—'}</td>}
+                    <td className="py-1.5 text-right tabular-nums font-medium align-top whitespace-nowrap">{formatCurrency(amt, currency)}</td>
                   </tr>
                 );
               })}
@@ -108,20 +110,20 @@ export default function InvoiceLivePreview({
         {/* Totals */}
         {validItems.length > 0 && (
           <div className="flex justify-end">
-            <div className="w-44 space-y-1">
+            <div className="w-52 space-y-1">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-mono">{formatCurrency(totals.subtotal, currency)}</span>
+                <span className="tabular-nums">{formatCurrency(totals.subtotal, currency)}</span>
               </div>
               {isVatRegistered && totals.tax > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">VAT</span>
-                  <span className="font-mono">{formatCurrency(totals.tax, currency)}</span>
+                  <span className="tabular-nums">{formatCurrency(totals.tax, currency)}</span>
                 </div>
               )}
               <div className="flex justify-between font-semibold text-xs border-t pt-1.5">
                 <span>Total</span>
-                <span className="font-mono text-primary">{formatCurrency(totals.total, currency)}</span>
+                <span className="tabular-nums text-primary">{formatCurrency(totals.total, currency)}</span>
               </div>
             </div>
           </div>
