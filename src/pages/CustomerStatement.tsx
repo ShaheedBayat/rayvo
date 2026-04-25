@@ -51,8 +51,9 @@ export default function CustomerStatement() {
     const fromDate = dateFrom;
     const toDate = dateTo + 'T23:59:59';
 
-    // Fetch invoices for this customer (by name match, excluding voided/deleted)
-    const { data: invoices } = await supabase
+    // Fetch invoices for this customer — scoped to the customer's company
+    // (the same client name can exist across multiple companies)
+    let invoicesQuery = supabase
       .from('invoices')
       .select('id, invoice_number, company_id, client_name, items, tax_rate, currency, status, created_at, due_date')
       .eq('client_name', customer.name)
@@ -61,6 +62,18 @@ export default function CustomerStatement() {
       .gte('created_at', fromDate)
       .lte('created_at', toDate)
       .order('created_at', { ascending: true });
+    // Look up the customer's company_id to scope the statement correctly
+    // (the same client name can exist in multiple companies)
+    const { data: customerRow } = await supabase
+      .from('customers')
+      .select('company_id')
+      .eq('id', customer.id)
+      .maybeSingle();
+    const customerCompanyId = customerRow?.company_id;
+    if (customerCompanyId) {
+      invoicesQuery = invoicesQuery.eq('company_id', customerCompanyId);
+    }
+    const { data: invoices } = await invoicesQuery;
 
     const safeInvoices = invoices || [];
     setDbInvoices(safeInvoices);
@@ -81,8 +94,8 @@ export default function CustomerStatement() {
       setDbPayments([]);
     }
 
-    // Fetch credit notes for this customer
-    const { data: creditNotes } = await supabase
+    // Fetch credit notes for this customer — also scoped to the customer's company
+    let creditNotesQuery = supabase
       .from('credit_notes')
       .select('id, credit_note_number, company_id, invoice_id, client_name, items, tax_rate, currency, status, created_at')
       .eq('client_name', customer.name)
@@ -90,6 +103,10 @@ export default function CustomerStatement() {
       .gte('created_at', fromDate)
       .lte('created_at', toDate)
       .order('created_at', { ascending: true });
+    if (customerCompanyId) {
+      creditNotesQuery = creditNotesQuery.eq('company_id', customerCompanyId);
+    }
+    const { data: creditNotes } = await creditNotesQuery;
     setDbCreditNotes(creditNotes || []);
 
     setLoading(false);
