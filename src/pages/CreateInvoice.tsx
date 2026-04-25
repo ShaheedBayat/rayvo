@@ -219,13 +219,43 @@ export default function CreateInvoice() {
 
     if (!isRecurring) {
       const finalItems = isVatRegistered ? items : items.map(i => ({ ...i, taxRate: 0, taxRateName: undefined }));
+
+      // For deposit invoices, replace the line items with a single "deposit" line
+      // for the deposit amount only. The full job total is preserved in jobTotal
+      // so the balance invoice can be auto-created when the deposit is paid.
+      let invoiceItems = finalItems;
+      let invoiceTaxRate = isVatRegistered ? taxRate : 0;
+      let jobTotal: number | undefined = undefined;
+
+      if (invoiceType === 'deposit') {
+        const fullJobTotal = totals.total;
+        const depositAmount = depositType === 'percentage'
+          ? fullJobTotal * (depositValue / 100)
+          : Math.min(depositValue, fullJobTotal);
+        const roundedDeposit = Math.round(depositAmount * 100) / 100;
+        const depositLabel = depositType === 'percentage'
+          ? `${depositValue}% deposit — Job total ${formatCurrency(fullJobTotal, currency)}`
+          : `Deposit payment — Job total ${formatCurrency(fullJobTotal, currency)}`;
+        invoiceItems = [{
+          id: uuidv4(),
+          description: depositLabel,
+          quantity: 1,
+          unitPrice: roundedDeposit,
+        }];
+        // Tax was already accounted for in the job total computation; set to 0 to
+        // avoid double-taxing the deposit line.
+        invoiceTaxRate = 0;
+        jobTotal = fullJobTotal;
+      }
+
       const invoice: Invoice = {
         id: uuidv4(), invoiceNumber: '', companyId, clientName, clientEmail, clientAddress, currency,
-        items: finalItems, taxRate: isVatRegistered ? taxRate : 0, notes,
+        items: invoiceItems, taxRate: invoiceTaxRate, notes,
         status: saveAction === 'send' ? 'sent' : 'draft',
         createdAt: new Date().toISOString(), dueDate, invoiceType,
         depositType: invoiceType === 'deposit' ? depositType : undefined,
         depositValue: invoiceType === 'deposit' ? depositValue : undefined,
+        jobTotal,
       };
 
       await safeExecuteAction({
