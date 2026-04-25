@@ -18,6 +18,10 @@ export interface Quote {
   notes: string;
   validUntil: string;
   createdAt: string;
+  shareToken?: string | null;
+  rejectionReason?: string | null;
+  respondedAt?: string | null;
+  convertedInvoiceId?: string | null;
 }
 
 function mapQuote(row: any): Quote {
@@ -35,6 +39,10 @@ function mapQuote(row: any): Quote {
     notes: row.notes || '',
     validUntil: row.valid_until,
     createdAt: row.created_at,
+    shareToken: row.share_token ?? null,
+    rejectionReason: row.rejection_reason ?? null,
+    respondedAt: row.responded_at ?? null,
+    convertedInvoiceId: row.converted_invoice_id ?? null,
   };
 }
 
