@@ -419,4 +419,46 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Subtle themed scrollbar — used in sidebar and other dark/internal scroll areas
+     so Windows/Linux don't render the default chunky white scrollbar. */
+  .scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--sidebar-border)) transparent;
+  }
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--sidebar-border));
+    border-radius: 9999px;
+    transition: background-color 150ms;
+  }
+  .scrollbar-subtle:hover::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--sidebar-muted) / 0.5);
+  }
+
+  /* Light variant for content areas (uses --border instead of sidebar tokens) */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+  }
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.4);
+  }
 }
