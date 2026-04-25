@@ -184,7 +184,7 @@ serve(async (req) => {
           text: textContent,
           purpose: "transactional",
           label: isFeedback ? "feedback-report" : "invoice-email",
-          idempotency_key: isFeedback ? `feedback-${messageId}` : `invoice-${invoiceNumber}-${email}`,
+          idempotency_key: isFeedback ? `feedback-${messageId}` : `invoice-${messageId}`,
           unsubscribe_token: preparation.unsubscribeToken,
           queued_at: new Date().toISOString(),
         },
