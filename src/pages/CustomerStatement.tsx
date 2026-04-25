@@ -62,8 +62,16 @@ export default function CustomerStatement() {
       .gte('created_at', fromDate)
       .lte('created_at', toDate)
       .order('created_at', { ascending: true });
-    if (customer.companyId) {
-      invoicesQuery = invoicesQuery.eq('company_id', customer.companyId);
+    // Look up the customer's company_id to scope the statement correctly
+    // (the same client name can exist in multiple companies)
+    const { data: customerRow } = await supabase
+      .from('customers')
+      .select('company_id')
+      .eq('id', customer.id)
+      .maybeSingle();
+    const customerCompanyId = customerRow?.company_id;
+    if (customerCompanyId) {
+      invoicesQuery = invoicesQuery.eq('company_id', customerCompanyId);
     }
     const { data: invoices } = await invoicesQuery;
 
@@ -95,8 +103,8 @@ export default function CustomerStatement() {
       .gte('created_at', fromDate)
       .lte('created_at', toDate)
       .order('created_at', { ascending: true });
-    if (customer.companyId) {
-      creditNotesQuery = creditNotesQuery.eq('company_id', customer.companyId);
+    if (customerCompanyId) {
+      creditNotesQuery = creditNotesQuery.eq('company_id', customerCompanyId);
     }
     const { data: creditNotes } = await creditNotesQuery;
     setDbCreditNotes(creditNotes || []);
