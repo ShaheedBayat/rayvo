@@ -232,7 +232,7 @@ export default function AppLayout({ children, fullWidth = false }: { children: R
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside
-        className={`sticky top-0 h-screen hidden md:flex flex-col border-r border-border/50 bg-sidebar transition-all duration-200 ${
+        className={`sticky top-0 h-screen hidden md:flex flex-col border-r border-border/50 bg-sidebar transition-[width] duration-300 ease-premium ${
           collapsed ? 'w-16' : 'w-60'
         }`}
       >
