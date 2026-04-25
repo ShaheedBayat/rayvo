@@ -9,16 +9,7 @@ import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-
-const countsAsStatementCredit = (creditNote: { status?: string; notes?: string }) => {
-  const notes = (creditNote.notes || '').toLowerCase();
-  return creditNote.status !== 'draft' &&
-    !notes.includes('auto-generated from overpayment') &&
-    !notes.startsWith('applied from credit note');
-};
-
-const normalizeName = (s: string | undefined | null) =>
-  (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+import { countsAsStatementCredit, normalizeStatementName } from '@/lib/customerStatement';
 
 export default function CustomerStatements() {
   const { customers } = useCustomers();
@@ -49,17 +40,17 @@ export default function CustomerStatements() {
 
   const customerBalances = useMemo(() => {
     return customers.map(c => {
-      const cName = normalizeName(c.name);
+      const cName = normalizeStatementName(c.name);
       const custInvoices = invoices.filter(i =>
-        normalizeName(i.clientName) === cName &&
+        normalizeStatementName(i.clientName) === cName &&
         i.companyId === c.companyId &&
         i.status !== 'voided' &&
         i.status !== 'draft'
       );
       const custCreditNotes = creditNotes.filter(cn =>
-        normalizeName(cn.clientName) === cName &&
+        normalizeStatementName(cn.clientName) === cName &&
         cn.companyId === c.companyId &&
-        countsAsStatementCredit(cn)
+        countsAsStatementCredit(cn, creditNotes)
       );
 
       const invoiceTotal = custInvoices.reduce((sum, i) => {
