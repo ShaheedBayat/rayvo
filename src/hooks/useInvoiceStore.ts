@@ -99,7 +99,6 @@ export function useInvoices() {
 
   const updateInvoice = useCallback(async (invoice: Invoice): Promise<Invoice | null> => {
     const { data, error } = await supabase.from('invoices').update({
-      invoice_number: invoice.invoiceNumber,
       company_id: invoice.companyId || null,
       client_name: invoice.clientName,
       client_email: invoice.clientEmail,
