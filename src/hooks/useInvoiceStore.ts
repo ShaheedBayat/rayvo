@@ -44,6 +44,7 @@ function mapInvoice(row: any): Invoice {
     depositType: (row.deposit_type as any) || 'percentage',
     depositValue: row.deposit_value != null ? Number(row.deposit_value) : 0,
     parentInvoiceId: row.parent_invoice_id || undefined,
+    jobTotal: row.job_total != null ? Number(row.job_total) : undefined,
   };
 }
 
@@ -88,6 +89,7 @@ export function useInvoices() {
       deposit_type: invoice.depositType || 'percentage',
       deposit_value: invoice.depositValue || 0,
       parent_invoice_id: invoice.parentInvoiceId || null,
+      job_total: invoice.jobTotal != null ? invoice.jobTotal : null,
     } as any).select().single();
     if (!error && data) {
       const newInvoice = mapInvoice(data);
