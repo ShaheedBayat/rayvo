@@ -13,6 +13,7 @@ import CreateInvoice from "./pages/CreateInvoice";
 import InvoiceView from "./pages/InvoiceView";
 import EditInvoice from "./pages/EditInvoice";
 import PublicInvoice from "./pages/PublicInvoice";
+import PublicQuote from "./pages/PublicQuote";
 import Companies from "./pages/Companies";
 import Customers from "./pages/Customers";
 import Products from "./pages/Products";
@@ -180,6 +181,7 @@ const App = () => (
               <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
               <Route path="/onboarding" element={<ProtectedRoute><OnboardingGuard><Onboarding /></OnboardingGuard></ProtectedRoute>} />
               <Route path="/public/invoice/:id" element={<PublicInvoice />} />
+              <Route path="/public/quote/:id" element={<PublicQuote />} />
               <Route path="/" element={<ProtectedRoute><CompanyRequired><Overview /></CompanyRequired></ProtectedRoute>} />
               <Route path="/invoices" element={<ProtectedRoute><CompanyRequired><Invoices /></CompanyRequired></ProtectedRoute>} />
               <Route path="/invoices/new" element={<ProtectedRoute><CompanyRequired><CreateInvoice /></CompanyRequired></ProtectedRoute>} />

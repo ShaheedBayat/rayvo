@@ -111,5 +111,45 @@ export function useQuotes() {
     if (!error) setQuotes(prev => prev.filter(q => q.id !== id));
   }, []);
 
-  return { quotes, loading, addQuote, updateQuote, deleteQuote, refetch: fetchQuotes };
+  const sendQuote = useCallback(async (q: Quote, companyName: string, totalAmount: number) => {
+    // Ensure share_token exists
+    let token = q.shareToken;
+    if (!token) {
+      token = crypto.randomUUID().replace(/-/g, '');
+      const { error: tokErr } = await supabase
+        .from('quotes')
+        .update({ share_token: token })
+        .eq('id', q.id);
+      if (tokErr) return { error: tokErr.message };
+    }
+
+    const baseUrl = window.location.origin;
+    const publicUrl = `${baseUrl}/public/quote/${q.id}?token=${token}`;
+
+    const { data, error } = await supabase.functions.invoke('send-quote-email', {
+      body: {
+        emails: [q.clientEmail],
+        quoteNumber: q.quoteNumber,
+        clientName: q.clientName,
+        amount: totalAmount.toFixed(2),
+        currency: q.currency,
+        validUntil: q.validUntil,
+        publicUrl,
+        companyName,
+      },
+    });
+    if (error) return { error: error.message };
+    if ((data as any)?.error) return { error: (data as any).error };
+
+    // Mark as sent if currently draft
+    if (q.status === 'draft') {
+      await supabase.from('quotes').update({ status: 'sent' }).eq('id', q.id);
+      setQuotes(prev => prev.map(c => c.id === q.id ? { ...c, status: 'sent', shareToken: token } : c));
+    } else {
+      setQuotes(prev => prev.map(c => c.id === q.id ? { ...c, shareToken: token } : c));
+    }
+    return { success: true };
+  }, []);
+
+  return { quotes, loading, addQuote, updateQuote, deleteQuote, sendQuote, refetch: fetchQuotes };
 }
