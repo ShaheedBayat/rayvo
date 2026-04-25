@@ -9,7 +9,7 @@ import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Clock, AlertCircle, CheckCircle2, Receipt, Download, CalendarIcon } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, Receipt, Download, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
