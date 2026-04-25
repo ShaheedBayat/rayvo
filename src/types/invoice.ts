@@ -50,6 +50,8 @@ export interface Invoice {
   depositType?: DepositType;
   depositValue?: number;
   parentInvoiceId?: string;
+  /** For deposit invoices: the full job total this deposit was calculated against. */
+  jobTotal?: number;
 }
 
 export const currencySymbols: Record<Currency, string> = {
