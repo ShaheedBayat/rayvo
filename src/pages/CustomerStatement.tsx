@@ -28,6 +28,9 @@ const countsAsStatementCredit = (creditNote: { status?: string; notes?: string }
     !notes.startsWith('applied from credit note');
 };
 
+const normalizeName = (s: string | undefined | null) =>
+  (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
 export default function CustomerStatement() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -58,18 +61,6 @@ export default function CustomerStatement() {
     const fromDate = dateFrom;
     const toDate = dateTo + 'T23:59:59';
 
-    // Fetch invoices for this customer — scoped to the customer's company
-    // (the same client name can exist across multiple companies)
-    let invoicesQuery = supabase
-      .from('invoices')
-      .select('id, invoice_number, company_id, client_name, items, tax_rate, currency, status, created_at, due_date')
-      .eq('client_name', customer.name)
-      .is('deleted_at', null)
-      .neq('status', 'voided')
-      .neq('status', 'draft')
-      .gte('created_at', fromDate)
-      .lte('created_at', toDate)
-      .order('created_at', { ascending: true });
     // Look up the customer's company_id to scope the statement correctly
     // (the same client name can exist in multiple companies)
     const { data: customerRow } = await supabase
@@ -78,12 +69,32 @@ export default function CustomerStatement() {
       .eq('id', customer.id)
       .maybeSingle();
     const customerCompanyId = customerRow?.company_id;
+
+    // Fetch invoices for this customer — strictly scoped to the customer's company.
+    // The same client name can exist across multiple companies, so company_id is mandatory.
+    let invoicesQuery = supabase
+      .from('invoices')
+      .select('id, invoice_number, company_id, client_name, items, tax_rate, currency, status, created_at, due_date')
+      .ilike('client_name', customer.name.trim())
+      .is('deleted_at', null)
+      .neq('status', 'voided')
+      .neq('status', 'draft')
+      .gte('created_at', fromDate)
+      .lte('created_at', toDate)
+      .order('created_at', { ascending: true });
     if (customerCompanyId) {
       invoicesQuery = invoicesQuery.eq('company_id', customerCompanyId);
+    } else {
+      invoicesQuery = invoicesQuery.is('company_id', null);
     }
     const { data: invoices } = await invoicesQuery;
 
-    const safeInvoices = invoices || [];
+    // Defensive client-side filter: normalize names + enforce company match
+    const targetName = normalizeName(customer.name);
+    const safeInvoices = (invoices || []).filter(i =>
+      normalizeName(i.client_name) === targetName &&
+      i.company_id === customerCompanyId
+    );
     setDbInvoices(safeInvoices);
 
     const invoiceIds = safeInvoices.map(i => i.id);
@@ -102,11 +113,11 @@ export default function CustomerStatement() {
       setDbPayments([]);
     }
 
-    // Fetch credit notes for this customer — also scoped to the customer's company
+    // Fetch credit notes for this customer — strictly scoped to the customer's company
     let creditNotesQuery = supabase
       .from('credit_notes')
       .select('id, credit_note_number, company_id, invoice_id, client_name, items, tax_rate, currency, status, notes, created_at')
-      .eq('client_name', customer.name)
+      .ilike('client_name', customer.name.trim())
       .is('deleted_at', null)
       .neq('status', 'draft')
       .gte('created_at', fromDate)
@@ -114,9 +125,15 @@ export default function CustomerStatement() {
       .order('created_at', { ascending: true });
     if (customerCompanyId) {
       creditNotesQuery = creditNotesQuery.eq('company_id', customerCompanyId);
+    } else {
+      creditNotesQuery = creditNotesQuery.is('company_id', null);
     }
     const { data: creditNotes } = await creditNotesQuery;
-    setDbCreditNotes((creditNotes || []).filter(countsAsStatementCredit));
+    setDbCreditNotes(
+      (creditNotes || [])
+        .filter(cn => normalizeName(cn.client_name) === targetName && cn.company_id === customerCompanyId)
+        .filter(countsAsStatementCredit)
+    );
 
     setLoading(false);
   }, [user, customer, dateFrom, dateTo]);

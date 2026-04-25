@@ -17,6 +17,9 @@ const countsAsStatementCredit = (creditNote: { status?: string; notes?: string }
     !notes.startsWith('applied from credit note');
 };
 
+const normalizeName = (s: string | undefined | null) =>
+  (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
 export default function CustomerStatements() {
   const { customers } = useCustomers();
   const { invoices } = useInvoices();
@@ -46,15 +49,16 @@ export default function CustomerStatements() {
 
   const customerBalances = useMemo(() => {
     return customers.map(c => {
+      const cName = normalizeName(c.name);
       const custInvoices = invoices.filter(i =>
-        i.clientName === c.name &&
-        (!c.companyId || i.companyId === c.companyId) &&
+        normalizeName(i.clientName) === cName &&
+        i.companyId === c.companyId &&
         i.status !== 'voided' &&
         i.status !== 'draft'
       );
       const custCreditNotes = creditNotes.filter(cn =>
-        cn.clientName === c.name &&
-        (!c.companyId || cn.companyId === c.companyId) &&
+        normalizeName(cn.clientName) === cName &&
+        cn.companyId === c.companyId &&
         countsAsStatementCredit(cn)
       );
 
