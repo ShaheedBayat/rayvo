@@ -39,8 +39,17 @@ export default function CustomerStatements() {
 
   const customerBalances = useMemo(() => {
     return customers.map(c => {
-      const custInvoices = invoices.filter(i => i.clientName === c.name && i.status !== 'voided' && i.status !== 'draft');
-      const custCreditNotes = creditNotes.filter(cn => cn.clientName === c.name);
+      const custInvoices = invoices.filter(i =>
+        i.clientName === c.name &&
+        (!c.companyId || i.companyId === c.companyId) &&
+        i.status !== 'voided' &&
+        i.status !== 'draft'
+      );
+      const custCreditNotes = creditNotes.filter(cn =>
+        cn.clientName === c.name &&
+        (!c.companyId || cn.companyId === c.companyId) &&
+        cn.status !== 'draft'
+      );
 
       const invoiceTotal = custInvoices.reduce((sum, i) => {
         const co = getCompany(i.companyId);
@@ -54,8 +63,9 @@ export default function CustomerStatements() {
       const balance = invoiceTotal - paymentsTotal - creditTotal;
       const currency = (custInvoices[0]?.currency || 'ZAR') as Currency;
       const invoiceCount = custInvoices.length;
+      const companyName = c.companyId ? getCompany(c.companyId)?.name : undefined;
 
-      return { ...c, balance, currency, invoiceCount };
+      return { ...c, balance, currency, invoiceCount, companyName };
     }).filter(c => c.invoiceCount > 0);
   }, [customers, invoices, creditNotes, paymentsByInvoice, getCompany]);
 
@@ -78,6 +88,7 @@ export default function CustomerStatements() {
             <thead>
               <tr className="border-b bg-muted/30">
                 <th className="py-3 px-4 text-left font-medium text-muted-foreground">Customer</th>
+                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Company</th>
                 <th className="py-3 px-4 text-left font-medium text-muted-foreground">Email</th>
                 <th className="py-3 px-4 text-right font-medium text-muted-foreground">Invoices</th>
                 <th className="py-3 px-4 text-right font-medium text-muted-foreground">Balance</th>
@@ -88,6 +99,7 @@ export default function CustomerStatements() {
               {customerBalances.map(c => (
                 <tr key={c.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                   <td className="py-3 px-4 font-medium">{c.name}</td>
+                  <td className="py-3 px-4 text-muted-foreground">{c.companyName || '—'}</td>
                   <td className="py-3 px-4 text-muted-foreground">{c.email || '—'}</td>
                   <td className="py-3 px-4 text-right mono">{c.invoiceCount}</td>
                   <td className={`py-3 px-4 text-right mono font-semibold ${c.balance > 0 ? 'text-foreground' : 'text-success'}`}>

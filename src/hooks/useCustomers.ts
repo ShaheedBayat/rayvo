@@ -15,6 +15,7 @@ export interface CustomerContact {
 
 export interface Customer {
   id: string;
+  companyId: string;
   type: 'individual' | 'company';
   name: string;
   email: string;
@@ -65,6 +66,7 @@ export interface Customer {
 function mapCustomer(row: any): Customer {
   return {
     id: row.id,
+    companyId: row.company_id || '',
     type: row.type,
     name: row.name,
     email: row.email || '',
