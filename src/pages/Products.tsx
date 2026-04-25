@@ -13,11 +13,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/components/AppLayout';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { useActiveCompany } from '@/hooks/useActiveCompany';
 import { toast } from 'sonner';
+import ImportProductsDialog from '@/components/products/ImportProductsDialog';
+import { exportProducts } from '@/lib/productImportExport';
 
 const TAX_RATES = ['0%', '5%', '10%', '15%', '20%'];
 const PAGE_SIZE = 20;
@@ -213,7 +214,7 @@ function NewItemDialog({ open, onOpenChange, onSave, editing }: {
 }
 
 export default function Products() {
-  const { products, loading, addProduct, updateProduct, deleteProduct } = useProducts();
+  const { products, loading, addProduct, updateProduct, deleteProduct, refetch } = useProducts();
   const permissions = usePermissions();
   const { activeCompany } = useActiveCompany();
   const isVatRegistered = activeCompany?.isVatRegistered ?? false;
@@ -222,6 +223,7 @@ export default function Products() {
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [page, setPage] = useState(0);
+  const [importOpen, setImportOpen] = useState(false);
 
   const filtered = products.filter(p =>
     p.code.toLowerCase().includes(search.toLowerCase()) ||
@@ -254,26 +256,25 @@ export default function Products() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="hidden sm:inline-flex">
-                <Button variant="outline" size="sm" className="gap-1.5 rounded-lg opacity-50 cursor-not-allowed" disabled>
-                  <Upload className="h-3.5 w-3.5" /> Import
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Coming soon</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="hidden sm:inline-flex">
-                <Button variant="outline" size="sm" className="gap-1.5 rounded-lg opacity-50 cursor-not-allowed" disabled>
-                  <Download className="h-3.5 w-3.5" /> Export
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Coming soon</TooltipContent>
-          </Tooltip>
+          {permissions.canCreateProduct && (
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-lg hidden sm:inline-flex" onClick={() => setImportOpen(true)}>
+              <Upload className="h-3.5 w-3.5" /> Import
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 rounded-lg hidden sm:inline-flex" disabled={products.length === 0}>
+                <Download className="h-3.5 w-3.5" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportProducts(products, 'csv')}>Export as CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportProducts(products, 'xlsx')}>Export as Excel (.xlsx)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportProducts(products, 'txt')}>Export as TXT</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportProducts(products, 'pdf')}>Export as PDF</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportProducts(products, 'json')}>Export as JSON</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {permissions.canCreateProduct && (
             <Button className="gap-1.5 rounded-lg" onClick={openNew}>
               <Plus className="h-4 w-4" /> New Item
@@ -291,6 +292,14 @@ export default function Products() {
           editing={editing}
         />
       )}
+
+      <ImportProductsDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        existingCodes={new Set(products.map(p => p.code))}
+        onImport={addProduct}
+        onDone={refetch}
+      />
 
       {loading ? (
         <div className="space-y-3">
