@@ -505,7 +505,7 @@ export default function CreateInvoice() {
                   💰 Deposit Settings
                 </h2>
                 <p className="text-xs text-muted-foreground mb-3">
-                  A deposit invoice charges a portion upfront. When fully paid, a balance invoice is auto-created.
+                  This invoice will be created for the <strong>deposit amount only</strong>. When it's fully paid, a separate <strong>balance invoice</strong> is auto-generated for the remainder.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1">
@@ -526,15 +526,15 @@ export default function CreateInvoice() {
                 {totals.total > 0 && (
                   <div className="mt-3 rounded-md bg-card border p-3 text-sm space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Full Total</span>
+                      <span className="text-muted-foreground">Full Job Total</span>
                       <span className="font-medium">{formatCurrency(totals.total, currency)}</span>
                     </div>
                     <div className="flex justify-between text-amber-700 dark:text-amber-400 font-medium">
-                      <span>Deposit</span>
+                      <span>This Invoice (Deposit)</span>
                       <span>{formatCurrency(depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total), currency)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground border-t pt-1">
-                      <span>Balance (auto)</span>
+                      <span>Balance Invoice (auto, after deposit paid)</span>
                       <span>{formatCurrency(totals.total - (depositType === 'percentage' ? totals.total * (depositValue / 100) : Math.min(depositValue, totals.total)), currency)}</span>
                     </div>
                   </div>
