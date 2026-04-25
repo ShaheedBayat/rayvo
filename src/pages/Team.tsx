@@ -386,14 +386,54 @@ export default function Team() {
                                 <span style={{ ...ownerBadgeStyle, ...badgeBase }}>Owner</span>
                               </>
                             )}
+                            {m.isBlocked && (
+                              <span
+                                style={{ ...blockedBadgeStyle, ...badgeBase }}
+                                className="inline-flex items-center gap-1"
+                                title={m.blockedReason || 'Account blocked'}
+                              >
+                                <Ban className="h-3 w-3" />
+                                Blocked
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs text-muted-foreground">Joined {formatDate(m.createdAt)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {m.isBlocked && m.blockedReason
+                              ? m.blockedReason
+                              : `Joined ${formatDate(m.createdAt)}`}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2.5 shrink-0" onClick={e => e.stopPropagation()}>
                         <span style={{ ...roleBadgeStyle(m.role), ...badgeBase }}>{m.role}</span>
                         {!isCurrentUser && (
                           <>
+                            {m.isBlocked && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                                    <ShieldOff className="h-3.5 w-3.5" />
+                                    Unblock
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Unblock {m.displayName}?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {m.blockedReason || 'This user is currently blocked from deleting invoices.'}
+                                      <br /><br />
+                                      Unblocking will restore full access. They will be re-blocked automatically if they delete 3+ invoices within 5 minutes.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleUnblock(m.userId, m.displayName)}>
+                                      Unblock
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                             <Select value={m.role} onValueChange={(val) => handleRoleChange(m.userId, val)}>
                               <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
