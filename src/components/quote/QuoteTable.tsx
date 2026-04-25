@@ -1,4 +1,4 @@
-import { MoreHorizontal, Edit, ArrowRight, Trash2, Loader2, Send, MessageSquareWarning } from 'lucide-react';
+import { MoreHorizontal, Edit, ArrowRight, Trash2, Loader2, Send, MessageSquareWarning, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -14,6 +14,7 @@ interface QuoteTableProps {
   sending: string | null;
   onEdit: (q: Quote) => void;
   onConvert: (q: Quote) => void;
+  onViewInvoice: (invoiceId: string) => void;
   onSend: (q: Quote) => void;
   onShowReason: (q: Quote) => void;
   onUpdateStatus: (q: Quote, status: Quote['status']) => void;
@@ -22,7 +23,7 @@ interface QuoteTableProps {
 
 export default function QuoteTable({
   quotes, statusConfig, getCompany, converting, sending,
-  onEdit, onConvert, onSend, onShowReason, onUpdateStatus, onDelete,
+  onEdit, onConvert, onViewInvoice, onSend, onShowReason, onUpdateStatus, onDelete,
 }: QuoteTableProps) {
   return (
     <div className="rounded-xl border border-border/50 bg-card invoice-shadow overflow-hidden">
@@ -87,7 +88,12 @@ export default function QuoteTable({
                           <MessageSquareWarning className="mr-2 h-4 w-4" /> View Rejection Reason
                         </DropdownMenuItem>
                       )}
-                      {q.status !== 'converted' && (
+                      {q.status === 'converted' && q.convertedInvoiceId && (
+                        <DropdownMenuItem onClick={() => onViewInvoice(q.convertedInvoiceId!)}>
+                          <Eye className="mr-2 h-4 w-4" /> View Invoice
+                        </DropdownMenuItem>
+                      )}
+                      {(q.status === 'draft' || q.status === 'sent' || q.status === 'accepted') && (
                         <DropdownMenuItem onClick={() => onConvert(q)} disabled={isConverting}>
                           {isConverting ? (
                             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Converting...</>
