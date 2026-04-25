@@ -8,7 +8,7 @@ import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import InvoiceDocument from '@/components/invoice/InvoiceDocument';
 import { calculateSmartTotals, formatCurrency } from '@/types/invoice';
-import type { Invoice, Company } from '@/types/invoice';
+import type { Invoice, Company, Currency } from '@/types/invoice';
 
 export default function PublicQuote() {
   const { id } = useParams<{ id: string }>();
@@ -47,7 +47,7 @@ export default function PublicQuote() {
             country: c.country,
             taxNumber: c.tax_number || '',
             logo: c.logo || '',
-            defaultCurrency: c.default_currency,
+            defaultCurrency: c.default_currency as Currency,
             pricingMode: c.pricing_mode as any,
             vatRate: Number(c.vat_rate),
             isVatRegistered: c.is_vat_registered,
