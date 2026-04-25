@@ -15,7 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Users, Trash2, Mail, Plus, Send, RefreshCw, ChevronRight, ChevronDown, Shield, Clock } from 'lucide-react';
+import { Users, Trash2, Mail, Plus, Send, RefreshCw, ChevronRight, ChevronDown, Shield, Clock, ShieldOff, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -29,6 +29,12 @@ const ownerBadgeStyle: React.CSSProperties = {
   background: 'hsl(192 75% 36% / 0.08)',
   color: 'hsl(192 75% 28%)',
   border: '1px solid hsl(192 75% 36% / 0.2)',
+};
+
+const blockedBadgeStyle: React.CSSProperties = {
+  background: 'hsl(0 84% 50% / 0.1)',
+  color: 'hsl(0 72% 42%)',
+  border: '1px solid hsl(0 84% 50% / 0.25)',
 };
 
 const badgeBase: React.CSSProperties = { fontSize: '11px', fontWeight: 500, padding: '2px 8px', borderRadius: '20px', display: 'inline-block', textTransform: 'capitalize' as const };
@@ -253,7 +259,7 @@ function isInviteExpired(invite: { expiresAt: string | null; status: string }) {
 export default function Team() {
   const { user } = useAuth();
   const permissions = usePermissions();
-  const { members, invites, loading, sendInvite, revokeInvite, resendInvite, updateMemberRole, removeMember } = useTeam();
+  const { members, invites, loading, sendInvite, revokeInvite, resendInvite, updateMemberRole, removeMember, unblockMember } = useTeam();
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('staff');
   const [matrixOpen, setMatrixOpen] = useState(false);
@@ -291,6 +297,12 @@ export default function Team() {
     const ok = await removeMember(userId);
     if (ok) toast.success(`${name} removed from team`);
     else toast.error('Failed to remove member');
+  };
+
+  const handleUnblock = async (userId: string, name: string) => {
+    const ok = await unblockMember(userId);
+    if (ok) toast.success(`${name} has been unblocked`);
+    else toast.error('Failed to unblock — only Super Admins or Company Admins can unblock users.');
   };
 
   const handleRevoke = async (id: string) => {
