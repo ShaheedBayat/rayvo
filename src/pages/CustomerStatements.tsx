@@ -3,73 +3,51 @@ import { Link } from 'react-router-dom';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useInvoices } from '@/hooks/useInvoiceStore';
 import { useCreditNotes } from '@/hooks/useCreditNotes';
-import { formatCurrency, calculateSmartTotals } from '@/types/invoice';
+import { formatCurrency } from '@/types/invoice';
 import { useCompanies } from '@/hooks/useInvoiceStore';
-import type { Currency } from '@/types/invoice';
 import AppLayout from '@/components/AppLayout';
 import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { countsAsStatementCredit, normalizeStatementName } from '@/lib/customerStatement';
+import { buildCustomerStatement } from '@/lib/customerStatement';
 
 export default function CustomerStatements() {
   const { customers } = useCustomers();
   const { invoices } = useInvoices();
   const { getCompany } = useCompanies();
   const { creditNotes } = useCreditNotes();
-  const [paymentsByInvoice, setPaymentsByInvoice] = useState<Record<string, number>>({});
+  const [payments, setPayments] = useState<any[]>([]);
 
   // Fetch payments for the currently visible invoices and aggregate per invoice
   useEffect(() => {
     const ids = invoices.map(i => i.id);
-    if (ids.length === 0) { setPaymentsByInvoice({}); return; }
+    if (ids.length === 0) { setPayments([]); return; }
     let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from('payments')
-        .select('invoice_id, amount')
+        .select('id, invoice_id, amount, payment_date, reference, created_at')
         .in('invoice_id', ids);
       if (cancelled) return;
-      const map: Record<string, number> = {};
-      (data || []).forEach(p => {
-        map[p.invoice_id] = (map[p.invoice_id] || 0) + Number(p.amount);
-      });
-      setPaymentsByInvoice(map);
+      setPayments(data || []);
     })();
     return () => { cancelled = true; };
   }, [invoices]);
 
   const customerBalances = useMemo(() => {
     return customers.map(c => {
-      const cName = normalizeStatementName(c.name);
-      const custInvoices = invoices.filter(i =>
-        normalizeStatementName(i.clientName) === cName &&
-        i.companyId === c.companyId &&
-        i.status !== 'voided' &&
-        i.status !== 'draft'
-      );
-      const custCreditNotes = creditNotes.filter(cn =>
-        normalizeStatementName(cn.clientName) === cName &&
-        cn.companyId === c.companyId &&
-        countsAsStatementCredit(cn, creditNotes)
-      );
-
-      const invoiceTotal = custInvoices.reduce((sum, i) => {
-        const co = getCompany(i.companyId);
-        return sum + calculateSmartTotals(i.items, i.taxRate, co?.pricingMode || 'exclusive', co?.isVatRegistered ?? false).total;
-      }, 0);
-      const creditTotal = custCreditNotes.reduce((sum, cn) => {
-        const cnCompany = cn.companyId ? getCompany(cn.companyId) : undefined;
-        return sum + calculateSmartTotals(cn.items, cn.taxRate, cnCompany?.pricingMode || 'exclusive', cnCompany?.isVatRegistered ?? false).total;
-      }, 0);
-      const paymentsTotal = custInvoices.reduce((sum, i) => sum + (paymentsByInvoice[i.id] || 0), 0);
-      const balance = invoiceTotal - paymentsTotal - creditTotal;
-      const currency = (custInvoices[0]?.currency || 'ZAR') as Currency;
-      const invoiceCount = custInvoices.length;
+      const statement = buildCustomerStatement({
+        customerName: c.name,
+        companyId: c.companyId,
+        invoices,
+        payments,
+        creditNotes,
+        getCompany,
+      });
       const companyName = c.companyId ? getCompany(c.companyId)?.name : undefined;
 
-      return { ...c, balance, currency, invoiceCount, companyName };
+      return { ...c, balance: statement.balance, currency: statement.currency, invoiceCount: statement.invoiceCount, companyName };
     }).filter(c => c.invoiceCount > 0);
-  }, [customers, invoices, creditNotes, paymentsByInvoice, getCompany]);
+  }, [customers, invoices, creditNotes, payments, getCompany]);
 
   return (
     <AppLayout>
