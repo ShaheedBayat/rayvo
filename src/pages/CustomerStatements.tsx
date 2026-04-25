@@ -10,6 +10,13 @@ import AppLayout from '@/components/AppLayout';
 import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+const countsAsStatementCredit = (creditNote: { status?: string; notes?: string }) => {
+  const notes = (creditNote.notes || '').toLowerCase();
+  return creditNote.status !== 'draft' &&
+    !notes.includes('auto-generated from overpayment') &&
+    !notes.startsWith('applied from credit note');
+};
+
 export default function CustomerStatements() {
   const { customers } = useCustomers();
   const { invoices } = useInvoices();
@@ -48,7 +55,7 @@ export default function CustomerStatements() {
       const custCreditNotes = creditNotes.filter(cn =>
         cn.clientName === c.name &&
         (!c.companyId || cn.companyId === c.companyId) &&
-        cn.status !== 'draft'
+        countsAsStatementCredit(cn)
       );
 
       const invoiceTotal = custInvoices.reduce((sum, i) => {

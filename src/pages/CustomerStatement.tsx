@@ -21,6 +21,13 @@ interface StatementEntry {
   currency: Currency;
 }
 
+const countsAsStatementCredit = (creditNote: { status?: string; notes?: string }) => {
+  const notes = (creditNote.notes || '').toLowerCase();
+  return creditNote.status !== 'draft' &&
+    !notes.includes('auto-generated from overpayment') &&
+    !notes.startsWith('applied from credit note');
+};
+
 export default function CustomerStatement() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -98,9 +105,10 @@ export default function CustomerStatement() {
     // Fetch credit notes for this customer — also scoped to the customer's company
     let creditNotesQuery = supabase
       .from('credit_notes')
-      .select('id, credit_note_number, company_id, invoice_id, client_name, items, tax_rate, currency, status, created_at')
+      .select('id, credit_note_number, company_id, invoice_id, client_name, items, tax_rate, currency, status, notes, created_at')
       .eq('client_name', customer.name)
       .is('deleted_at', null)
+      .neq('status', 'draft')
       .gte('created_at', fromDate)
       .lte('created_at', toDate)
       .order('created_at', { ascending: true });
@@ -108,7 +116,7 @@ export default function CustomerStatement() {
       creditNotesQuery = creditNotesQuery.eq('company_id', customerCompanyId);
     }
     const { data: creditNotes } = await creditNotesQuery;
-    setDbCreditNotes(creditNotes || []);
+    setDbCreditNotes((creditNotes || []).filter(countsAsStatementCredit));
 
     setLoading(false);
   }, [user, customer, dateFrom, dateTo]);
