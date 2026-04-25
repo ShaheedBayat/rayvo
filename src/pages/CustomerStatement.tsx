@@ -95,7 +95,7 @@ export default function CustomerStatement() {
     if (invoiceIds.length > 0) {
       const { data: payments } = await supabase
         .from('payments')
-        .select('id, invoice_id, amount, payment_date, reference')
+        .select('id, invoice_id, amount, payment_date, reference, created_at')
         .in('invoice_id', invoiceIds)
         .gte('payment_date', fromDate)
         .lte('payment_date', toDate)
@@ -152,6 +152,7 @@ export default function CustomerStatement() {
         type: 'Invoice',
         amount: computed.total,
         currency: inv.currency as Currency,
+        sortAt: inv.created_at,
       });
     });
 
@@ -166,6 +167,7 @@ export default function CustomerStatement() {
         type: 'Payment',
         amount: -amount,
         currency: (inv?.currency as Currency) || 'ZAR',
+        sortAt: p.created_at || p.payment_date,
       });
     });
 
@@ -181,11 +183,12 @@ export default function CustomerStatement() {
         type: 'Credit Note',
         amount: -computed.total,
         currency: cn.currency as Currency,
+        sortAt: cn.created_at,
       });
     });
 
     // Sort chronologically
-    items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    items.sort((a, b) => new Date(a.sortAt).getTime() - new Date(b.sortAt).getTime());
 
     return { entries: items, totalInvoices: sumInvoices, totalPayments: sumPayments, totalCredits: sumCredits };
   }, [dbInvoices, dbPayments, dbCreditNotes, getCompany]);
