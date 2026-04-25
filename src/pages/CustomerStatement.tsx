@@ -59,6 +59,7 @@ export default function CustomerStatement() {
       .eq('client_name', customer.name)
       .is('deleted_at', null)
       .neq('status', 'voided')
+      .neq('status', 'draft')
       .gte('created_at', fromDate)
       .lte('created_at', toDate)
       .order('created_at', { ascending: true });
