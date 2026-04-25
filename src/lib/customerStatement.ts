@@ -149,7 +149,7 @@ export const countsAsInvoiceCredit = <T extends CreditNoteLike>(creditNote: T) =
 export const countsAsStatementCredit = <T extends CreditNoteLike>(creditNote: T, allCreditNotes: T[] = []) => {
   if (isDraftCreditNote(creditNote.status)) return false;
   if (isOverpaymentCreditNote(creditNote)) {
-    return true;
+    return false;
   }
 
   const source = findCreditSource(creditNote, allCreditNotes);
