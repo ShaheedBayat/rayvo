@@ -818,8 +818,13 @@ export default function InvoiceView() {
                 </div>
               )}
               {payAmount && parseFloat(payAmount) > amountDue && (
-                <div className="mt-2 text-xs text-warning font-medium bg-warning/10 rounded px-2 py-1">
-                  ⚠️ Overpayment will create credit of {formatCurrency(parseFloat(payAmount) - amountDue, invoice.currency)}
+                <div className="mt-2 rounded-md border border-warning/30 bg-warning/10 px-2.5 py-2 text-xs">
+                  <p className="font-medium text-warning">
+                    ⚠️ Overpayment will create a credit note of {formatCurrency(parseFloat(payAmount) - amountDue, invoice.currency)}
+                  </p>
+                  <p className="mt-1 text-muted-foreground leading-relaxed">
+                    The extra amount becomes an <span className="font-medium text-foreground">Available</span> credit for {invoice.clientName}, which you can apply to any of their future invoices. Find it later under <span className="font-medium text-foreground">Credit Notes</span>.
+                  </p>
                 </div>
               )}
             </div>
