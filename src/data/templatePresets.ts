@@ -4,7 +4,7 @@ export interface TemplatePreset {
   id: string;
   name: string;
   description: string;
-  category: 'corporate' | 'minimal' | 'luxury' | 'tech' | 'legal' | 'creative';
+  category: 'corporate' | 'minimal' | 'luxury' | 'tech' | 'legal' | 'creative' | 'premium';
   thumbnail: string; // CSS gradient for preview card
   theme: Omit<BrandingTheme, 'id' | 'createdAt'>;
 }
@@ -221,6 +221,106 @@ export const templatePresets: TemplatePreset[] = [
       },
     },
   },
+  {
+    id: 'aurora-gradient',
+    name: 'Aurora Gradient',
+    description: 'A vibrant, gradient-rich showpiece. Bold violet-to-cyan palette with airy whitespace — built to wow modern startups and design-led brands.',
+    category: 'premium',
+    thumbnail: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 35%, #06b6d4 70%, #22d3ee 100%)',
+    theme: {
+      ...base,
+      name: 'Aurora Gradient',
+      fontFamily: 'Plus Jakarta Sans',
+      fontSize: 10,
+      primaryColor: '#6d28d9',
+      accentColor: '#06b6d4',
+      logoAlignment: 'left',
+      showItemCode: true,
+      showTaxColumn: true,
+      showBankDetails: true,
+      showQrCode: true,
+      paymentService: 'stripe',
+      topMargin: 2.8,
+      bottomMargin: 2.5,
+      addressPadding: 1.4,
+      footerMessage: 'Crafted with care — questions? Reply anytime.',
+      documentTitles: {
+        ...base.documentTitles,
+        approved_invoice: 'INVOICE',
+        draft_invoice: 'DRAFT',
+        overdue_invoice: 'PAST DUE',
+        quote: 'PROPOSAL',
+        credit_note: 'CREDIT',
+      },
+    },
+  },
+  {
+    id: 'midnight-noir',
+    name: 'Midnight Noir',
+    description: 'Dark, cinematic and editorial. Ink-black headers with electric emerald accents — for premium agencies, studios, and high-end consultancies.',
+    category: 'premium',
+    thumbnail: 'linear-gradient(135deg, #020617 0%, #0f172a 45%, #064e3b 80%, #10b981 100%)',
+    theme: {
+      ...base,
+      name: 'Midnight Noir',
+      fontFamily: 'Space Grotesk',
+      fontSize: 10,
+      primaryColor: '#0b1120',
+      accentColor: '#10b981',
+      logoAlignment: 'left',
+      showItemCode: true,
+      showTaxColumn: true,
+      showBankDetails: true,
+      showQrCode: false,
+      topMargin: 3.0,
+      bottomMargin: 2.8,
+      addressPadding: 1.6,
+      watermark: 'CONFIDENTIAL',
+      footerMessage: 'Premium service. Personal attention. Always.',
+      documentTitles: {
+        ...base.documentTitles,
+        approved_invoice: 'Statement',
+        draft_invoice: 'Draft Statement',
+        overdue_invoice: 'Overdue Notice',
+        quote: 'Engagement Proposal',
+        credit_note: 'Credit Memorandum',
+      },
+    },
+  },
+  {
+    id: 'monaco-luxe',
+    name: 'Monaco Luxe',
+    description: 'Editorial luxury with serif elegance and warm gold accents on cream. Designed for boutique hotels, jewellers, fine art, and private clients.',
+    category: 'premium',
+    thumbnail: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 30%, #ca8a04 70%, #78350f 100%)',
+    theme: {
+      ...base,
+      name: 'Monaco Luxe',
+      fontFamily: 'Playfair Display',
+      fontSize: 10,
+      primaryColor: '#451a03',
+      accentColor: '#b45309',
+      logoAlignment: 'center',
+      showItemCode: false,
+      showTaxColumn: true,
+      showBankDetails: true,
+      showQrCode: false,
+      hideDiscount: false,
+      topMargin: 3.2,
+      bottomMargin: 3.0,
+      addressPadding: 1.8,
+      footerMessage: 'A privilege to be of service.',
+      documentTitles: {
+        ...base.documentTitles,
+        approved_invoice: 'Invoice',
+        draft_invoice: 'Pro Forma',
+        overdue_invoice: 'Reminder of Account',
+        quote: 'Estimate',
+        credit_note: 'Credit Note',
+        receipt: 'Acknowledgement',
+      },
+    },
+  },
 ];
 
 export const categoryLabels: Record<string, string> = {
@@ -230,4 +330,5 @@ export const categoryLabels: Record<string, string> = {
   tech: 'Tech',
   legal: 'Legal',
   creative: 'Creative',
+  premium: 'Premium',
 };
