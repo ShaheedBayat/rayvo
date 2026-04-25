@@ -174,6 +174,7 @@ export default function Quotes() {
           sending={sending}
           onEdit={(q) => navigate(`/quotes/${q.id}/edit`)}
           onConvert={handleConvertToInvoice}
+          onViewInvoice={(invoiceId) => navigate(`/invoices/${invoiceId}`)}
           onSend={handleSend}
           onShowReason={(q) => setReasonQuote(q)}
           onUpdateStatus={async (q, status) => {
