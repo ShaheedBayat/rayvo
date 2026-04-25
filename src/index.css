@@ -377,6 +377,33 @@
     font-family: var(--theme-font, 'Inter', system-ui, sans-serif);
   }
 
+  /* Themed thin scrollbar everywhere — replaces the chunky default white
+     scrollbar on Windows / Linux so it doesn't clash with our dark sidebar
+     and overall premium aesthetic. */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-weight: var(--theme-heading-weight, 600);
     letter-spacing: var(--theme-heading-tracking, -0.025em);
@@ -418,5 +445,47 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Subtle themed scrollbar — used in sidebar and other dark/internal scroll areas
+     so Windows/Linux don't render the default chunky white scrollbar. */
+  .scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--sidebar-border)) transparent;
+  }
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--sidebar-border));
+    border-radius: 9999px;
+    transition: background-color 150ms;
+  }
+  .scrollbar-subtle:hover::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--sidebar-muted) / 0.5);
+  }
+
+  /* Light variant for content areas (uses --border instead of sidebar tokens) */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+  }
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.4);
   }
 }

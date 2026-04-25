@@ -130,7 +130,7 @@ function getNavItems(canAccessSettings: boolean, canManageCompanies: boolean, ca
 
 function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav, badges }: { collapsed: boolean; isActive: (path: string) => boolean; onNavigate?: () => void; salesNav: any[]; manageNav: any[]; badges?: Record<string, number> }) {
   return (
-    <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+    <nav className="flex-1 overflow-y-auto scrollbar-subtle px-3 py-4 space-y-5">
       <div>
         {!collapsed && (
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
@@ -177,7 +177,7 @@ function SidebarContent({ collapsed, isActive, onNavigate, salesNav, manageNav, 
   );
 }
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children, fullWidth = false }: { children: React.ReactNode; fullWidth?: boolean }) {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const permissions = usePermissions();
@@ -355,7 +355,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="flex-1 px-4 md:px-8 py-6 md:py-10 animate-fade-in">
-          <div className="mx-auto max-w-6xl">{children}</div>
+          <div className={fullWidth ? 'mx-auto w-full' : 'mx-auto max-w-7xl'}>{children}</div>
         </main>
       </div>
     </div>

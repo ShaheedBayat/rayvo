@@ -187,7 +187,7 @@ export default function EditInvoice() {
   };
 
   return (
-    <AppLayout>
+    <AppLayout fullWidth>
       <button
         onClick={() => navigate(`/invoices/${invoice.id}`)}
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"

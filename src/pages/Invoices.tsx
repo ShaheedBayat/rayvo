@@ -354,7 +354,17 @@ export default function Invoices() {
     else toast.info('No eligible invoices to void in selection');
   };
 
-  const statuses = ['draft', 'awaiting_approval', 'sent', 'paid', 'partially_paid', 'voided', 'overdue'];
+  // Primary statuses shown inline; the rest collapse into a "More" dropdown
+  const primaryStatuses = ['draft', 'sent', 'paid', 'overdue'];
+  const overflowStatuses = ['awaiting_approval', 'partially_paid', 'voided'];
+
+  // Status counts (across the company-filtered set, ignoring search/status filters)
+  const statusCount = (s: string) => {
+    if (s === 'overdue') {
+      return companyFiltered.filter(i => (i.status === 'sent' || i.status === 'partially_paid') && new Date(i.dueDate) < new Date()).length;
+    }
+    return companyFiltered.filter(i => i.status === s).length;
+  };
 
   const py = density === 'compact' ? 'py-2' : 'py-3.5';
 
@@ -405,26 +415,48 @@ export default function Invoices() {
               <Input placeholder="Search invoices..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} className="pl-9 h-9 rounded-lg" />
             </div>
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              {/* Filter pills with horizontal scroll */}
-              <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-0.5 min-w-0 flex-1">
+              {/* Filter pills — wrap on small screens, no horizontal scroll */}
+              <div className="flex flex-wrap gap-1.5 min-w-0 flex-1">
                 <button
                   onClick={() => { setShowDeleted(false); setStatusFilterParam(null); }}
-                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${!statusFilter && !showDeleted ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
+                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${!statusFilter && !showDeleted ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground'}`}
                 >
                   All
                 </button>
-                {statuses.map((s) => (
-                  <button key={s} onClick={() => { setShowDeleted(false); setStatusFilterParam(statusFilter === s ? null : s); }}
-                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${statusFilter === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
-                  >
-                    {statusConfig[s]?.label || s}
-                  </button>
-                ))}
-                <button onClick={handleShowDeleted}
-                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${showDeleted ? 'bg-destructive text-destructive-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
-                >
-                  Deleted
-                </button>
+                {primaryStatuses.map((s) => {
+                  const count = statusCount(s);
+                  const active = statusFilter === s;
+                  return (
+                    <button key={s} onClick={() => { setShowDeleted(false); setStatusFilterParam(active ? null : s); }}
+                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors inline-flex items-center gap-1.5 ${active ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground'}`}
+                    >
+                      <span>{statusConfig[s]?.label || s}</span>
+                      {count > 0 && <span className={`tabular-nums text-[10px] rounded-full px-1.5 ${active ? 'bg-primary-foreground/20' : 'bg-foreground/10'}`}>{count}</span>}
+                    </button>
+                  );
+                })}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors inline-flex items-center gap-1 ${overflowStatuses.includes(statusFilter || '') ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground'}`}
+                    >
+                      {overflowStatuses.includes(statusFilter || '') ? statusConfig[statusFilter!].label : 'More'}
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    {overflowStatuses.map(s => (
+                      <DropdownMenuItem key={s} onClick={() => { setShowDeleted(false); setStatusFilterParam(statusFilter === s ? null : s); }}>
+                        <span className="flex-1">{statusConfig[s]?.label}</span>
+                        <span className="tabular-nums text-[10px] text-muted-foreground">{statusCount(s)}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleShowDeleted} className={showDeleted ? 'text-destructive' : ''}>
+                      <Trash2 className="mr-2 h-3.5 w-3.5" /> {showDeleted ? 'Hide deleted' : 'Show deleted'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               {/* Density toggle */}
               <div className="hidden md:flex items-center border border-border/60 rounded-lg overflow-hidden shrink-0">
