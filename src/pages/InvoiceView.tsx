@@ -492,10 +492,16 @@ export default function InvoiceView() {
 
     // Auto-create balance invoice when a deposit invoice is fully paid
     if (newStatus === 'paid' && invoice.invoiceType === 'deposit' && invoice.depositValue && invoice.depositValue > 0) {
-      const depositAmount = invoice.depositType === 'percentage'
-        ? invoiceTotal * (invoice.depositValue / 100)
-        : Math.min(invoice.depositValue, invoiceTotal);
-      const balanceAmount = invoiceTotal - depositAmount;
+      // Deposit invoices store ONLY the deposit amount as their total. The full
+      // job total is preserved on jobTotal so we can compute the balance.
+      // Fall back to legacy behaviour (full total stored on invoice) if jobTotal is missing.
+      const fullJobTotal = invoice.jobTotal && invoice.jobTotal > 0 ? invoice.jobTotal : invoiceTotal;
+      const depositAmount = invoice.jobTotal && invoice.jobTotal > 0
+        ? invoiceTotal // the deposit invoice total IS the deposit amount
+        : (invoice.depositType === 'percentage'
+            ? invoiceTotal * (invoice.depositValue / 100)
+            : Math.min(invoice.depositValue, invoiceTotal));
+      const balanceAmount = fullJobTotal - depositAmount;
 
       if (balanceAmount > 0.01) {
         const balanceId = uuidv4();
