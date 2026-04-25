@@ -42,8 +42,11 @@ describe('customer statement calculations', () => {
 
     expect(statement.totalInvoices).toBe(35000);
     expect(statement.totalPayments).toBe(30000);
-    expect(statement.totalCredits).toBe(5000);
-    expect(statement.balance).toBe(0);
+    // Auto-generated overpayment credit notes are NOT counted as statement credits
+    // because the cash is already counted in payments. Counting both would double-count.
+    expect(statement.totalCredits).toBe(0);
+    // Net: customer was billed R35k, paid R30k cash → owes R5k.
+    expect(statement.balance).toBe(5000);
   });
 
   it('isolates same-name customers by company', () => {
